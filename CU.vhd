@@ -64,4 +64,39 @@ entity CU is
         StackPush   : out std_logic; -- stack push/pop control
         Reset       : out std_logic -- active low reset signal
     );
+
 end CU;
+
+--
+--  CU Architecture
+--
+
+architecture RISC of CU is
+
+    signal CLK : std_logic;
+    signal cycle_num :  std_logic_vector(1 downto 0);
+    signal cycle     :  std_logic_vector(1 downto 0);
+
+begin
+
+    Decoder : process (CLK)
+    begin
+      if (rising_edge(CLK)) then
+                
+    
+      end if;
+    end process Decoder;
+
+    FSM : process (CLK)
+    begin
+      if (rising_edge(CLK)) then
+    
+      end if;
+    end process FSM;
+
+end RISC;
+
+
+
+
+
