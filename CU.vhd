@@ -24,6 +24,9 @@ use ieee.numeric_std.all;
 library opcodes; 
 use opcodes.opcodes.all; 
 
+library CPUconst;
+use CPUconst.constants.all;
+
 entity CU is
     port(
         ProgDB  : in std_logic_vector(15 downto 0); -- program memory data bus
@@ -73,28 +76,203 @@ end CU;
 
 architecture RISC of CU is
 
+    -- FSM States
+    type states is (
+        Done,
+        Count
+    );
+
+    signal FSMState : states := Done;
+
     signal CLK : std_logic;
-    signal cycle_num :  std_logic_vector(1 downto 0);
-    signal cycle     :  std_logic_vector(1 downto 0);
+    
+    signal load         :   std_logic;
+
+    signal cycle_num    :   std_logic_vector(1 downto 0);
+    signal cycle        :   std_logic_vector(1 downto 0);
+
+    signal IR           :   std_logic_vector(15 downto 0);
+
+    constant 
 
 begin
 
     Decoder : process (CLK)
     begin
-      if (rising_edge(CLK)) then
-                
+        if (rising_edge(CLK)) then
+            -- sets cycle number for op_codes 
+            -- defaults to 1
+            cycle_num = "01";
+            if (std_match(IR, OpADIW) or 
+                std_match(IR, OpADIW) or 
+                std_match(IR, OpADIW) or 
+                std_match(IR, OpADIW)) then
+                    cycle_num = "10";
+            end if;
+
+            -- register default values
+            K = ;
+            RegSelA <= IR(8 downto 4);
+            RegWEn  <= '1';
+            RegSelB <= IR();
+            RegWSel <= ;
+
+            -- not support all MULS operations so can combine
+            --  all operations that do single byte 
+            if  std_match(IR, "000-------------") then
+                -- ALU output to use Adder/Subber
+                -- ALU Cin = IR(12);
+                -- ALU sub flag = [IR(11) xor IR(10)]
+                -- reg A   = IR(8..4)
+                -- reg B   = IR(9) & IR(3..0)
+                -- reg sel = IR(8..4) & IR(11)
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+            if  std_match(IR, OpADIW) then
+                slkdj;
+            end if;
+
     
-      end if;
+        end if;
     end process Decoder;
 
-    FSM : process (CLK)
+
+    load <= '1' when cycle = cycle_num else
+            '0';
+
+    FSM_noSM : process (CLK)
     begin
       if (rising_edge(CLK)) then
-    
+            if load = '0' then
+                cycle <= cycle + 1;
+            else
+                cycle <= "00";
+            end if;
       end if;
-    end process FSM;
+    end process FSM_noSM;
+
+    ---- handles FSM transitions
+    --FSM_trans : process (CLK)
+    --begin
+    --    if (rising_edge(CLK)) then
+    --        case FSMState is
+    --            when Done =>
+    --                if cycle_num /= cycle then
+    --                    FSMState <= Count;
+    --                end if;
+    --            when Count =>
+    --                if cycle_num = cycle then
+    --                    FSMState <= Done;
+    --                end if;
+    --        end case;
+    --    end if;
+    --end process FSM_trans;
+
+    ---- handles FSM actions
+    --FSM_actions : process (CLK)
+    --begin
+    --    if (rising_edge(CLK)) then
+    --        case FSMState is
+    --            when Done =>
+    --                load <= '1';
+    --                cycle = "00";
+    --            when Count =>
+    --                load <= '0';
+    --                cycle <= cycle + 1;
+    --        end case;
+    --    end if;
+    --end process FSM_actions;
 
 end RISC;
+
+
+
+
+
+
+
+
+
 
 
 
