@@ -18,10 +18,17 @@ package constants is
     subtype  ALU_selects  is  std_logic_vector(2 downto 0);
 
 --  ALU select opcode constants
+<<<<<<< HEAD
 
     constant AddSubEn       : ALU_selects := "00";
     constant FBlockEn       : ALU_selects := "01";
     constant ShiftEn        : ALU_selects := "10";
+=======
+    
+    constant AddSubEn       : ALU_selects := "000";
+    constant FBlockEn       : ALU_selects := "001";
+    constant ShiftEn        : ALU_selects := "010";
+>>>>>>> 9d4f44e40c27cdee4688461e90e225b2f004d2f2
 
 
     constant REGSIZE    : natural := 8;
