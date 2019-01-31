@@ -19,9 +19,9 @@ package constants is
 
 --  ALU select opcode constants
     
-    constant AddSubEn       : ALU_selects := "00";
-    constant FBlockEn       : ALU_selects := "01";
-    constant ShiftEn        : ALU_selects := "10";
+    constant AddSubEn       : ALU_selects := "000";
+    constant FBlockEn       : ALU_selects := "001";
+    constant ShiftEn        : ALU_selects := "010";
 
 
 end package;

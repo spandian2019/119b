@@ -93,8 +93,6 @@ architecture RISC of CU is
 
     signal IR           :   std_logic_vector(15 downto 0);
 
-    constant 
-
 begin
 
     Decoder : process (CLK)
@@ -111,21 +109,18 @@ begin
             end if;
 
             -- register default values
-            K = ;
+            K <= IR(11 downto 8) & IR(3 downto 0);
             RegSelA <= IR(8 downto 4);
             RegWEn  <= '1';
-            RegSelB <= IR();
-            RegWSel <= ;
 
             -- not support all MULS operations so can combine
             --  all operations that do single byte 
             if  std_match(IR, "000-------------") then
-                -- ALU output to use Adder/Subber
+                ALUSel <= AddSubEn;
                 -- ALU Cin = IR(12);
                 -- ALU sub flag = [IR(11) xor IR(10)]
-                -- reg A   = IR(8..4)
-                -- reg B   = IR(9) & IR(3..0)
-                -- reg sel = IR(8..4) & IR(11)
+                RegSelB <= IR(9) & IR(3..0)
+                RegWSel <= IR(8..4) & IR(11)
             end if;
             if  std_match(IR, OpADIW) then
                 slkdj;
