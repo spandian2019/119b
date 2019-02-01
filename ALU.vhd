@@ -36,8 +36,7 @@ use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
 
-library opcodes; 
-use work.opcodes.all; 
+--use work.opcodes.all; 
 
 use work.ALUconstants.all; 
 
