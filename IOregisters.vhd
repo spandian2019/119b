@@ -56,7 +56,6 @@ end IOReg;
 
 architecture Reg_arc of Reg is
 
-    signal CLK : std_logic;
     signal registers : IO_reg_array;
 
 begin

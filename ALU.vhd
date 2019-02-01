@@ -34,9 +34,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
-
-library opcodes; 
-use opcodes.opcodes.all; 
+use ieee.std_logic_unsigned.all;
+ 
+use work.opcodes.all; 
 
 use work.ALUconstants.all; 
 
@@ -169,20 +169,11 @@ begin
       
     -- end mux 
 
-    Bout    <= (conv_integer(IR(6 downto 4)) => '1',
-                others                       => '0');
-
+    -- transfer bit loading
     BIT_OP : for i in 0 to REGSIZE-1 generate
-        if i = conv_integer(RegB) then
-            Bout(i) <= ALUOp(0);
-        else
-            Bout(i) <= RegA(i);
-        end if;
+        Bout(i) <= ALUOp(0) when i = conv_integer(RegB) else
+                   RegA(i);
     end generate;
-
-    
-    Bout    <=  RegA when std_match(LoadIn, LoadA) else
-            registers(conv_integer(RegSelA));
 
     GenALUSel:  for i in REGSIZE-1 downto 0 generate
     ALUSelMux: Mux
@@ -192,7 +183,7 @@ begin
             SIn0        => AdderOut(i),
             SIn1        => FOut(i), 
             SIn2        => SROut(i),
-            SIn3        => 'X',
+            SIn3        => Bout(i),
             SOut        => RegBuff(i)
       );
       end generate GenALUSel;
