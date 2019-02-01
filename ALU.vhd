@@ -111,8 +111,8 @@ begin
         port map(
             A           => RegA(0),
             B           => RegB(0),
-            Subtract    => ALUOp(0),
-            Cin         => ALUOp(1),
+            Subtract    => ALUOp(SUBFLAG),
+            Cin         => ALUOp(CARRYBIT),
             Cout        => Carryout(0), 
             Sum         => AdderOut(0)
       );
@@ -122,8 +122,8 @@ begin
         port map(
             A           => RegA(i),
             B           => RegB(i),
-            Subtract    => ALUOp(0),
-            Cin         => CarryOut(i-1), --?
+            Subtract    => ALUOp(SUBFLAG),
+            Cin         => CarryOut(i-1), 
             Cout        => Carryout(i), 
             Sum         => AdderOut(i)
       );
@@ -153,7 +153,7 @@ begin
             S1          => ALUOp(1),
             SIn0        => '0',             -- LSR high bit = 0
             SIn1        => RegA(REGSIZE-1), -- ASR high bit constant
-            SIn2        => ALUOp(2),        -- ROR high bit = carry in 
+            SIn2        => ALUOp(CARRYBIT),        -- ROR high bit = carry in 
             SIn3        => 'X',
             SOut        => SROut(REGSIZE-1)
       );
@@ -189,8 +189,8 @@ begin
     --StatusOut(6) <= RegA(to_integer(unsigned(RegB)));
     
     -- half carry 
-    StatusOut(5) <= CarryOut(HALFCARRYBIT) when std_match(ALUOp, OP_ADD) else 
-						  not CarryOut(HALFCARRYBIT);
+    StatusOut(5) <= CarryOut(HALFCARRYBIT) when ALUOp(SUBFLAG) = OP_ADD else 
+						  not CarryOut(HALFCARRYBIT);		-- carry flag opposite when subtracting
 	 
 	 -- corrected signed 
     StatusOut(4) <= RegBuff(REGSIZE-1) xor VFlag; -- N xor V 
@@ -207,8 +207,8 @@ begin
     StatusOut(1) <= '1' when RegBuff = ZERO8 else 
                     '0';
     -- carry
-    StatusOut(0) <= CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN and std_match(ALUOp, OP_ADD) else 
-						  not CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN else 
+    StatusOut(0) <= CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN and ALUOp(SUBFLAG) = OP_ADD else 
+						  not CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN else 	-- carry flag opposite when subtracting
 						  '1' when ALUSel = FBLOCKEN else 
                    RegA(0); --when ALUSel = SHIFTEN; 
 						 

@@ -26,16 +26,18 @@ package ALUConstants is
 
     subtype ALU_OPS is std_logic_vector(3 downto 0);
     -- F-block operands 
-    constant OP_ZERO    : ALU_OPS := "0000"; -- zeros
-    constant OP_NOR     : ALU_OPS := "0001"; -- A nor B
-    constant OP_NOTB    : ALU_OPS := "0011"; -- not B
     constant OP_NOTA    : ALU_OPS := "0101"; -- not A
     constant OP_XOR     : ALU_OPS := "0110"; -- A xor B
-    constant OP_NAND    : ALU_OPS := "0111"; -- A nand B
     constant OP_AND     : ALU_OPS := "1000"; -- A and B
-    constant OP_XNOR    : ALU_OPS := "1001"; -- A xnor B 
     constant OP_OR      : ALU_OPS := "1110"; -- A or B
-    constant OP_ONE     : ALU_OPS := "1111"; -- true     
+
+	 -- F-block operands not used in instruction set 
+    constant OP_ZERO    : ALU_OPS := "0000"; -- zeros
+    constant OP_NOR     : ALU_OPS := "0001"; -- A nor B
+    constant OP_NOTB    : ALU_OPS := "0011"; -- not B 
+    constant OP_ONE     : ALU_OPS := "1111"; -- true  
+    constant OP_XNOR    : ALU_OPS := "1001"; -- A xnor B 
+    constant OP_NAND    : ALU_OPS := "0111"; -- A nand B
     
     -- Shifter/Rotator operands 
     constant OP_LSR     : ALU_OPS := "--00"; -- Logical shift right 
@@ -43,13 +45,18 @@ package ALUConstants is
     constant OP_ROR     : ALU_OPS := "-010"; -- Rotate right (no carry)
     constant OP_RORC     : ALU_OPS := "-110"; -- Rotate right (with carry)
     
-    -- Adder/Subtractor operands 
-    constant OP_ADDNC     : ALU_OPS := "--00";-- add no carry
-    constant OP_SUBNC     : ALU_OPS := "--11";-- sub no carry
-	 constant OP_ADD     : ALU_OPS := "---0";
-    constant OP_SUB     : ALU_OPS := "---1"; 
-    constant OP_CARRY   : ALU_OPS := "--1-"; -- carry bit 
-    constant OP_NOCARRY : ALU_OPS := "--0-";
+	 
+	 -- Adder/Subtractor operand indices and values
+    constant SUBFLAG    : integer := 3;	-- index of subtract flag
+    constant CARRYBIT   : integer := 2;	-- index of carry flag 
+	 
+	 constant OP_ADD : std_logic := '0'; 
+	 constant OP_SUB : std_logic := '1'; 
+	 constant OP_CARRY : std_logic:= '1'; 
+	 
+    -- Testing add/sub
+    constant OP_ADDNC     : ALU_OPS := "00--";-- add no carry
+    constant OP_SUBNC     : ALU_OPS := "11--";-- sub no carry
     
     -- SReg
     constant HALFCARRYBIT : natural := 3; -- half carry is carry out of bit 3
