@@ -65,7 +65,7 @@ architecture regteste_arc of reg_test is
     signal    LoadIn      : std_logic_vector(1 downto 0);
 
         -- to ALU and SReg
-    signal    ALUOp   : std_logic_vector(4 downto 0); -- operation control signals
+    signal    ALUOp   : std_logic_vector(3 downto 0); -- operation control signals
     signal    ALUSel  : std_logic_vector(2 downto 0); -- operation select
     signal    bitmask : std_logic_vector(7 downto 0); -- mask for writing to flags
 
@@ -78,27 +78,26 @@ architecture regteste_arc of reg_test is
     signal 	  data_bus_in : std_logic_vector(7 downto 0);
     signal 	  IOdata 	  : std_logic_vector(7 downto 0);
     signal 	  ALUdata     : std_logic_vector(7 downto 0);
-    signal 	  DataBus     : std_logic_vector(7 downto 0);
 
 begin
 
-    CtrlU   : entity CU port map(IR, SReg, RegWEn, RegWSel, RegSelA,
+    CtrlU   : entity work.CU port map(IR, SReg, RegWEn, RegWSel, RegSelA,
                                    RegSelB, RegDataSel, LoadIn, ALUOp, ALUSel,
                                    bitmask, IORegInEn, IORegOutEn, SRegOut, K, clock);
 
     data_muxer: for i in 7 downto 0 generate
-    data_line: Mux
+    data_line: entity work.Mux
     	port map (
-    		LoadIn(0), LoadIn(1), K(i), ALUdata(i), IOdata(i), RegAOut(i), DataBus(i),
+    		LoadIn(0), LoadIn(1), K(i), ALUdata(i), IOdata(i), RegAOut(i),
     		data_bus_in(i)
     	);
     end generate data_muxer;
 
-    IORegSpace : entity IOReg port map(data_bus_in, K(6 downto 5)&K(3 downto 0),
+    IORegSpace : entity work.IOReg port map(data_bus_in, K(6 downto 5)&K(3 downto 0),
 								SRegOut, clock, IORegInEn, IORegOutEn, bitmask, IOdata,
 								SReg);
 
-    RegSpace : entity Reg port map(data_bus_in, clock,  RegWEn, RegWSel, RegSelA,
+    RegSpace : entity work.Reg port map(data_bus_in, clock,  RegWEn, RegWSel, RegSelA,
                                    RegSelB, RegAOut, RegAOut, LoadIn);
 
 

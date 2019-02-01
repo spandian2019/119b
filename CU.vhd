@@ -42,7 +42,7 @@ entity CU is
         LoadIn      : out std_logic_vector(1 downto 0);
 
         -- to ALU and SReg
-        ALUOp   : out std_logic_vector(4 downto 0); -- operation control signals
+        ALUOp   : out std_logic_vector(3 downto 0); -- operation control signals
         ALUSel  : out std_logic_vector(2 downto 0); -- operation select
         bitmask : out std_logic_vector(7 downto 0); -- mask for writing to flags
 
@@ -246,8 +246,8 @@ begin
                 -- TODO: K_en <= IR(14);
                 RegWSel <= IR(8 downto 4);
                 if std_match(IR, OpANDI) then
-                    RegSelA(8) <= '1';
-                    RegWSel(8) <= '1';
+                    RegSelA(4) <= '1';
+                    RegWSel(4) <= '1';
                 end if;
                 RegSelB <= IR(9) & IR(3 downto 0);
             end if;
