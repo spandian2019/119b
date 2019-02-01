@@ -161,10 +161,10 @@ begin
     -- end mux 
 
     -- transfer bit loading
---    BIT_OP : for i in 0 to REGSIZE-1 generate
---        Bout(i) <= ALUOp(0) when i = to_integer(unsigned(RegB)) else
---                   RegA(i);
---    end generate; --??
+    BIT_OP : for i in 0 to REGSIZE-1 generate
+        Bout(i) <= ALUOp(0) when i = to_integer(unsigned(RegB)) else
+                   RegA(i);
+    end generate; 
 
     GenALUSel:  for i in REGSIZE-1 downto 0 generate
     ALUSelMux: Mux
@@ -186,7 +186,7 @@ begin
     -- transfer, interrupt bits not set through ALU
     --StatusOut(7) <= 'X'; 
     -- transfer bit
-    --StatusOut(6) <= RegA(to_integer(unsigned(RegB)));
+    StatusOut(6) <= RegA(to_integer(unsigned(RegB)));
     
     -- half carry 
     StatusOut(5) <= CarryOut(HALFCARRYBIT) when ALUOp(SUBFLAG) = OP_ADD else 
