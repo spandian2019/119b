@@ -19,7 +19,7 @@
 ----------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
+--use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
 
@@ -38,8 +38,8 @@ entity CU is
         RegWSel     : out std_logic_vector(4 downto 0); -- register write select
         RegSelA     : out std_logic_vector(4 downto 0); -- register A select
         RegSelB     : out std_logic_vector(4 downto 0); -- register B select
-        RegDataSel  : out std_logic_vector(3 downto 0); -- selects data line into reg
-        LoadIn      : out std_logic_vector(1 downto 0);
+        LoadIn      : out std_logic_vector(1 downto 0); -- selects data line into reg
+        LoadReg     : out std_logic_vector(1 downto 0);
 
         -- to ALU and SReg
         ALUOp   : out std_logic_vector(3 downto 0); -- operation control signals
@@ -122,6 +122,8 @@ begin
             RegWEn  <= '1';
             IORegInEn <= '0';
             IORegOutEn <= '0';
+            LoadIn <= LdALU;
+            LoadReg <= LoadB;
 
             -- 3 MSBs of IR for AVR all use adder/subber
             --  block for ALU ops except for those that
@@ -234,7 +236,8 @@ begin
                 -- always subbing so set
                 ALUOp(subFlag)  <= '1';
                 K <= (others => IR(0));
-                -- TODO: mux K into second operand
+                LoadReg <= LoadA;
+                LoadIn <= LdRegA;
                 RegWSel <= IR(8 downto 4);
             end if;
 
@@ -243,7 +246,9 @@ begin
                 ALUSel <= FBlockEn;
                 -- select AND operation
                 ALUOp <= OP_AND;
-                -- TODO: K_en <= IR(14);
+                if IR(14) = '1' then
+                    LoadIn <= LdK;
+                end if;
                 RegWSel <= IR(8 downto 4);
                 if std_match(IR, OpANDI) then
                     RegSelA(4) <= '1';
@@ -257,11 +262,13 @@ begin
                 ALUSel <= FBlockEn;
                 -- select OR operation
                 ALUOp <= OP_OR;
-                -- TODO: K_en <= IR(14);
+                if IR(14) = '1' then
+                    LoadIn <= LdK;
+                end if;
                 RegWSel <= IR(8 downto 4);
                 if std_match(IR, OpORI) then
-                    RegSelA(8) <= '1';
-                    RegWSel(8) <= '1';
+                    RegSelA(4) <= '1';
+                    RegWSel(4) <= '1';
                 end if;
                 RegSelB <= IR(9) & IR(3 downto 0);
             end if;
@@ -269,9 +276,8 @@ begin
             if  std_match(IR, OpEOR) then
                 -- enable F Block Operation
                 ALUSel <= FBlockEn;
-                -- select AND operation
+                -- select XOR operation
                 ALUOp <= OP_XOR;
-                -- TODO: K_en <= IR(14);
                 RegWSel <= IR(8 downto 4);
                 RegSelB <= IR(9) & IR(3 downto 0);
             end if;
@@ -302,25 +308,26 @@ begin
 
             if  std_match(IR, OpBCLR) or std_match(IR, OpBSET) then
                 SRegOut <= (others => not IR(7));
-                bitmask <= (conv_integer(IR(6 downto 4)) => '1',
-                            others                       => '0');
+                bitmask <= (others => '0');
+                bitmask(conv_integer(IR(6 downto 4))) <= '1';
             end if;
 
             if  std_match(IR, OpBLD) or std_match(IR, OpBST) then
                 ALUSel <= PassThruEn;
---                RegDataSel <=
                 RegWSel <= IR(8 downto 4);
 --                (conv_integer(IR(6 downto 4)))
             end if;
 
             if std_match(IR, OpSWAP) then
---                RegDataSel <= RData_SWAP;
+                LoadReg <= LoadSwap;
+                LoadIn <= LdRegA;
                 RegWSel <= IR(8 downto 4);
             end if;
 
             if std_match(IR, OpIN) or std_match(IR, OpOUT) then
                 IORegInEn  <= not IR(11);
                 IORegOutEn <= IR(11);
+                LoadIn <= LdIO;
             end if;
 
         end if;

@@ -32,8 +32,16 @@ package constants is
 
     subtype  LoadIn_selects is std_logic_vector(1 downto 0);
     -- LoadIn select constants
-    constant LoadA      : LoadIn_selects := "01";
-    constant LoadB      : LoadIn_selects := "10";
+    constant LdK       : LoadIn_selects := "00";
+    constant LdALU     : LoadIn_selects := "01";
+    constant LdIO      : LoadIn_selects := "10";
+    constant LdRegA    : LoadIn_selects := "11";
+
+    subtype  LoadReg_selects is std_logic_vector(1 downto 0);
+    -- LoadIn select constants
+    constant LoadA      : LoadReg_selects := "01";
+    constant LoadB      : LoadReg_selects := "10";
+    constant LoadSwap   : LoadReg_selects := "11";
 
     constant REGSIZE    : natural := 8;
     constant ZERO8      : std_logic_vector(7 downto 0) := "00000000";

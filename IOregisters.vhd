@@ -78,7 +78,7 @@ begin
     RegOut  <=  registers(conv_integer(RegInSel));
     SRegOut <=  registers(conv_integer(SReg_addr));
 
-    SREG_write : process (CLK) 
+    SREG_write : process (CLK)
     begin
         if (rising_edge(CLK)) then
             BIT_OP : for i in 0 to 7 loop

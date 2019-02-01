@@ -61,8 +61,8 @@ architecture regteste_arc of reg_test is
     signal    RegWSel     : std_logic_vector(4 downto 0); -- register write select
     signal    RegSelA     : std_logic_vector(4 downto 0); -- register A select
     signal    RegSelB     : std_logic_vector(4 downto 0); -- register B select
-    signal    RegDataSel  : std_logic_vector(3 downto 0); -- selects data line into reg
     signal    LoadIn      : std_logic_vector(1 downto 0);
+    signal    LoadReg     : std_logic_vector(1 downto 0);
 
         -- to ALU and SReg
     signal    ALUOp   : std_logic_vector(3 downto 0); -- operation control signals
@@ -82,7 +82,7 @@ architecture regteste_arc of reg_test is
 begin
 
     CtrlU   : entity work.CU port map(IR, SReg, RegWEn, RegWSel, RegSelA,
-                                   RegSelB, RegDataSel, LoadIn, ALUOp, ALUSel,
+                                   RegSelB, LoadIn, LoadReg, ALUOp, ALUSel,
                                    bitmask, IORegInEn, IORegOutEn, SRegOut, K, clock);
 
     data_muxer: for i in 7 downto 0 generate
@@ -98,7 +98,7 @@ begin
 								SReg);
 
     RegSpace : entity work.Reg port map(data_bus_in, clock,  RegWEn, RegWSel, RegSelA,
-                                   RegSelB, RegAOut, RegAOut, LoadIn);
+                                   RegSelB, RegAOut, RegAOut, LoadReg);
 
 
 end regteste_arc;
