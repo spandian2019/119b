@@ -25,8 +25,9 @@
 --        StatusOut - 8 bit status flags to status register
 --
 -- Revision History:
--- 01/24/2019 Sophia Liu Initial revision
--- 01/28/2019 Sophia Liu Initial architecture revision
+-- 01/24/2019   Sophia Liu      Initial revision
+-- 01/28/2019   Sophia Liu      Initial architecture revision
+-- 01/31/2019   Sundar Pandian  Added support for BST, BLD
 --
 ----------------------------------------------------------------------------
 library ieee;
@@ -66,6 +67,8 @@ signal Fout : std_logic_vector(REGSIZE-1 downto 0); -- f block output
 
 signal SRout : std_logic_vector(REGSIZE-1 downto 0); -- shifter/rotator block output 
 
+signal Bout : std_logic_vector(REGSIZE-1 downto 0); -- bit set block output 
+
 --signal SRegBuff : std_logic_vector(REGSIZE-1 downto 0); -- sreg before flag mask
 
 signal RegBuff  : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output result ?
@@ -74,6 +77,7 @@ signal RegBuff  : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output res
 signal NFlag : std_logic; -- negative status flag
 signal CFlag : std_logic; -- carry status flag
 signal VFlag : std_logic; -- signed overflow status flag 
+signal TFlag : std_logic; -- transfer flag
 
 -- component declarations 
 component fullAdder is
@@ -163,7 +167,23 @@ begin
             SOut        => SROut(REGSIZE-1)
       );
       
-    -- end mux     
+    -- end mux 
+
+    Bout    <= (conv_integer(IR(6 downto 4)) => '1',
+                others                       => '0');
+
+    BIT_OP : for i in 0 to REGSIZE-1 generate
+        if i = conv_integer(RegB) then
+            Bout(i) <= ALUOp(0);
+        else
+            Bout(i) <= RegA(i);
+        end if;
+    end generate;
+
+    
+    Bout    <=  RegA when std_match(LoadIn, LoadA) else
+            registers(conv_integer(RegSelA));
+
     GenALUSel:  for i in REGSIZE-1 downto 0 generate
     ALUSelMux: Mux
         port map(
@@ -182,6 +202,8 @@ begin
     -- transfer, interrupt bits not set through ALU
     --StatusOut(7) <= 'X'; 
     --StatusOut(6) <= 'X'; --?
+    -- transfer bit
+    StatusOut(6) <= RegA(conv_integer(RegB));
     
     -- half carry 
     StatusOut(5) <= CarryOut(HALFCARRYBIT);
