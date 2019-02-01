@@ -32,11 +32,10 @@
 ----------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
+--use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
 
-library opcodes; 
 use work.opcodes.all; 
 
 use work.ALUconstants.all; 
@@ -70,17 +69,17 @@ signal SRout : std_logic_vector(REGSIZE-1 downto 0); -- shifter/rotator block ou
 
 signal Bout : std_logic_vector(REGSIZE-1 downto 0); -- bit set block output 
 
-signal Status : std_logic_vector(REGSIZE-1 downto 0); -- sreg buffer
+--signal Status : std_logic_vector(REGSIZE-1 downto 0); -- sreg buffer
 
 signal RegBuff  : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output result ?
 
 -- internal status signals 
-signal NFlag : std_logic; -- negative status flag
-signal CFlag : std_logic; -- carry status flag
+--signal NFlag : std_logic; -- negative status flag
+--signal CFlag : std_logic; -- carry status flag
 signal VFlag : std_logic; -- signed overflow status flag 
-signal TFlag : std_logic; -- transfer flag
+--signal TFlag : std_logic; -- transfer flag
 
--- component declarations 
+---- component declarations 
 component fullAdder is
     port(
         A           :  in      std_logic;  -- adder input 
@@ -162,10 +161,10 @@ begin
     -- end mux 
 
     -- transfer bit loading
-    BIT_OP : for i in 0 to REGSIZE-1 generate
-        Bout(i) <= ALUOp(0) when i = conv_integer(RegB) else
-                   RegA(i);
-    end generate; --??
+--    BIT_OP : for i in 0 to REGSIZE-1 generate
+--        Bout(i) <= ALUOp(0) when i = to_integer(unsigned(RegB)) else
+--                   RegA(i);
+--    end generate; --??
 
     GenALUSel:  for i in REGSIZE-1 downto 0 generate
     ALUSelMux: Mux
@@ -180,24 +179,27 @@ begin
       );
       end generate GenALUSel;
     
+	     RegOut <= RegBuff;
+		  
     -- Status Register logic
     
     -- transfer, interrupt bits not set through ALU
     --StatusOut(7) <= 'X'; 
     -- transfer bit
-    StatusOut(6) <= RegA(conv_integer(RegB));
+    --StatusOut(6) <= RegA(to_integer(unsigned(RegB)));
     
     -- half carry 
-    StatusOut(5) <= CarryOut(HALFCARRYBIT);
+    StatusOut(5) <= CarryOut(HALFCARRYBIT) when std_match(ALUOp, OP_ADD) else 
+						  not CarryOut(HALFCARRYBIT);
 	 
 	 -- corrected signed 
-    StatusOut(4) <= RegBuff(REGSIZE-1) xor Status(3); -- N xor V 
+    StatusOut(4) <= RegBuff(REGSIZE-1) xor VFlag; -- N xor V 
     
     -- signed overflow 
-    StatusOut(3) <= '1' when (ALUSEL = ADDSUBEN and CarryOut(REGSIZE-1)= CarryOut(REGSIZE-2)) else -- 1 if signed overflow  
+    VFlag <= '1' when (ALUSEL = ADDSUBEN and CarryOut(REGSIZE-1) /= CarryOut(REGSIZE-2)) else -- 1 if signed overflow  
                  '0' when (ALUSEL = ADDSUBEN or  ALUSEL = FBLOCKEN) else -- 0 if no overflow or logical op
-                 (RegBuff(REGSIZE-1) xor RegA(0)) when ALUSEL = SHIFTEN; --N xor C for shift operations 
-						  
+                 (RegBuff(REGSIZE-1) xor RegA(0)); --when ALUSEL = SHIFTEN; --N xor C for shift operations 
+	 StatusOut(3) <= VFlag; 				  
     -- negative
     StatusOut(2) <= RegBuff(REGSIZE-1); 
     
@@ -205,11 +207,13 @@ begin
     StatusOut(1) <= '1' when RegBuff = ZERO8 else 
                     '0';
     -- carry
-    StatusOut(0) <= CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN else 
-                   RegA(0) when ALUSel = SHIFTEN; 
+    StatusOut(0) <= CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN and std_match(ALUOp, OP_ADD) else 
+						  not CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN else 
+						  '1' when ALUSel = FBLOCKEN else 
+                   RegA(0); --when ALUSel = SHIFTEN; 
 						 
-    
-    
+
+    FlagMask <= (others => '0'); -- TODO
 
 end behavioral;  
 
@@ -257,7 +261,7 @@ architecture fullAdder of fullAdder is
     begin
         -- combinational logic for calculating the sum and carry out bit
         Sum <= A xor B xor Cin xor Subtract;
-        Cout <= ((A xor Subtract) and B) or ((A xor Subtract) and Cin) or (B and Cin);
+        Cout <= (A and (B xor Subtract)) or (A and Cin) or ((B xor Subtract) and Cin); -- Axor??
 end fullAdder;
 
 
@@ -286,9 +290,9 @@ architecture Mux of Mux is
     begin  
         if S0 = '0' and S1 = '0' then 
             SOut <= SIn0; 
-        elsif S0 = '0' and S1 = '1' then 
-            SOut <= SIn1; 
         elsif S0 = '1' and S1 = '0' then 
+            SOut <= SIn1; 
+        elsif S0 = '0' and S1 = '1' then 
             SOut <= SIn2; 
         elsif S0 = '1' and S1 = '1' then 
             SOut <= SIn3; 
