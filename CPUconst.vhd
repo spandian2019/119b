@@ -19,12 +19,12 @@ package constants is
 
     --  ALU select opcode constants
 
-    constant NoneEn         : ALU_selects := "000";
-    constant AddSubEn       : ALU_selects := "001";
-    constant FBlockEn       : ALU_selects := "010";
-    constant ShiftEn        : ALU_selects := "011";
+    --constant NoneEn         : ALU_selects := "000";
+    constant AddSubEn       : ALU_selects := "000";
+    constant FBlockEn       : ALU_selects := "001";
+    constant ShiftEn        : ALU_selects := "010";
+    constant PassThruEn     : ALU_selects := "011";
     constant MulEn          : ALU_selects := "100";
-    constant PassThruEn     : ALU_selects := "111";
 
     -- Register Data In Select constants
     subtype  RegData_selects is std_logic_vector(3 downto 0);
