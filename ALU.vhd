@@ -35,7 +35,8 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
- 
+
+library opcodes; 
 use work.opcodes.all; 
 
 use work.ALUconstants.all; 
@@ -46,12 +47,12 @@ entity ALU is
         -- from CU
         ALUOp   : in std_logic_vector(3 downto 0); -- operation control signals 
         ALUSel  : in std_logic_vector(1 downto 0); -- operation select 
-        --FlagMask: in std_logic_vector(REGSIZE - 1 downto 0); -- mask for writing to status flags
         
         -- from Regs 
         RegA    : in std_logic_vector(REGSIZE-1 downto 0); -- operand A
         RegB    : in std_logic_vector(REGSIZE-1 downto 0); -- operand B, or immediate 
         
+        FlagMask: out std_logic_vector(REGSIZE - 1 downto 0); -- mask for writing to status flags
         RegOut  : out std_logic_vector(REGSIZE-1 downto 0); -- output result
         StatusOut    : out std_logic_vector(REGSIZE-1 downto 0) -- status register output
     );
@@ -69,7 +70,7 @@ signal SRout : std_logic_vector(REGSIZE-1 downto 0); -- shifter/rotator block ou
 
 signal Bout : std_logic_vector(REGSIZE-1 downto 0); -- bit set block output 
 
---signal SRegBuff : std_logic_vector(REGSIZE-1 downto 0); -- sreg before flag mask
+signal Status : std_logic_vector(REGSIZE-1 downto 0); -- sreg buffer
 
 signal RegBuff  : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output result ?
 
@@ -102,15 +103,6 @@ component Mux is
         SOut        :  out     std_logic   -- mux output
       );
 end component;  
-
-component DFF is
-    port(
-        Clk         :  in      std_logic;  -- clock  
-        En          :  in      std_logic;  -- enable
-        D           :  in      std_logic;  -- D input 
-        Q           :  out     std_logic   -- Q output
-      );
-end component;
 
 begin
 
@@ -173,7 +165,7 @@ begin
     BIT_OP : for i in 0 to REGSIZE-1 generate
         Bout(i) <= ALUOp(0) when i = conv_integer(RegB) else
                    RegA(i);
-    end generate;
+    end generate; --??
 
     GenALUSel:  for i in REGSIZE-1 downto 0 generate
     ALUSelMux: Mux
@@ -183,7 +175,7 @@ begin
             SIn0        => AdderOut(i),
             SIn1        => FOut(i), 
             SIn2        => SROut(i),
-            SIn3        => Bout(i),
+            SIn3        => Bout(i),			
             SOut        => RegBuff(i)
       );
       end generate GenALUSel;
@@ -192,33 +184,32 @@ begin
     
     -- transfer, interrupt bits not set through ALU
     --StatusOut(7) <= 'X'; 
-    --StatusOut(6) <= 'X'; --?
     -- transfer bit
     StatusOut(6) <= RegA(conv_integer(RegB));
     
     -- half carry 
     StatusOut(5) <= CarryOut(HALFCARRYBIT);
-    
-    -- corrected signed 
-    StatusOut(4) <= 'X'; -- N xor V
+	 
+	 -- corrected signed 
+    StatusOut(4) <= RegBuff(REGSIZE-1) xor Status(3); -- N xor V 
     
     -- signed overflow 
-    VFlag <= '1' when (ALUSEL = ADDSUBEN and CarryOut(REGSIZE-1)= CarryOut(REGSIZE-2)) else 
-                    '0' when (ALUSEL = ADDSUBEN or  ALUSEL = FBLOCKEN) else 
-                    (NFlag xor CFlag) when ALUSEL = SHIFTEN; --N xor C for shift operations 
-    StatusOut(3) <= VFlag; 
-    
+    StatusOut(3) <= '1' when (ALUSEL = ADDSUBEN and CarryOut(REGSIZE-1)= CarryOut(REGSIZE-2)) else -- 1 if signed overflow  
+                 '0' when (ALUSEL = ADDSUBEN or  ALUSEL = FBLOCKEN) else -- 0 if no overflow or logical op
+                 (RegBuff(REGSIZE-1) xor RegA(0)) when ALUSEL = SHIFTEN; --N xor C for shift operations 
+						  
     -- negative
-    NFlag <= RegBuff(REGSIZE-1); 
-    StatusOut(2) <= NFlag; 
+    StatusOut(2) <= RegBuff(REGSIZE-1); 
     
     -- zero flag 
     StatusOut(1) <= '1' when RegBuff = ZERO8 else 
                     '0';
     -- carry
-    CFlag <= CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN else 
-                   RegA(0) when ALUSel = SHIFTEN; -- don't care value?
-    StatusOut(0) <= CFlag; 
+    StatusOut(0) <= CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN else 
+                   RegA(0) when ALUSel = SHIFTEN; 
+						 
+    
+    
 
 end behavioral;  
 
@@ -227,18 +218,19 @@ end behavioral;
 --
 --  1 Bit Full Adder
 --
---  Implementation of a full adder. This entity takes the one bit 
---  inputs A and B with a carry in input and outputs the sum and carry 
+--  Implementation of a full adder/subtracter. This entity takes the one bit 
+--  inputs A and B with a carry in input and outputs the sum/diff and carry 
 --  out bits, using combinational logic. 
 --
 -- Inputs:
 --      A: std_logic - 1 bit adder input
---          B: std_logic - 1 bit adder input
+--      B: std_logic - 1 bit adder input
+--      Subtract: std_logic - 1 bit subtract input 
 --      Cin: std_logic - 1 bit carry in input
 --
 -- Outputs:
 --      Sum: std_logic - 1 bit sum of A, B, and Cin
---       Cout: std_logic - 1 bit carry out value 
+--      Cout: std_logic - 1 bit carry out value 
 --
 --  Revision History:
 --      11/21/18  Sophia Liu    Initial revision.
@@ -305,28 +297,3 @@ architecture Mux of Mux is
         end if;   
     end process;
 end Mux;
-
---------------------------- DFF
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
-entity DFF is
-    port(
-        Clk         :  in      std_logic;  -- clock  
-        En          :  in      std_logic;  -- enable
-        D           :  in      std_logic;  -- D input 
-        Q           :  out     std_logic   -- Q output
-      );
-end DFF;
-
-architecture DFF of DFF is
-    begin
-    process(clk)
-    begin 
-        if rising_edge(clk) and En = '1' then 
-            Q <= D;
-        end if; 
-    end process; 
-end DFF;
