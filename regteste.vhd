@@ -38,8 +38,7 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 
-library opcodes;
-use opcodes.opcodes.all;
+use work.opcodes.all;
 
 
 entity  REG_TEST  is
@@ -54,13 +53,89 @@ entity  REG_TEST  is
 
 end  REG_TEST;
 
-architecture regteste_arc of regteste is
+architecture regteste_arc of reg_test is
 
-    signal CLK : std_logic;
+	signal SReg : std_logic_vector(7 downto 0);
+
+    signal    RegWEn      : std_logic; -- register write enable
+    signal    RegWSel     : std_logic_vector(4 downto 0); -- register write select
+    signal    RegSelA     : std_logic_vector(4 downto 0); -- register A select
+    signal    RegSelB     : std_logic_vector(4 downto 0); -- register B select
+    signal    RegDataSel  : std_logic_vector(3 downto 0); -- selects data line into reg
+    signal    LoadIn      : std_logic_vector(1 downto 0);
+
+        -- to ALU and SReg
+    signal    ALUOp   : std_logic_vector(4 downto 0); -- operation control signals
+    signal    ALUSel  : std_logic_vector(2 downto 0); -- operation select
+    signal    bitmask : std_logic_vector(7 downto 0); -- mask for writing to flags
+
+        -- I/O
+    signal    IORegInEn   : std_logic;                      --
+    signal    IORegOutEn  : std_logic;                      --
+    signal    SRegOut     : std_logic_vector(7 downto 0);
+    signal    K           : std_logic_vector(7 downto 0); -- immediate value K
+
+    signal 	  data_bus_in : std_logic_vector(7 downto 0);
+    signal 	  IOdata 	  : std_logic_vector(7 downto 0);
+    signal 	  ALUdata     : std_logic_vector(7 downto 0);
+    signal 	  DataBus     : std_logic_vector(7 downto 0);
 
 begin
 
-    
+    CtrlU   : entity CU port map(IR, SReg, RegWEn, RegWSel, RegSelA,
+                                   RegSelB, RegDataSel, LoadIn, ALUOp, ALUSel,
+                                   bitmask, IORegInEn, IORegOutEn, SRegOut, K, clock);
+
+    data_muxer: for i in 7 downto 0 generate
+    data_line: Mux
+    	port map (
+    		LoadIn(0), LoadIn(1), K(i), ALUdata(i), IOdata(i), RegAOut(i), DataBus(i),
+    		data_bus_in(i)
+    	);
+    end generate data_muxer;
+
+    IORegSpace : entity IOReg port map(data_bus_in, K(6 downto 5)&K(3 downto 0),
+								SRegOut, clock, IORegInEn, IORegOutEn, bitmask, IOdata,
+								SReg);
+
+    RegSpace : entity Reg port map(data_bus_in, clock,  RegWEn, RegWSel, RegSelA,
+                                   RegSelB, RegAOut, RegAOut, LoadIn);
 
 
 end regteste_arc;
+
+--------------------------- 4:1 mux
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity Mux is
+    port(
+        S0          :  in      std_logic;  -- mux sel (0) 
+        S1          :  in      std_logic;  -- mux sel(1) 
+        SIn0         :  in      std_logic;  -- mux inputs
+        SIn1         :  in      std_logic;  -- mux inputs
+        SIn2         :  in      std_logic;  -- mux inputs
+        SIn3         :  in      std_logic;  -- mux inputs
+        SOut        :  out     std_logic   -- mux output
+      );
+end Mux;
+
+architecture Mux of Mux is
+    begin
+    process(SIn0, SIn1, SIn2, SIn3, S0, S1)
+    begin  
+        if S0 = '0' and S1 = '0' then 
+            SOut <= SIn0; 
+        elsif S0 = '0' and S1 = '1' then 
+            SOut <= SIn1; 
+        elsif S0 = '1' and S1 = '0' then 
+            SOut <= SIn2; 
+        elsif S0 = '1' and S1 = '1' then 
+            SOut <= SIn3; 
+        else 
+            SOut <= 'X'; -- for sim  
+        end if;   
+    end process;
+end Mux;

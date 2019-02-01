@@ -33,11 +33,9 @@ use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
 
-library opcodes; 
-use opcodes.opcodes.all; 
+use work.opcodes.all; 
 
-library CPUconst;
-use CPUconst.constants.all;
+use work.constants.all;
 
 entity IOReg is
     port(
@@ -54,7 +52,8 @@ entity IOReg is
 
 end IOReg;
 
-architecture Reg_arc of Reg is
+architecture IOReg_arc of IOReg is
+    type IO_reg_array is array (63 downto 0) of std_logic_vector(7 downto 0); -- difference between subtype and type?
 
     signal registers : IO_reg_array;
 
@@ -82,15 +81,15 @@ begin
     SREG_write : process (CLK) 
     begin
         if (rising_edge(CLK)) then
-            BIT_OP : for i in 0 to 7 generate
+            BIT_OP : for i in 0 to 7 loop
                 if bitmask(i) = '1' then
-                    registers(conv_integer(RegInSel))(i) <= SRegIn(i);
+                    registers(conv_integer(RegInSel))(i) <= StatusIn(i);
                 end if;
-            end generate;
+            end loop;
         end if;
     end process SREG_write;
 
-end Reg_arc;
+end IOReg_arc;
 
 
 

@@ -28,7 +28,7 @@ package constants is
 
     -- Register Data In Select constants
     subtype  RegData_selects is std_logic_vector(3 downto 0);
-    constant flkjsdlfkjsdlkfjsldkfjsdlkjf
+--    constant flkjsdlfkjsdlkfjsldkfjsdlkjf
 
     subtype  LoadIn_selects is std_logic_vector(1 downto 0);
     -- LoadIn select constants

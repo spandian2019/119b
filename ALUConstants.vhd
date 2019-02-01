@@ -16,9 +16,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
-
-library opcodes; 
-use opcodes.opcodes.all; 
+ 
+use work.opcodes.all; 
 
 package ALUConstants is
     constant REGSIZE    : natural := 8; 
