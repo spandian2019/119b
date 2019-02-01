@@ -6,158 +6,138 @@
 --  thoroughly tests the entity by exercising it and checking the outputs
 --  through the use of an array of test values (TestVector). The test bench
 --  entity is called ALUTB.
---  
+--
 --
 --  Revision History:
---  01/30/2019 Sophia Liu Initial revision  
+--  01/30/2019 Sophia Liu Initial revision
 --
 ----------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
- 
-use work.opcodes.all; 
 
-use work.ALUconstants.all; 
+use work.opcodes.all;
 
-entity ALUTB is
-    -- timing constants for testing  
+use work.constants.all;
+
+entity REGTB is
+    -- timing constants for testing
     constant CLK_PERIOD : time := 20 ns;
-    constant EDGE_TEST_SIZE: natural := 5; 
-end ALUTB;
+    constant TEST_SIZE: natural := 12;
+end REGTB;
 
-architecture TB_ARCHITECTURE of ALUTB is
+architecture TB_ARCHITECTURE of REGTB is
 
-    -- test component declaration 
-    component ALU is
+    -- test component declaration
+    component REG_TEST is
         port(
-            --Clk     : in std_logic; -- system clock
-            ALUOp   : in std_logic_vector(3 downto 0); -- operation control signals 
-            ALUSel  : in std_logic_vector(1 downto 0); -- operation select 
-    
-            RegA    : in std_logic_vector(REGSIZE-1 downto 0); -- operand A
-            RegB    : in std_logic_vector(REGSIZE-1 downto 0); -- operand B, or immediate 
-            
-            RegOut  : out std_logic_vector(REGSIZE-1 downto 0); -- output result
-            StatusOut    : out std_logic_vector(REGSIZE-1 downto 0) -- status register output
+            IR       :  in  opcode_word;                        -- Instruction Register
+            RegIn    :  in  std_logic_vector(7 downto 0);       -- input register bus
+            clock    :  in  std_logic;                          -- system clock
+            RegAOut  :  out std_logic_vector(7 downto 0);       -- register bus A out
+            RegBOut  :  out std_logic_vector(7 downto 0)        -- register bus B out
         );
     end component;
-    
+
     -- Signal used to stop clock signal generators
     signal  END_SIM  :  BOOLEAN := FALSE;
-    
+
     -- Stimulus signals - signals mapped to the input and inout ports of tested entity
-    signal Clk     : std_logic; -- system clock
-    signal ALUOp   : std_logic_vector(3 downto 0); -- operation control signals 
-    signal ALUSel  : std_logic_vector(1 downto 0); -- operation select 
-    signal RegA    : std_logic_vector(REGSIZE-1 downto 0); -- operand A
-    signal RegB    : std_logic_vector(REGSIZE-1 downto 0); -- operand B, or immediate   
-    signal RegOut  : std_logic_vector(REGSIZE-1 downto 0); -- output result
-    signal StatusOut    : std_logic_vector(REGSIZE-1 downto 0); -- status register output
-    
-    type VectorCases is array (integer range <>) of std_logic_vector(REGSIZE-1 downto 0);
-    signal EdgeCasesA : VectorCases(EDGE_TEST_SIZE downto 0);
-    signal EdgeCasesB : VectorCases(EDGE_TEST_SIZE downto 0);
-    signal AddResult : VectorCases(EDGE_TEST_SIZE downto 0);
-    signal AddFlags : VectorCases(EDGE_TEST_SIZE downto 0);
-    signal SubResult : VectorCases(EDGE_TEST_SIZE downto 0);
-    signal SubFlags : VectorCases(EDGE_TEST_SIZE downto 0);
-    
-    signal TestResult : std_logic_vector(REGSIZE-1 downto 0); 
+    signal IR       : opcode_word;
+    signal clock    : std_logic; -- system clock
+    signal RegIn    : std_logic_vector(7 downto 0);
+    signal RegAOut  : std_logic_vector(7 downto 0);
+    signal RegBOut  : std_logic_vector(7 downto 0);
+
+    type IRVector    is array (integer range <>) of opcode_word;
+    type VectorCases is array (integer range <>) of std_logic_vector(7 downto 0);
+
     begin
-        UUT: ALU 
+        UUT: REG_TEST
         port map(
             --Clk     => Clk,
-            ALUOp   => ALUOp,
-            ALUSel  => ALUSel,
-            RegA    => RegA,
-            RegB    => RegB,
-            RegOut  => RegOut,
-            StatusOut    => StatusOut
+            IR      => IR,
+            RegIn   => RegIn,
+            clock   => clock,
+            RegAOut => RegAOut,
+            RegBOut => RegBOut
         );
-        
+
         -- generate the stimulus and test the design
         TB: process
-        variable  i  :  integer; 
-        begin 
-            EdgeCasesA <= (X"00", X"FF", X"EE", X"80", X"01", X"34");
-            EdgeCasesB <= (X"00", X"FF", X"11", X"80", X"05", X"F0");
-            
-            AddResult <= (X"00", X"FE", X"FF", X"00", X"06", X"24");
-            AddFlags <= ("--000010", "--110101", "--010100", "--011011", "--000000", "--000001");
-            
-            SubResult <= (X"00", X"00", X"DD", X"00", X"FC", X"44");
-            SubResult <= ("--000010", "--000010", "--010100", "--000010", "--110101", "--000001");
-            
+        variable  i  :  integer := 0;
+
+        variable IRTest : IRVector(TEST_SIZE downto 0);
+        variable casesIn : VectorCases(TEST_SIZE downto 0);
+        variable casesA : VectorCases(TEST_SIZE downto 0);
+        variable casesB : VectorCases(TEST_SIZE downto 0);
+
+        begin
+
             -- initially everything is X, have not started
-            ALUOp   <= "XXXX";
-            ALUSel  <= "XX";
-            RegA    <= "XXXXXXXX";
-            RegB    <= "XXXXXXXX";
-            wait for 100 ns; 
-            
-            -- test add/subtract
-            -- add no carry
-            for i in 0 to EdgeCasesA'LENGTH-1 loop 
-               ALUOp <= OP_ADD and OP_NOCARRY; 
-               ALUSel <= ADDSUBEN; 
-               RegA <= EdgeCasesA(i);
-               RegB <= EdgeCasesB(i); 
-               
-               wait for CLK_PERIOD; 
+            IR      <= "0000000000000000";
+            RegIn   <= "00000000";
+            RegAOut <= "00000000";
+            RegBOut <= "00000000";
+            wait for CLK_PERIOD*5;
+
+            IRTest  := ("0111000000000000", -- R16 ANDI $00
+                        "0111000000010000", -- R17 ANDI $00
+                        "0111000011100000", -- R30 ANDI $00
+                        "0111000011110000", -- R31 ANDI $00
+                        "0110000000011111", -- R17 ORI  $0F
+                        "0000111100000001", -- R16 <- R16 + R17
+                        "1001010100001010", -- R16 <- R16 - 1
+                        "0010101100000001", -- R16 <- R16 OR R17
+                        "1001011100110001", -- R31:R30 <- R31:R30 + $01FF
+                        "1001011100110001", -- R31:R30 <- R31:R30 + $01FF
+                        "1001010000001000", -- SReg(0) <- '1'
+                        "1111101100000000", -- T <- R16(0)
+                        "0001111111100001");-- R30 <- R30 + R17
+
+            casesIn := (X"00", X"00", X"00", X"00", X"0F", X"0F",
+                        X"0E", X"0F", X"FF", X"01", X"FF", X"0F", X"10");
+            casesA  := (X"00", X"00", X"00", X"00", X"0F", X"0F",
+                        X"0E", X"0F", X"FF", X"01", X"FF", X"0F", X"10");
+            casesB  := (X"00", X"00", X"00", X"00", X"0F", X"0F",
+                        X"01", X"0F", X"FF", X"01", X"FF", X"0F", X"0F");
+
+           IR <= IRTest(i);
+
+           wait for CLK_PERIOD*0.50;
+           RegIn <= casesIn(i);
+           wait for CLK_PERIOD*0.50;
+
+           -- check result
+           assert (std_match(casesA(i), RegAOut))
+                report  "A reg failure"
+                severity  ERROR;
+           -- check pre-masked sreg
+           assert (std_match(casesB(i), RegBOut))
+                report  "B reg failure"
+                severity  ERROR;
+
+            for i in TEST_SIZE to 0 loop
+               IR <= IRTest(i);
+
+               wait for CLK_PERIOD*0.75;
+               RegIn <= casesIn(i);
+               wait for CLK_PERIOD*0.25;
+
                -- check result
-               assert (std_match(AddResult(i), RegOut))
-                    report  "Add result failure"
+               assert (std_match(casesA(i), RegAOut))
+                    report  "A reg failure"
                     severity  ERROR;
                -- check pre-masked sreg
-               assert (std_match(AddFlags(i), StatusOut))
-                    report  "Add  sreg failure"
-                    severity  ERROR;
-            end loop; 
-            
-            -- sub no carry --TODO put together
-            for i in 0 to EdgeCasesA'LENGTH-1 loop 
-               ALUOp <= OP_SUB and OP_NOCARRY; 
-               ALUSel <= ADDSUBEN; 
-               RegA <= EdgeCasesA(i);
-               RegB <= EdgeCasesB(i); 
-               
-               wait for CLK_PERIOD; 
-               -- check result
-               assert (std_match(SubResult(i), RegOut))
-                    report  "Add result failure"
-                    severity  ERROR;
-               -- check pre-masked sreg
-               assert (std_match(SubFlags(i), StatusOut))
-                    report  "Add  sreg failure"
+               assert (std_match(casesB(i), RegBOut))
+                    report  "B reg failure"
                     severity  ERROR;
             end loop;
 
-            -- add no carry 
-            -- add cary 
-            -- subtract carry 
-            -- subtract no carry
-            
-            -- test logical operations  
-            -- nor 
-            -- not 
-            -- xor 
-            -- nand 
-            -- and 
-            -- xor 
-            -- or 
-            -- 0, 1??? 
-    
-            -- test shift 
-            -- asr 
-            -- lsr 
-            -- ror
-            
-            
             END_SIM <= TRUE;        -- end of stimulus events
             wait;                   -- wait for simulation to end
-        end process; 
+        end process;
 
         -- process for generating system clock
         CLOCK_CLK : process
@@ -165,14 +145,14 @@ architecture TB_ARCHITECTURE of ALUTB is
             -- this process generates a 20 ns 50% duty cycle clock
             -- stop the clock when the end of the simulation is reached
             if END_SIM = FALSE then
-                CLK <= '0';
+                clock <= '0';
                 wait for CLK_PERIOD/2;
             else
                 wait;
             end if;
-    
+
             if END_SIM = FALSE then
-                CLK <= '1';
+                clock <= '1';
                 wait for CLK_PERIOD/2;
             else
                 wait;
@@ -181,10 +161,10 @@ architecture TB_ARCHITECTURE of ALUTB is
 
 end TB_ARCHITECTURE;
 
-configuration TESTBENCH_FOR_ALU of ALUTB is
-    for TB_ARCHITECTURE 
-          for UUT : ALU
-            use entity work.ALU;
+configuration TESTBENCH_FOR_REG of REGTB is
+    for TB_ARCHITECTURE
+          for UUT : REG_TEST
+            use entity work.REG_TEST;
         end for;
     end for;
-end TESTBENCH_FOR_ALU;
+end TESTBENCH_FOR_REG;

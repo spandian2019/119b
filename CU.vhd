@@ -50,6 +50,7 @@ entity CU is
         IORegInEn   : out   std_logic;                      --
         IORegOutEn  : out   std_logic;                      --
         SRegOut     : out   std_logic_vector(7 downto 0);
+        SRegLd      : out   std_logic;
         K           : out std_logic_vector(7 downto 0); -- immediate value K
 
         ---- Program memory access
@@ -99,7 +100,7 @@ architecture RISC of CU is
     signal load         :   std_logic;
 
     signal cycle_num    :   std_logic_vector(1 downto 0);
-    signal cycle        :   std_logic_vector(1 downto 0);
+    signal cycle        :   std_logic_vector(1 downto 0) := "00";
 
 begin
 
@@ -110,9 +111,7 @@ begin
             -- defaults to 1
             cycle_num <= "01";
             if (std_match(IR, OpADIW) or
-                std_match(IR, OpADIW) or
-                std_match(IR, OpADIW) or
-                std_match(IR, OpADIW)) then
+                std_match(IR, OpSBIW)) then
                     cycle_num <= "10";
             end if;
 
@@ -124,6 +123,7 @@ begin
             IORegOutEn <= '0';
             LoadIn <= LdALU;
             LoadReg <= LoadB;
+            SRegLd <= LdSRALU;
 
             -- 3 MSBs of IR for AVR all use adder/subber
             --  block for ALU ops except for those that
@@ -307,6 +307,7 @@ begin
             end if;
 
             if  std_match(IR, OpBCLR) or std_match(IR, OpBSET) then
+                SRegLd <= LdSRCtrlU;
                 SRegOut <= (others => not IR(7));
                 bitmask <= (others => '0');
                 bitmask(conv_integer(IR(6 downto 4))) <= '1';
@@ -315,7 +316,7 @@ begin
             if  std_match(IR, OpBLD) or std_match(IR, OpBST) then
                 ALUSel <= PassThruEn;
                 RegWSel <= IR(8 downto 4);
---                (conv_integer(IR(6 downto 4)))
+                --(conv_integer(IR(6 downto 4)))
             end if;
 
             if std_match(IR, OpSWAP) then
@@ -332,7 +333,6 @@ begin
 
         end if;
     end process decoder;
-
 
     load <= '1' when cycle = cycle_num else
             '0';

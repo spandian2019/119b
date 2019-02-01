@@ -73,31 +73,39 @@ architecture regteste_arc of reg_test is
     signal    IORegInEn   : std_logic;                      --
     signal    IORegOutEn  : std_logic;                      --
     signal    SRegOut     : std_logic_vector(7 downto 0);
+    signal    SRegLd      : std_logic;
     signal    K           : std_logic_vector(7 downto 0); -- immediate value K
 
     signal 	  data_bus_in : std_logic_vector(7 downto 0);
     signal 	  IOdata 	  : std_logic_vector(7 downto 0);
     signal 	  ALUdata     : std_logic_vector(7 downto 0);
 
+    signal    IOAddr 	  : std_logic_vector(5 downto 0);
+
 begin
 
     CtrlU   : entity work.CU port map(IR, SReg, RegWEn, RegWSel, RegSelA,
                                    RegSelB, LoadIn, LoadReg, ALUOp, ALUSel,
-                                   bitmask, IORegInEn, IORegOutEn, SRegOut, K, clock);
+                                   bitmask, IORegInEn, IORegOutEn, SRegOut, SRegLd,
+                                   K, clock);
 
-    data_muxer: for i in 7 downto 0 generate
-    data_line: entity work.Mux
-    	port map (
-    		LoadIn(0), LoadIn(1), K(i), ALUdata(i), IOdata(i), RegAOut(i),
-    		data_bus_in(i)
-    	);
-    end generate data_muxer;
+    --data_muxer: for i in 7 downto 0 generate
+    --data_line: entity work.Mux
+    --	port map (
+    --		LoadReg(0), LoadReg(1), K(i), ALUdata(i), IOdata(i), RegAOut(i),
+    --		data_bus_in(i)
+    --	);
+    --end generate data_muxer;
 
-    IORegSpace : entity work.IOReg port map(data_bus_in, K(6 downto 5)&K(3 downto 0),
+    -- 2 to 1 mux as well for muxing in SReg/bitmask lines from both CtrlU and ALU
+
+    IOAddr <= K(6 downto 5)&K(3 downto 0);
+
+    IORegSpace : entity work.IOReg port map(RegIn, IOAddr,
 								SRegOut, clock, IORegInEn, IORegOutEn, bitmask, IOdata,
 								SReg);
 
-    RegSpace : entity work.Reg port map(data_bus_in, clock,  RegWEn, RegWSel, RegSelA,
+    RegSpace : entity work.Reg port map(RegIn, clock,  RegWEn, RegWSel, RegSelA,
                                    RegSelB, RegAOut, RegAOut, LoadReg);
 
 
