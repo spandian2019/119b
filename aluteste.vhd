@@ -62,13 +62,13 @@ architecture ALUTB of ALU_TEST is
 				signal ALUOp   : std_logic_vector(3 downto 0); -- operation control signals 
             signal ALUSel  : std_logic_vector(2 downto 0); -- operation select 
             
-				signal FlagMask: std_logic_vector(REGSIZE - 1 downto 0); -- mask for writing to status flags
+				signal BitMask: std_logic_vector(REGSIZE - 1 downto 0); -- mask for writing to status flags
             signal ALUStatusOut    : std_logic_vector(REGSIZE-1 downto 0); -- status register output
 	 
         signal IORegInEn     :   std_logic;                    
         signal IORegOutEn    :   std_logic;                      
-        signal IORegOut      :   std_logic_vector(7 downto 0);   -- output register bus
-        signal SRegOut       :   std_logic_vector(7 downto 0);   -- status register output 
+        signal IOdata        :   std_logic_vector(7 downto 0);   -- output register bus
+        signal SReg          :   std_logic_vector(7 downto 0);   -- status register output 
 		  
 
 			-- to registers
@@ -77,10 +77,11 @@ architecture ALUTB of ALU_TEST is
         signal RegSelA     : std_logic_vector(4 downto 0); -- register A select
         signal RegSelB     : std_logic_vector(4 downto 0); -- register B select
         signal RegDataSel  : std_logic_vector(3 downto 0); 
+		  signal LoadIn : std_logic_vector(1 downto 0); -- selects data line into reg
+        signal LoadReg: std_logic_vector(1 downto 0);
 	 
-	 
-		  signal bitmask : std_logic_vector(7 downto 0); -- mask for writing to flags
 		  signal K	: std_logic_vector(7 downto 0); 
+		  signal SRegOut : std_logic_vector(7 downto 0); 
 		  
 
 	 begin 
@@ -88,10 +89,8 @@ architecture ALUTB of ALU_TEST is
 		port map(
 		      ALUOp   => ALUOp,
             ALUSel  => ALUSel,
-    
             RegA    => OperandA, 
             RegB    => OperandB,
-            
             RegOut   => Result,
             StatusOut    => ALUStatusOut
 		);
@@ -100,42 +99,43 @@ architecture ALUTB of ALU_TEST is
     port map(
         RegIn       => OperandA, -- register not included
         RegInSel    => K(6 downto 5) & K(3 downto 0),
-        StatusIn    => ALUStatusOut,
+        StatusIn    => ALUStatusOut, --SRegOut
         Clk         => clock, 
         RegInEn     => IORegInEn,                     
         RegOutEn    => IORegOutEn,
-        bitmask     => FlagMask,
-        RegOut      => IORegOut,
-        SRegOut     => SRegOut
+        bitmask     => BitMask,
+        RegOut      => IOdata,
+        SRegOut     => SReg
     ); 
 	 
-	 StatReg <= SRegOut;
-	 
-	 
+	 StatReg <= SReg;
+											  
 	 UUTCU: entity work.CU
     port map(
         IR  => IR,
-        SReg    => SRegOut, 
+        SReg    => SReg, 
 		  
-        ------------------------ unused, to registers
+        -- unused, to registers
         RegWEn      => RegWEn, 
         RegWSel     => RegWSel,
         RegSelA     => RegSelA,
         RegSelB     => RegSelB,
         RegDataSel  => RegDataSel,
-
+        LoadIn      => LoadIn, 
+        LoadReg     => LoadReg, 
+		  
         -- to ALU and SReg
         ALUOp   => ALUOp,
         ALUSel  => ALUSel,
-        bitmask => bitmask,
+        bitmask => BitMask,
         
         -- I/O
         IORegInEn   => IORegInEn,                      
         IORegOutEn  => IORegOutEn,                     
         SRegOut     => SRegOut, 
+		  SRegLd		  => SRegLd, 
         K           => K,
 		  Clk			=> clock
         
     );
-
 end ALUTB;

@@ -116,14 +116,15 @@ architecture TB_ARCHITECTURE of ALUTB is
 			
 			TestSel <= (ADDSUBEN, ADDSUBEN, FBLOCKEN, FBLOCKEN, FBLOCKEN, FBLOCKEN, SHIFTEN, SHIFTEN, SHIFTEN, SHIFTEN);
 	 
---        	-- initially everything is 0, have not started
+        	-- initially everything is 0, have not started
 --            ALUOp   <= "0000";
---            ALUSel  <= "00";
+--            ALUSel  <= "000";
 --            RegA    <= "00000000";
 --            RegB    <= "00000000";
         	wait for 100 ns; -- wait for a bit 
         	
 			-- loop through test vector
+			-- test ALU only 
 			for j in 9 downto 0 loop 
 				for i in EDGE_TEST_SIZE downto 0 loop 
 					ALUOp <= TestOp(j);
@@ -144,6 +145,12 @@ architecture TB_ARCHITECTURE of ALUTB is
 						severity  ERROR;
 				end loop;
 			end loop; 
+				
+				-- test ALU with control unit and sreg 
+				
+				
+				
+				
 				
             
             END_SIM <= TRUE;        -- end of stimulus events

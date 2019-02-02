@@ -184,7 +184,7 @@ begin
     --StatusOut(7) <= 'X'; 
     -- transfer bit
     StatusOut(6) <= RegA(to_integer(unsigned(RegB))) when ALUSel = PASSTHRUEN else 
-							'X';
+							'0';
     
     -- half carry 
     StatusOut(5) <= CarryOut(HALFCARRYBIT) when ALUOp(SUBFLAG) = OP_ADD else 
