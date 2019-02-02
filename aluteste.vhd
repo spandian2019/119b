@@ -40,8 +40,7 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 
-library opcodes;
-use opcodes.opcodes.all;
+use work.opcodes.all;
 
 use work.ALUConstants.all;
 
@@ -59,16 +58,19 @@ entity  ALU_TEST  is
 end  ALU_TEST;
 
 architecture ALUTB of ALU_TEST is 
-				signal ALUOp   : std_logic_vector(3 downto 0); -- operation control signals 
-            signal ALUSel  : std_logic_vector(2 downto 0); -- operation select 
+		signal load : std_logic; 
+		signal ALUOp   : std_logic_vector(3 downto 0); -- operation control signals 
+      signal ALUSel  : std_logic_vector(2 downto 0); -- operation select 
             
-				signal BitMask: std_logic_vector(REGSIZE - 1 downto 0); -- mask for writing to status flags
-            signal ALUStatusOut    : std_logic_vector(REGSIZE-1 downto 0); -- status register output
+		signal BitMask: std_logic_vector(REGSIZE - 1 downto 0); -- mask for writing to status flags
+      signal ALUStatusOut    : std_logic_vector(REGSIZE-1 downto 0); -- status register output
 	 
+		-- I/O
+		signal RegInSel    :    std_logic_vector(5 downto 0);
         signal IORegInEn     :   std_logic;                    
         signal IORegOutEn    :   std_logic;                      
-        signal IOdata        :   std_logic_vector(7 downto 0);   -- output register bus
-        signal SReg          :   std_logic_vector(7 downto 0);   -- status register output 
+        signal IOdata        :   std_logic_vector(REGSIZE-1 downto 0);   -- output register bus
+        signal SReg          :   std_logic_vector(REGSIZE-1 downto 0);   -- status register output 
 		  
 
 			-- to registers
@@ -76,13 +78,14 @@ architecture ALUTB of ALU_TEST is
         signal RegWSel     : std_logic_vector(4 downto 0); -- register write select
         signal RegSelA     : std_logic_vector(4 downto 0); -- register A select
         signal RegSelB     : std_logic_vector(4 downto 0); -- register B select
-        signal RegDataSel  : std_logic_vector(3 downto 0); 
 		  signal LoadIn : std_logic_vector(1 downto 0); -- selects data line into reg
         signal LoadReg: std_logic_vector(1 downto 0);
 	 
-		  signal K	: std_logic_vector(7 downto 0); 
-		  signal SRegOut : std_logic_vector(7 downto 0); 
+		  signal K	: std_logic_vector(REGSIZE-1 downto 0); 
+		  signal SRegOut : std_logic_vector(REGSIZE-1 downto 0);
+		  signal SRegLd : std_logic; 
 		  
+		  signal IOStatus : std_logic_vector(REGSIZE-1 downto 0); 
 
 	 begin 
 	 UUTALU: entity work.ALU
@@ -95,32 +98,40 @@ architecture ALUTB of ALU_TEST is
             StatusOut    => ALUStatusOut
 		);
 		
-	 UUTIO: entity work.IOReg
-    port map(
-        RegIn       => OperandA, -- register not included
-        RegInSel    => K(6 downto 5) & K(3 downto 0),
-        StatusIn    => ALUStatusOut, --SRegOut
-        Clk         => clock, 
-        RegInEn     => IORegInEn,                     
-        RegOutEn    => IORegOutEn,
-        bitmask     => BitMask,
-        RegOut      => IOdata,
-        SRegOut     => SReg
-    ); 
+--	 UUTIO: entity work.IOReg
+--    port map(
+--        RegIn       => OperandA, -- register not included
+--        RegInSel    => RegInSel,
+--        StatusIn    => IOStatus,
+--        Clk         => clock, 
+--        RegInEn     => IORegInEn,                     
+--        RegOutEn    => IORegOutEn,
+--        bitmask     => BitMask,
+--        RegOut      => IOdata,
+--        SRegOut     => SReg
+--    ); 
+--	 
+--	 RegInSel <= K(6 downto 5) & K(3 downto 0); 
 	 
-	 StatReg <= SReg;
-											  
+--	 IOStatus <= ALUStatusOut when SRegLd = '0' else 
+--					SRegOut;
+	 
+--	 StatReg <= ALUStatusOut when SRegLd = '0' else 
+--					SRegOut;
+	 StatReg <= ALUStatusOut;--SReg;
+	
+	
 	 UUTCU: entity work.CU
     port map(
         IR  => IR,
-        SReg    => SReg, 
+        SReg    => ALUStatusOut,--SReg,
+		  load => load,  
 		  
         -- unused, to registers
         RegWEn      => RegWEn, 
         RegWSel     => RegWSel,
         RegSelA     => RegSelA,
         RegSelB     => RegSelB,
-        RegDataSel  => RegDataSel,
         LoadIn      => LoadIn, 
         LoadReg     => LoadReg, 
 		  
@@ -136,6 +147,5 @@ architecture ALUTB of ALU_TEST is
 		  SRegLd		  => SRegLd, 
         K           => K,
 		  Clk			=> clock
-        
     );
 end ALUTB;

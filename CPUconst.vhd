@@ -65,20 +65,15 @@ package constants is
     constant OP_ONE     : ALU_OPS := "1111"; -- true
 
     -- Shifter/Rotator operands
-    constant OP_LSR     : ALU_OPS := "00--"; -- Logical shift right
-    constant OP_ASR     : ALU_OPS := "01--"; -- Arithmetic shift right
-    constant OP_ROR     : ALU_OPS := "100-"; -- Rotate right (no carry)
-    constant OP_RORC    : ALU_OPS := "101-"; -- Rotate right (with carry)
+    constant OP_LSR     : ALU_OPS := "--00"; -- Logical shift right
+    constant OP_ASR     : ALU_OPS := "--01"; -- Arithmetic shift right
+    constant OP_ROR     : ALU_OPS := "-010"; -- Rotate right (no carry)
+    constant OP_RORC     : ALU_OPS := "-110"; -- Rotate right (with carry)
+
 
     -- Adder/Subber bit assignments
     constant subFlag    : integer := 3;
     constant carryBit   : integer := 2;
-
-    -- Adder/Subtractor operands
-    constant OP_ADD     : ALU_OPS := "0---";
-    constant OP_SUB     : ALU_OPS := "1---";
-    constant OP_CARRY   : ALU_OPS := "-1--";
-    constant OP_NOCARRY : ALU_OPS := "-0--";
 
     type byte is array (7 downto 0) of std_logic;
     type word is array (15 downto 0) of std_logic;

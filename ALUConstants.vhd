@@ -27,12 +27,12 @@ package ALUConstants is
 
     subtype ALU_OPS is std_logic_vector(3 downto 0);
     -- F-block operands
-    constant OP_NOTA    : ALU_OPS := "0101"; -- not A
     constant OP_XOR     : ALU_OPS := "0110"; -- A xor B
     constant OP_AND     : ALU_OPS := "1000"; -- A and B
     constant OP_OR      : ALU_OPS := "1110"; -- A or B
 
 	 -- F-block operands not used in instruction set
+    constant OP_NOTA    : ALU_OPS := "0101"; -- not A
     constant OP_ZERO    : ALU_OPS := "0000"; -- zeros
     constant OP_NOR     : ALU_OPS := "0001"; -- A nor B
     constant OP_NOTB    : ALU_OPS := "0011"; -- not B

@@ -124,7 +124,7 @@ begin
                 -- subber flag mapped in IR as function of 2 bits
                 ALUOp(subFlag)  <= IR(11) xor IR(10);
                 -- carry/nborrow bit mapped in IR
-                if (IR(12) xor IR(11) xor IR(10)) = '0' then
+                if (IR(12) xor IR(11) xor IR(10)) = '1' then
                     -- send carry bit to ALU
                     ALUOp(carryBit) <= SReg(0);
                 else
@@ -364,6 +364,7 @@ begin
             end if;
 
             if  std_match(IR, OpBLD) or std_match(IR, OpBST) then
+					 ALUOp(0) <= SReg(6); -- send transfer bit to ALU
                 ALUSel <= PassThruEn;
                 RegWSel <= IR(8 downto 4);
                 -- clear bitmask
