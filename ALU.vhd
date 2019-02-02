@@ -16,9 +16,9 @@
 -- Ports:      
 --  Inputs:  
 --        ALUOp   - 4 bit operation control signal 
---        ALUSel  - 2 bit control signal for the final operation select 
+--        ALUSel  - 3 bit control signal for the final operation select 
 --        RegA    - 8 bit operand A 
---        RegB    - 8 bit operand B         
+--        RegB    - 8 bit operand B, or immediate value 
 --
 --  Outputs:
 --        RegOut  - 8 bit output result        
@@ -28,11 +28,11 @@
 -- 01/24/2019   Sophia Liu      Initial revision
 -- 01/28/2019   Sophia Liu      Initial architecture revision
 -- 01/31/2019   Sundar Pandian  Added support for BST, BLD
+-- 02/01/2019   Sophia Liu      Updates for CU support
 --
 ----------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
---use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
 
@@ -42,7 +42,6 @@ use work.ALUconstants.all;
 
 entity ALU is
     port(
-        --Clk     : in std_logic; -- system clock
         -- from CU
         ALUOp   : in std_logic_vector(3 downto 0); -- operation control signals 
         ALUSel  : in std_logic_vector(2 downto 0); -- operation select 
@@ -71,8 +70,6 @@ signal Bout : std_logic_vector(REGSIZE-1 downto 0); -- bit set block output
 signal RegBuff  : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output result 
 
 -- internal status signals 
---signal NFlag : std_logic; -- negative status flag
---signal CFlag : std_logic; -- carry status flag
 signal VFlag : std_logic; -- signed overflow status flag 
 
 ---- component declarations 
@@ -149,12 +146,10 @@ begin
             S1          => ALUOp(1),
             SIn0        => '0',             -- LSR high bit = 0
             SIn1        => RegA(REGSIZE-1), -- ASR high bit constant
-            SIn2        => ALUOp(CARRYBIT),        -- ROR high bit = carry in 
+            SIn2        => ALUOp(CARRYBIT), -- ROR high bit = carry in 
             SIn3        => 'X',
             SOut        => SROut(REGSIZE-1)
       );
-      
-    -- end mux 
 
     -- transfer bit loading
     BIT_OP : for i in 0 to REGSIZE-1 generate
@@ -162,6 +157,7 @@ begin
                    RegA(i);
     end generate; 
 
+	 -- final ALU select mux 
     GenALUSel:  for i in REGSIZE-1 downto 0 generate
     ALUSelMux: Mux
         port map(
@@ -180,11 +176,12 @@ begin
 		  
     -- Status Register logic
     
-    -- transfer, interrupt bits not set through ALU
-    --StatusOut(7) <= 'X'; 
+    -- interrupt bits not set through ALU
+    -- StatusOut(7) <= 'X'; 
+	 
     -- transfer bit
     StatusOut(6) <= RegA(to_integer(unsigned(RegB))) when ALUSel = PASSTHRUEN else 
-							'0';
+							'0'; -- update if transfer bit is set or cleared 
     
     -- half carry 
     StatusOut(5) <= CarryOut(HALFCARRYBIT) when ALUOp(SUBFLAG) = OP_ADD else 
@@ -196,19 +193,20 @@ begin
     -- signed overflow 
     VFlag <= '1' when (ALUSEL = ADDSUBEN and CarryOut(REGSIZE-1) /= CarryOut(REGSIZE-2)) else -- 1 if signed overflow  
                  '0' when (ALUSEL = ADDSUBEN or  ALUSEL = FBLOCKEN) else -- 0 if no overflow or logical op
-                 (RegBuff(REGSIZE-1) xor RegA(0)); --when ALUSEL = SHIFTEN; --N xor C for shift operations 
+                 (RegBuff(REGSIZE-1) xor RegA(0));  --N xor C for shift operations 
 	 StatusOut(3) <= VFlag; 				  
+	 
     -- negative
-    StatusOut(2) <= RegBuff(REGSIZE-1); 
+    StatusOut(2) <= RegBuff(REGSIZE-1); -- set based on sign bit 
     
     -- zero flag 
-    StatusOut(1) <= '1' when RegBuff = ZERO8 else 
+    StatusOut(1) <= '1' when RegBuff = ZERO8 else -- compare with 0
                     '0';
     -- carry
     StatusOut(0) <= CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN and ALUOp(SUBFLAG) = OP_ADD else 
 						  not CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN else 	-- carry flag opposite when subtracting
-						  '1' when ALUSel = FBLOCKEN else 
-                   RegA(0); --when ALUSel = SHIFTEN; 
+						  '1' when ALUSel = FBLOCKEN else -- set for logical operations 
+                   RegA(0); -- when ALUSel = SHIFTEN; 
 						 
 
 end behavioral;  
@@ -229,7 +227,7 @@ end behavioral;
 --      Cin: std_logic - 1 bit carry in input
 --
 -- Outputs:
---      Sum: std_logic - 1 bit sum of A, B, and Cin
+--      Sum: std_logic - 1 bit sum or difference of A, B, and Cin
 --      Cout: std_logic - 1 bit carry out value 
 --
 --  Revision History:
@@ -255,14 +253,36 @@ end fullAdder;
 
 architecture fullAdder of fullAdder is
     begin
-        -- combinational logic for calculating the sum and carry out bit
+        -- combinational logic for calculating A+B or A-B with carry in and out bits
         Sum <= A xor B xor Cin xor Subtract;
-        Cout <= (A and (B xor Subtract)) or (A and Cin) or ((B xor Subtract) and Cin); -- Axor??
+        Cout <= (A and (B xor Subtract)) or (A and Cin) or ((B xor Subtract) and Cin); 
 end fullAdder;
 
 
 
---------------------------- 4:1 mux
+----------------------------------------------------------------------------
+--
+--  4:1 mux
+--
+--  Implementation of a 4:1 mux. Includes 2 control bits, 4 input signals, 
+--  and a selected output.
+--
+-- Inputs:
+--      S0 - mux select bit 0
+--      S1 - mux select bit 1
+--      SIn0 - mux input 0 
+--      SIn1 - mux input 1 
+--      SIn2 - mux input 2
+--      SIn3 - mux input 3
+--
+-- Outputs:
+--      SOut - mux output
+--
+--  Revision History:
+--      01/31/18  Sophia Liu    Initial revision.
+--      02/01/18  Sophia Liu    Updated comments.
+--
+----------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -283,7 +303,7 @@ end Mux;
 architecture Mux of Mux is
     begin
     process(SIn0, SIn1, SIn2, SIn3, S0, S1)
-    begin  
+    begin  -- choose Sout based on S0 & S1
         if S0 = '0' and S1 = '0' then 
             SOut <= SIn0; 
         elsif S0 = '1' and S1 = '0' then 
@@ -293,45 +313,7 @@ architecture Mux of Mux is
         elsif S0 = '1' and S1 = '1' then 
             SOut <= SIn3; 
         else 
-            SOut <= 'X'; -- for sim  
+            SOut <= 'X'; -- for simulation
         end if;   
     end process;
 end Mux;
-
---------------------------- 5:1 mux
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
-entity Mux5 is
-    port(
-        S          :  in      std_logic_vector(2 downto 0);  -- mux sel
-        SIn0         :  in      std_logic;  -- mux inputs
-        SIn1         :  in      std_logic;  -- mux inputs
-        SIn2         :  in      std_logic;  -- mux inputs
-        SIn3         :  in      std_logic;  -- mux inputs
-		  SIn4         :  in      std_logic;  -- mux inputs
-        SOut        :  out     std_logic   -- mux output
-      );
-end Mux5;
-
-architecture Mux5 of Mux5 is
-    begin
-    process(SIn0, SIn1, SIn2, SIn3, SIn4, S)
-    begin  
-        if S = "000" then
-            SOut <= SIn0; 
-        elsif S = "001" then 
-            SOut <= SIn1; 
-        elsif S = "010" then 
-            SOut <= SIn2; 
-        elsif S = "011" then 
-            SOut <= SIn3;
-		  elsif S = "100" then 
-            SOut <= SIn4;	
-        else 
-            SOut <= 'X'; -- for sim  
-        end if;   
-    end process;
-end Mux5;

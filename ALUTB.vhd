@@ -3,13 +3,14 @@
 --  Test Bench for ALU
 --
 --  This is a test bench for the ALU entity. The test bench
---  thoroughly tests the entity by exercising it and checking the outputs
---  through the use of an array of test values. The test bench
---  entity is called ALUTB.
+--  tests the entity by exercising it and checking the ALU result and SReg
+--  through the use of arrays of test values. It tests the major operations 
+--  for the ALU. The test bench entity is called ALUTB.
 --  
 --
 --  Revision History:
 --  01/30/2019 Sophia Liu Initial revision  
+--  02/01/2019 Sophia Liu Updated comments
 --
 ----------------------------------------------------------------------------
 library ieee;
@@ -22,7 +23,7 @@ use work.opcodes.all;
 use work.ALUconstants.all; 
 
 entity ALUTB is
-    -- timing constants for testing  
+    -- constants for testing  
     constant CLK_PERIOD : time := 20 ns;
     constant EDGE_TEST_SIZE: natural := 5; 
 	 constant COMMAND_TEST_SIZE: natural := 7; 
@@ -30,7 +31,7 @@ end ALUTB;
 
 architecture TB_ARCHITECTURE of ALUTB is
 
-    -- test component declaration 
+    -- test component declarations
     component ALU is
         port(
             ALUOp   : in std_logic_vector(3 downto 0); -- operation control signals 
@@ -113,12 +114,12 @@ architecture TB_ARCHITECTURE of ALUTB is
 		  -- ALU + CU test component
 		  UUT2: ALU_TEST
 		  port map(
-        IR        => IR,          -- Instruction Register
-        OperandA  => RegA,     -- first operand
-        OperandB  => RegB,      -- second operand
-        clock     => clk,        -- system clock
-        Result    => Result,      -- ALU result
-        StatReg   => StatReg      -- status register
+        IR        => IR,          
+        OperandA  => RegA,     
+        OperandB  => RegB,      
+        clock     => clk,        
+        Result    => Result,      
+        StatReg   => StatReg      
 			);
         
         -- generate the stimulus and test the design
@@ -134,20 +135,18 @@ architecture TB_ARCHITECTURE of ALUTB is
 			TestResult <= ((X"00", X"FE", X"FF", X"00", X"06", X"24"), --add (no carry)
 			(X"00", X"00", X"DD", X"00", X"FC", X"44"), -- sub  (no carry)
 			(X"00", X"FF", X"00", X"80", X"01", X"30"), -- and
-			--(X"FF", X"00", X"11", X"7F", X"FE", X"CB"), -- com -- performs subtract 
 			(X"00", X"00", X"FF", X"00", X"04", X"C4"), -- xor 
 			(X"00", X"FF", X"FF", X"80", X"05", X"F4"), -- or 
 			(X"00", X"FF", X"F7", X"C0", X"00", X"1A"), -- asr 
 			(X"00", X"7F", X"77", X"40", X"00", X"1A"), -- lsr 
-			--(X"00", X"7F", X"77", X"40", X"00", X"1A"), -- ror -- used with ALU-only testing
-			--(X"80", X"FF", X"F7", X"C0", X"80", X"9A")  -- rorc
+			--(X"00", X"7F", X"77", X"40", X"00", X"1A"), -- ror used with ALU-only testing
+			--(X"80", X"FF", X"F7", X"C0", X"80", X"9A")  -- rorc used with ALU-only testing
 			(X"00", X"7F", X"F7", X"40", X"00", X"9A")	-- ror for ALU_TEST 
 			);
 			
 			TestFlags <= (("--000010", "--110101", "--010100", "--011011", "--000000", "--000001"), 
         	("--000010", "--000010", "--010100", "--000010", "--110101", "--000001"),
 			("---0001-", "---1010-", "---0001-", "---1010-", "---0000-", "---0000-"),
-			--("---10101", "---00011", "---00001", "---00001", "---10101", "---10101"),
 			("---0001-", "---0001-", "---1010-", "---0001-", "---0000-", "---1010-"),
 			("---0001-", "---1010-", "---1010-", "---1010-", "---0000-", "---1010-"),
 			("---00010", "---10101", "---01100", "---01100", "---11011", "---00000"),
@@ -161,7 +160,7 @@ architecture TB_ARCHITECTURE of ALUTB is
 			
 			TestSel <= (ADDSUBEN, ADDSUBEN, FBLOCKEN, FBLOCKEN, FBLOCKEN, SHIFTEN, SHIFTEN, SHIFTEN);
 			
-			-- test BST, BLD
+			-- test vectors for BST, BLD
 			IRTBitTest <= (OpBST, OpBST, OpBST, OpBLD, OpBST, OpBLD); 
 			TCasesA <= (X"00", X"FF", X"34", X"00", X"00", X"FF");
         	TCasesB <= ("00000000", "00000111", "00000101", "00000000", "00000000", "00000111");
@@ -200,11 +199,11 @@ architecture TB_ARCHITECTURE of ALUTB is
 					wait for CLK_PERIOD*0.2; -- wait for rest of clock cycle 
 				end loop;
 			end loop; 
-				
+			
+				-----------------------------------------------------
 				-- test ALU with control unit and sreg (ALU_TEST entity)
             wait for CLK_PERIOD*5.5;
 				
-
 			for j in COMMAND_TEST_SIZE downto 0 loop 
             for i in EDGE_TEST_SIZE downto 0 loop
                 IR <= IRTest(j); 
@@ -228,6 +227,7 @@ architecture TB_ARCHITECTURE of ALUTB is
             end loop;
 				end loop; 
 				
+				-- test bst, bld 
 				for i in EDGE_TEST_SIZE downto 0 loop
                 IR <= IRTBitTest(i); 
 					 

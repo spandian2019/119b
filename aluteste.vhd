@@ -58,34 +58,28 @@ entity  ALU_TEST  is
 end  ALU_TEST;
 
 architecture ALUTB of ALU_TEST is 
+		-- mapped signals
 		signal load : std_logic; 
 		signal ALUOp   : std_logic_vector(3 downto 0); -- operation control signals 
       signal ALUSel  : std_logic_vector(2 downto 0); -- operation select 
             
 		signal BitMask: std_logic_vector(REGSIZE - 1 downto 0); -- mask for writing to status flags
       signal ALUStatusOut    : std_logic_vector(REGSIZE-1 downto 0); -- status register output
-	 
-		-- I/O
-		signal RegInSel    :    std_logic_vector(5 downto 0);
-        signal IORegInEn     :   std_logic;                    
-        signal IORegOutEn    :   std_logic;                      
-        signal IOdata        :   std_logic_vector(REGSIZE-1 downto 0);   -- output register bus
-        signal SReg          :   std_logic_vector(REGSIZE-1 downto 0);   -- status register output 
 		  
+		-- to registers
+	  signal RegWEn      : std_logic; -- register write enable 
+	  signal RegWSel     : std_logic_vector(4 downto 0); -- register write select
+	  signal RegSelA     : std_logic_vector(4 downto 0); -- register A select
+	  signal RegSelB     : std_logic_vector(4 downto 0); -- register B select
+	  signal LoadIn : std_logic_vector(1 downto 0); -- selects data line into reg
+	  signal LoadReg: std_logic_vector(1 downto 0);
 
-			-- to registers
-        signal RegWEn      : std_logic; -- register write enable 
-        signal RegWSel     : std_logic_vector(4 downto 0); -- register write select
-        signal RegSelA     : std_logic_vector(4 downto 0); -- register A select
-        signal RegSelB     : std_logic_vector(4 downto 0); -- register B select
-		  signal LoadIn : std_logic_vector(1 downto 0); -- selects data line into reg
-        signal LoadReg: std_logic_vector(1 downto 0);
-	 
-		  signal K	: std_logic_vector(REGSIZE-1 downto 0); 
-		  signal SRegOut : std_logic_vector(REGSIZE-1 downto 0);
-		  signal SRegLd : std_logic; 
-		  
-		  signal IOStatus : std_logic_vector(REGSIZE-1 downto 0); 
+	  -- I/O
+	  signal IORegInEn     :   std_logic;                    
+	  signal IORegOutEn    :   std_logic;
+	  signal K	: std_logic_vector(REGSIZE-1 downto 0); 
+	  signal SRegOut : std_logic_vector(REGSIZE-1 downto 0);
+	  signal SRegLd : std_logic;  
 
 	 begin 
 	 UUTALU: entity work.ALU
@@ -98,33 +92,13 @@ architecture ALUTB of ALU_TEST is
             StatusOut    => ALUStatusOut
 		);
 		
---	 UUTIO: entity work.IOReg
---    port map(
---        RegIn       => OperandA, -- register not included
---        RegInSel    => RegInSel,
---        StatusIn    => IOStatus,
---        Clk         => clock, 
---        RegInEn     => IORegInEn,                     
---        RegOutEn    => IORegOutEn,
---        bitmask     => BitMask,
---        RegOut      => IOdata,
---        SRegOut     => SReg
---    ); 
---	 
---	 RegInSel <= K(6 downto 5) & K(3 downto 0); 
-	 
---	 IOStatus <= ALUStatusOut when SRegLd = '0' else 
---					SRegOut;
-	 
---	 StatReg <= ALUStatusOut when SRegLd = '0' else 
---					SRegOut;
-	 StatReg <= ALUStatusOut;--SReg;
+	 StatReg <= ALUStatusOut;
 	
 	
 	 UUTCU: entity work.CU
     port map(
         IR  => IR,
-        SReg    => ALUStatusOut,--SReg,
+        SReg    => ALUStatusOut,
 		  load => load,  
 		  
         -- unused, to registers

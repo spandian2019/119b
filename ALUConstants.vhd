@@ -21,8 +21,8 @@ use ieee.numeric_std.all;
 use work.opcodes.all;
 
 package ALUConstants is
-    constant REGSIZE    : natural := 8;
-
+	 -- general constants 
+    constant REGSIZE    : natural := 8; -- size of registers
     constant ZERO8     : std_logic_vector(7 downto 0) := "00000000";
 
     subtype ALU_OPS is std_logic_vector(3 downto 0);
@@ -50,7 +50,7 @@ package ALUConstants is
 	 -- Adder/Subtractor operand indices and values
     constant SUBFLAG    : integer := 3;	-- index of subtract flag
     constant CARRYBIT   : integer := 2;	-- index of carry flag
-
+	 -- values of subtract/carry flags 
 	 constant OP_ADD : std_logic := '0';
 	 constant OP_SUB : std_logic := '1';
 	 constant OP_CARRY : std_logic:= '1';
@@ -62,13 +62,12 @@ package ALUConstants is
     -- SReg
     constant HALFCARRYBIT : natural := 3; -- half carry is carry out of bit 3
 
-
+	 -- ALUSel signals
     subtype ALU_selects is std_logic_vector(2 downto 0);
-
 	 constant AddSubEn       : ALU_selects := "000";
     constant FBlockEn       : ALU_selects := "001";
     constant ShiftEn        : ALU_selects := "010";
     constant PassThruEn     : ALU_selects := "011";
-    constant MulEn          : ALU_selects := "100";
+    constant MulEn          : ALU_selects := "100"; 
 
 end package ALUConstants;
