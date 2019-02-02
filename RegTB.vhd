@@ -112,14 +112,14 @@ architecture TB_ARCHITECTURE of REGTB is
                         "--------",
                         "--------",
                         X"00",
+                        X"00",
                         X"0F",
                         X"0E",
+                        X"00",
+                        X"00",
+                        "--------",
                         X"0F",
-                        X"FF",
-                        X"01",
-                        X"FF",
-                        X"0F",
-                        X"10");
+                        X"1F");
             casesB  := (X"00",
                         X"00",
                         X"00",
@@ -128,44 +128,29 @@ architecture TB_ARCHITECTURE of REGTB is
                         X"0F",
                         X"01",
                         X"0F",
-                        X"FF",
-                        X"01",
-                        X"FF",
+                        X"1F",
+                        X"00",
+                        X"0F",
                         X"0F",
                         X"0F");
 
-            --IR <= IRTest(TEST_SIZE);
-
-            --wait for CLK_PERIOD*0.50;
-            --RegIn <= casesIn(TEST_SIZE);
-            --wait for CLK_PERIOD*0.50;
-
-            --wait for CLK_PERIOD*0.1;
-            ---- check result
-            --assert (std_match(casesA(TEST_SIZE), RegAOut))
-            --     report  "A reg failure"
-            --     severity  ERROR;
-            ---- check pre-masked sreg
-            --assert (std_match(casesB(TEST_SIZE), RegBOut))
-            --     report  "B reg failure"
-            --     severity  ERROR;
             IR <= IRTest(TEST_SIZE);
             wait for CLK_PERIOD*0.50;
             RegIn <= casesIn(TEST_SIZE);
             wait for CLK_PERIOD*0.5;
+
             for i in TEST_SIZE-1 downto 0 loop
                 IR <= IRTest(i);
                 wait for CLK_PERIOD*0.50;
                 RegIn <= casesIn(i);
                 wait for CLK_PERIOD*0.4;
                 -- check result
-                assert (std_match(casesA(i+1), RegAOut))
-                    report  "A reg failure at " & integer'image(TEST_SIZE-i-1) &
-                            "th test"
+                assert (std_match(casesA(i), RegAOut))
+                    report  "A reg failure at test " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
                 -- check pre-masked sreg
-                assert (std_match(casesB(i+1), RegBOut))
-                    report  "B reg failure at " & integer'image(TEST_SIZE-i-1) &
+                assert (std_match(casesB(i), RegBOut))
+                    report  "B reg failure at test " & integer'image(TEST_SIZE-i) &
                             "th test"
                     severity ERROR;
                 wait for CLK_PERIOD*0.1;

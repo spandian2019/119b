@@ -28,7 +28,6 @@ package constants is
 
     -- Register Data In Select constants
     subtype  RegData_selects is std_logic_vector(3 downto 0);
---    constant flkjsdlfkjsdlkfjsldkfjsdlkjf
 
     subtype  LoadIn_selects is std_logic_vector(1 downto 0);
     -- LoadIn select constants
@@ -90,27 +89,27 @@ package constants is
     type IO_reg_array is array (63 downto 0) of byte; -- difference between subtype and type?
 
     constant SReg_addr : std_logic_vector(5 downto 0) := "111111";
-	 
-	 -- flag masks 
-	 -- Sreg: I T H S V N Z C 
-	 subtype SREG_MASK is std_logic_vector(7 downto 0); 
+
+	 -- flag masks
+	 -- Sreg: I T H S V N Z C
+	 subtype SREG_MASK is std_logic_vector(7 downto 0);
 	 constant MASK_ADD : SREG_MASK:= "00111111"; -- add sub(except adiw, sbiw), including neg
-	 constant MASK_CP : SREG_MASK:= "001111111"; -- compares
+	 constant MASK_CP : SREG_MASK:= "00111111"; -- compares
 	 constant MASK_ADIW : SREG_MASK:= "00011111"; -- adiw, sbiw
 	 constant MASK_DECINC : SREG_MASK:= "00011110"; -- dec, inc
-	 
-	 constant MASK_ANDOR : SREG_MASK:= "00011110"; -- and, or 
+
+	 constant MASK_ANDOR : SREG_MASK:= "00011110"; -- and, or
 	 constant MASK_COM : SREG_MASK:= "00011111"; -- com
 	 constant MASK_NEG : SREG_MASK:= "00111111"; -- neg
-	 constant MASK_EOR : SREG_MASK:= "00011110"; -- eor 
-	 
-	 constant MASK_SHIFT : SREG_MASK:= "00011111"; -- asr, lsr, ror 
-	 
+	 constant MASK_EOR : SREG_MASK:= "00011110"; -- eor
+
+	 constant MASK_SHIFT : SREG_MASK:= "00011111"; -- asr, lsr, ror
+
 	 constant MASK_BLD : SREG_MASK:= "00000000"; -- bld
 	 constant MASK_BST : SREG_MASK:= "01000000"; -- bst
-	 constant T_SREG : natural := 6; -- transfer bit number in sreg 
+	 constant T_SREG : natural := 6; -- transfer bit number in sreg
 	 constant T_IR : natural := 9; -- transfer bit number in IR
-	 
+
 	 constant MASK_MUL : SREG_MASK:= "00000001"; -- mul
 	 constant MASK_NONE : SREG_MASK:= "00000000"; -- change nothing
 

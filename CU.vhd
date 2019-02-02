@@ -126,8 +126,8 @@ begin
             LoadIn <= LdALU;
             LoadReg <= LoadNone;
             SRegLd <= LdSRALU;
-				
-				BitMask <= MASK_NONE;
+
+			BitMask <= MASK_NONE;
 
             -- 3 MSBs of IR for AVR all use adder/subber
             --  block for ALU ops except for those that
@@ -138,7 +138,11 @@ begin
                 -- enable Adder/Subber operation
                 ALUSel <= AddSubEn;
                 -- carry/nborrow bit mapped in IR
-                ALUOp(carryBit) <= IR(12);
+                if IR(12) = '1' then
+                    ALUOp(carryBit) <= SReg(0);
+                else
+                    ALUOp(carryBit) <= '0';
+                end if;
                 -- subber flag mapped in IR as function of 2 bits
                 ALUOp(subFlag)  <= IR(11) xor IR(10);
                 -- CP and CPC doesn't rewrite register
@@ -146,7 +150,7 @@ begin
 
                 RegSelB <= IR(9) & IR(3 downto 0);
                 RegWSel <= IR(8 downto 4);
-					 BitMask <= MASK_ADD; 
+					 BitMask <= MASK_ADD;
             end if;
 
             -- considering word adder/subber ops
@@ -171,7 +175,8 @@ begin
                     -- maps same as to subFlag
                     -- mapping to immediate value in IR
                     K <= "00" & IR(7 downto 6) & IR(3 downto 0);
-                    ALUOp(carryBit) <= IR(8);
+                    ALUOp(subFlag)  <= IR(8);
+                    ALUOp(carryBit) <= SReg(0);
                     RegSelA <= "11" & IR(5 downto 4) & '0';
                     RegWSel <= "11" & IR(5 downto 4) & '0';
                 elsif load = '0' then
@@ -210,7 +215,11 @@ begin
                 -- enable Adder/Subber operation
                 ALUSel <= AddSubEn;
                 -- carry/nborrow bit mapped in IR
-                ALUOp(carryBit) <= IR(12);
+                if IR(12) = '1' then
+                    ALUOp(carryBit) <= SReg(0);
+                else
+                    ALUOp(carryBit) <= '0';
+                end if;
                 -- subbing so subFlag active
                 ALUOp(subFlag)  <= '1';
                 -- CPI doesn't rewrite register
@@ -219,7 +228,7 @@ begin
 
                 RegSelA <= '1' & IR(7 downto 4);
                 RegWSel <= '1' & IR(7 downto 4);
-					 BitMask <= MASK_ADD; 
+					 BitMask <= MASK_ADD;
             end if;
 
             -- considering incrementing/decrementing operations
@@ -236,7 +245,7 @@ begin
                 K <= "00000001";
                 LoadReg <= LoadB;
                 RegWSel <= IR(8 downto 4);
-					 BitMask <= MASK_DECINC; 
+					 BitMask <= MASK_DECINC;
             end if;
 
             -- considering COM and NEG operations
@@ -254,11 +263,11 @@ begin
                 LoadReg <= LoadA;
                 LoadIn <= LdRegA;
                 RegWSel <= IR(8 downto 4);
-					 if std_match(IR, OpCOM) then 
-					     BitMask <= MASK_COM; 
-					 else 
-					     BitMask <= MASK_NEG; 
-				    end if; 
+					 if std_match(IR, OpCOM) then
+					     BitMask <= MASK_COM;
+					 else
+					     BitMask <= MASK_NEG;
+				    end if;
             end if;
 
             if  std_match(IR, OpAND) or std_match(IR, OpANDI) then
@@ -275,7 +284,7 @@ begin
                     RegWSel(4) <= '1';
                 end if;
                 RegSelB <= IR(9) & IR(3 downto 0);
-					 BitMask <= MASK_ANDOR; 
+					 BitMask <= MASK_ANDOR;
             end if;
 
             if  std_match(IR, OpOR) or std_match(IR, OpORI) then
@@ -292,7 +301,7 @@ begin
                     RegWSel(4) <= '1';
                 end if;
                 RegSelB <= IR(9) & IR(3 downto 0);
-					 BitMask <= MASK_ANDOR; 
+					 BitMask <= MASK_ANDOR;
             end if;
 
             if  std_match(IR, OpEOR) then
@@ -302,7 +311,7 @@ begin
                 ALUOp <= OP_XOR;
                 RegWSel <= IR(8 downto 4);
                 RegSelB <= IR(9) & IR(3 downto 0);
-					 BitMask <= MASK_EOR; 
+					 BitMask <= MASK_EOR;
             end if;
 
             if  std_match(IR, OpLSR) then
@@ -311,7 +320,7 @@ begin
                 -- select LSR operation
                 ALUOp <= OP_LSR;
                 RegWSel <= IR(8 downto 4);
-					 BitMask <= MASK_SHIFT; 
+					 BitMask <= MASK_SHIFT;
             end if;
 
             if  std_match(IR, OpASR) then
@@ -328,6 +337,7 @@ begin
                 ALUSel <= ShiftEn;
                 -- select LSR operation
                 ALUOp <= OP_ROR;
+                ALUOp(carryBit) <= SReg(0);
                 RegWSel <= IR(8 downto 4);
 					 BitMask <= MASK_SHIFT;
             end if;
@@ -342,15 +352,15 @@ begin
             if  std_match(IR, OpBLD) or std_match(IR, OpBST) then
                 ALUSel <= PassThruEn;
                 RegWSel <= IR(8 downto 4);
-					 BitMask <= (others => '0'); 
-					 BitMask(T_SREG) <= IR(T_IR); 
+					 BitMask <= (others => '0');
+					 BitMask(T_SREG) <= IR(T_IR);
             end if;
 
             if std_match(IR, OpSWAP) then
                 LoadReg <= LoadSwap;
                 LoadIn <= LdRegA;
                 RegWSel <= IR(8 downto 4);
-					 BitMask <= MASK_NONE; 
+					 BitMask <= MASK_NONE;
             end if;
 
             if std_match(IR, OpIN) or std_match(IR, OpOUT) then

@@ -61,7 +61,6 @@ begin
 
     -- maybe use for loop to make m:2^m decoder
     -- maybe using ORs and ANDs to set/reset SReg bits smaller?
-
     -- writing to registers occurs synchronously
     write_reg : process (CLK)
     begin
