@@ -32,14 +32,12 @@ architecture TB_ARCHITECTURE of ALUTB is
     -- test component declaration 
     component ALU is
         port(
-            --Clk     : in std_logic; -- system clock
             ALUOp   : in std_logic_vector(3 downto 0); -- operation control signals 
-            ALUSel  : in std_logic_vector(1 downto 0); -- operation select 
+            ALUSel  : in std_logic_vector(2 downto 0); -- operation select 
     
             RegA    : in std_logic_vector(REGSIZE-1 downto 0); -- operand A
             RegB    : in std_logic_vector(REGSIZE-1 downto 0); -- operand B, or immediate 
             
-				FlagMask: out std_logic_vector(REGSIZE - 1 downto 0); -- mask for writing to status flags
             RegOut  : out std_logic_vector(REGSIZE-1 downto 0); -- output result
             StatusOut    : out std_logic_vector(REGSIZE-1 downto 0) -- status register output
         );
@@ -51,7 +49,7 @@ architecture TB_ARCHITECTURE of ALUTB is
     -- Stimulus signals - signals mapped to the input and inout ports of tested entity
     signal Clk     : std_logic; -- system clock
     signal ALUOp   : std_logic_vector(3 downto 0) := "0000"; -- operation control signals 
-    signal ALUSel  : std_logic_vector(1 downto 0) := "00"; -- operation select 
+    signal ALUSel  : std_logic_vector(2 downto 0) := "000"; -- operation select 
     signal RegA    : std_logic_vector(REGSIZE-1 downto 0) := "00000000"; -- operand A
     signal RegB    : std_logic_vector(REGSIZE-1 downto 0) := "00000000"; -- operand B, or immediate   
     signal RegOut  : std_logic_vector(REGSIZE-1 downto 0); -- output result
@@ -66,21 +64,19 @@ architecture TB_ARCHITECTURE of ALUTB is
 	signal TestResult : TestVector(9 downto 0);
 	signal TestFlags : TestVector(9 downto 0);
 	
-	type OpCases is array (integer range <>) of std_logic_vector(3 downto 0);
+	type OpCases is array (integer range <>) of ALU_OPS;
 	signal TestOp : OpCases(9 downto 0);  
 	
-	type SelCases is array (integer range <>) of std_logic_vector(1 downto 0);
+	type SelCases is array (integer range <>) of ALU_SELECTS;
 	signal TestSel : SelCases(9 downto 0); 
 	
     begin
         UUT: ALU 
         port map(
-            --Clk     => Clk,
             ALUOp   => ALUOp,
             ALUSel  => ALUSel,
             RegA    => RegA,
             RegB    => RegB,
-				--FlagMask => FlagMask,
             RegOut  => RegOut,
             StatusOut    => StatusOut
         );
