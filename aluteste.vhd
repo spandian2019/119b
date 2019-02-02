@@ -60,7 +60,7 @@ end  ALU_TEST;
 
 architecture ALUTB of ALU_TEST is 
 				signal ALUOp   : std_logic_vector(3 downto 0); -- operation control signals 
-            signal ALUSel  : std_logic_vector(1 downto 0); -- operation select 
+            signal ALUSel  : std_logic_vector(2 downto 0); -- operation select 
             
 				signal FlagMask: std_logic_vector(REGSIZE - 1 downto 0); -- mask for writing to status flags
             signal ALUStatusOut    : std_logic_vector(REGSIZE-1 downto 0); -- status register output
@@ -92,7 +92,6 @@ architecture ALUTB of ALU_TEST is
             RegA    => OperandA, 
             RegB    => OperandB,
             
-				FlagMask => FlagMask, 
             RegOut   => Result,
             StatusOut    => ALUStatusOut
 		);

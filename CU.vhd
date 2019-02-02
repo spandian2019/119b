@@ -126,6 +126,8 @@ begin
             LoadIn <= LdALU;
             LoadReg <= LoadNone;
             SRegLd <= LdSRALU;
+				
+				BitMask <= MASK_NONE;
 
             -- 3 MSBs of IR for AVR all use adder/subber
             --  block for ALU ops except for those that
@@ -144,6 +146,7 @@ begin
 
                 RegSelB <= IR(9) & IR(3 downto 0);
                 RegWSel <= IR(8 downto 4);
+					 BitMask <= MASK_ADD; 
             end if;
 
             -- considering word adder/subber ops
@@ -179,6 +182,7 @@ begin
                     RegSelA <= "11" & IR(5 downto 4) & '1';
                     RegWSel <= "11" & IR(5 downto 4) & '1';
                 end if;
+					 BitMask <= MASK_ADIW;
             end if;
 
             -- considering word multiply op
@@ -198,6 +202,7 @@ begin
                     RegSelB <= IR(9) & IR(3 downto 0);
                     RegWSel <= "00001";
                 end if;
+					 BitMask <= MASK_MUL;
             end if;
 
             -- considering immediate subber operations
@@ -214,6 +219,7 @@ begin
 
                 RegSelA <= '1' & IR(7 downto 4);
                 RegWSel <= '1' & IR(7 downto 4);
+					 BitMask <= MASK_ADD; 
             end if;
 
             -- considering incrementing/decrementing operations
@@ -230,6 +236,7 @@ begin
                 K <= "00000001";
                 LoadReg <= LoadB;
                 RegWSel <= IR(8 downto 4);
+					 BitMask <= MASK_DECINC; 
             end if;
 
             -- considering COM and NEG operations
@@ -247,6 +254,11 @@ begin
                 LoadReg <= LoadA;
                 LoadIn <= LdRegA;
                 RegWSel <= IR(8 downto 4);
+					 if std_match(IR, OpCOM) then 
+					     BitMask <= MASK_COM; 
+					 else 
+					     BitMask <= MASK_NEG; 
+				    end if; 
             end if;
 
             if  std_match(IR, OpAND) or std_match(IR, OpANDI) then
@@ -263,6 +275,7 @@ begin
                     RegWSel(4) <= '1';
                 end if;
                 RegSelB <= IR(9) & IR(3 downto 0);
+					 BitMask <= MASK_ANDOR; 
             end if;
 
             if  std_match(IR, OpOR) or std_match(IR, OpORI) then
@@ -279,6 +292,7 @@ begin
                     RegWSel(4) <= '1';
                 end if;
                 RegSelB <= IR(9) & IR(3 downto 0);
+					 BitMask <= MASK_ANDOR; 
             end if;
 
             if  std_match(IR, OpEOR) then
@@ -288,6 +302,7 @@ begin
                 ALUOp <= OP_XOR;
                 RegWSel <= IR(8 downto 4);
                 RegSelB <= IR(9) & IR(3 downto 0);
+					 BitMask <= MASK_EOR; 
             end if;
 
             if  std_match(IR, OpLSR) then
@@ -296,6 +311,7 @@ begin
                 -- select LSR operation
                 ALUOp <= OP_LSR;
                 RegWSel <= IR(8 downto 4);
+					 BitMask <= MASK_SHIFT; 
             end if;
 
             if  std_match(IR, OpASR) then
@@ -304,6 +320,7 @@ begin
                 -- select LSR operation
                 ALUOp <= OP_ASR;
                 RegWSel <= IR(8 downto 4);
+					 BitMask <= MASK_SHIFT;
             end if;
 
             if  std_match(IR, OpROR) then
@@ -312,6 +329,7 @@ begin
                 -- select LSR operation
                 ALUOp <= OP_ROR;
                 RegWSel <= IR(8 downto 4);
+					 BitMask <= MASK_SHIFT;
             end if;
 
             if  std_match(IR, OpBCLR) or std_match(IR, OpBSET) then
@@ -324,12 +342,15 @@ begin
             if  std_match(IR, OpBLD) or std_match(IR, OpBST) then
                 ALUSel <= PassThruEn;
                 RegWSel <= IR(8 downto 4);
+					 BitMask <= (others => '0'); 
+					 BitMask(T_SREG) <= IR(T_IR); 
             end if;
 
             if std_match(IR, OpSWAP) then
                 LoadReg <= LoadSwap;
                 LoadIn <= LdRegA;
                 RegWSel <= IR(8 downto 4);
+					 BitMask <= MASK_NONE; 
             end if;
 
             if std_match(IR, OpIN) or std_match(IR, OpOUT) then

@@ -61,11 +61,13 @@ package ALUConstants is
     -- SReg
     constant HALFCARRYBIT : natural := 3; -- half carry is carry out of bit 3
     
-    -- TODO merge
-    subtype ALU_selects is std_logic_vector(1 downto 0);
-    
-    constant AddSubEn       : ALU_selects := "00";
-    constant FBlockEn       : ALU_selects := "01";
-    constant ShiftEn        : ALU_selects := "10";
+	 
+    subtype ALU_selects is std_logic_vector(2 downto 0);
+	 
+	 constant AddSubEn       : ALU_selects := "000";
+    constant FBlockEn       : ALU_selects := "001";
+    constant ShiftEn        : ALU_selects := "010";
+    constant PassThruEn     : ALU_selects := "011";
+    constant MulEn          : ALU_selects := "100";
 
 end package ALUConstants;

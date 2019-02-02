@@ -45,13 +45,12 @@ entity ALU is
         --Clk     : in std_logic; -- system clock
         -- from CU
         ALUOp   : in std_logic_vector(3 downto 0); -- operation control signals 
-        ALUSel  : in std_logic_vector(1 downto 0); -- operation select 
-        
+        ALUSel  : in std_logic_vector(2 downto 0); -- operation select 
+		  
         -- from Regs 
         RegA    : in std_logic_vector(REGSIZE-1 downto 0); -- operand A
         RegB    : in std_logic_vector(REGSIZE-1 downto 0); -- operand B, or immediate 
         
-        FlagMask: out std_logic_vector(REGSIZE - 1 downto 0); -- mask for writing to status flags
         RegOut  : out std_logic_vector(REGSIZE-1 downto 0); -- output result
         StatusOut    : out std_logic_vector(REGSIZE-1 downto 0) -- status register output
     );
@@ -69,15 +68,12 @@ signal SRout : std_logic_vector(REGSIZE-1 downto 0); -- shifter/rotator block ou
 
 signal Bout : std_logic_vector(REGSIZE-1 downto 0); -- bit set block output 
 
---signal Status : std_logic_vector(REGSIZE-1 downto 0); -- sreg buffer
-
-signal RegBuff  : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output result ?
+signal RegBuff  : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output result 
 
 -- internal status signals 
 --signal NFlag : std_logic; -- negative status flag
 --signal CFlag : std_logic; -- carry status flag
 signal VFlag : std_logic; -- signed overflow status flag 
---signal TFlag : std_logic; -- transfer flag
 
 ---- component declarations 
 component fullAdder is
@@ -161,24 +157,25 @@ begin
     -- end mux 
 
     -- transfer bit loading
---    BIT_OP : for i in 0 to REGSIZE-1 generate
---        Bout(i) <= ALUOp(0) when i = to_integer(unsigned(RegB)) else
---                   RegA(i);
---    end generate; --??
+    BIT_OP : for i in 0 to REGSIZE-1 generate
+        Bout(i) <= ALUOp(0) when i = to_integer(unsigned(RegB)) else 
+                   RegA(i);
+    end generate; 
 
     GenALUSel:  for i in REGSIZE-1 downto 0 generate
     ALUSelMux: Mux
         port map(
             S0          => ALUSel(0),
-            S1          => ALUSel(1),
+				S1 			=> ALUSel(1),
             SIn0        => AdderOut(i),
             SIn1        => FOut(i), 
             SIn2        => SROut(i),
-            SIn3        => Bout(i),			
+            SIn3        => Bout(i),	
             SOut        => RegBuff(i)
       );
       end generate GenALUSel;
-    
+	 
+	 
 	     RegOut <= RegBuff;
 		  
     -- Status Register logic
@@ -186,7 +183,8 @@ begin
     -- transfer, interrupt bits not set through ALU
     --StatusOut(7) <= 'X'; 
     -- transfer bit
-    --StatusOut(6) <= RegA(to_integer(unsigned(RegB)));
+    StatusOut(6) <= RegA(to_integer(unsigned(RegB))) when ALUSel = PASSTHRUEN else 
+							'X';
     
     -- half carry 
     StatusOut(5) <= CarryOut(HALFCARRYBIT) when ALUOp(SUBFLAG) = OP_ADD else 
@@ -212,8 +210,6 @@ begin
 						  '1' when ALUSel = FBLOCKEN else 
                    RegA(0); --when ALUSel = SHIFTEN; 
 						 
-
-    FlagMask <= (others => '0'); -- TODO
 
 end behavioral;  
 
@@ -301,3 +297,41 @@ architecture Mux of Mux is
         end if;   
     end process;
 end Mux;
+
+--------------------------- 5:1 mux
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity Mux5 is
+    port(
+        S          :  in      std_logic_vector(2 downto 0);  -- mux sel
+        SIn0         :  in      std_logic;  -- mux inputs
+        SIn1         :  in      std_logic;  -- mux inputs
+        SIn2         :  in      std_logic;  -- mux inputs
+        SIn3         :  in      std_logic;  -- mux inputs
+		  SIn4         :  in      std_logic;  -- mux inputs
+        SOut        :  out     std_logic   -- mux output
+      );
+end Mux5;
+
+architecture Mux5 of Mux5 is
+    begin
+    process(SIn0, SIn1, SIn2, SIn3, SIn4, S)
+    begin  
+        if S = "000" then
+            SOut <= SIn0; 
+        elsif S = "001" then 
+            SOut <= SIn1; 
+        elsif S = "010" then 
+            SOut <= SIn2; 
+        elsif S = "011" then 
+            SOut <= SIn3;
+		  elsif S = "100" then 
+            SOut <= SIn4;	
+        else 
+            SOut <= 'X'; -- for sim  
+        end if;   
+    end process;
+end Mux5;
