@@ -32,6 +32,7 @@ entity CU is
         --ProgDB  : in std_logic_vector(15 downto 0); -- program memory data bus
         IR      : in std_logic_vector(15 downto 0);
         SReg    : in std_logic_vector(7 downto 0);  -- status flags
+        load    : buffer std_logic;
 
         -- to registers
         RegWEn      : out std_logic; -- register write enable
@@ -97,10 +98,11 @@ architecture RISC of CU is
 
     --signal FSMState : states := Done;
 
-    signal load         :   std_logic;
+    --signal load         :   std_logic;
 
-    signal cycle_num    :   std_logic_vector(1 downto 0);
+    signal cycle_num    :   std_logic_vector(1 downto 0) := "00";
     signal cycle        :   std_logic_vector(1 downto 0) := "00";
+    --signal IR           :   std_logic_vector(15 downto 0); -- IR buffer
 
 begin
 
@@ -122,7 +124,7 @@ begin
             IORegInEn <= '0';
             IORegOutEn <= '0';
             LoadIn <= LdALU;
-            LoadReg <= LoadB;
+            LoadReg <= LoadNone;
             SRegLd <= LdSRALU;
 
             -- 3 MSBs of IR for AVR all use adder/subber
@@ -150,8 +152,7 @@ begin
                 ALUSel <= AddSubEn;
                 -- subFlag mapped in IR
                 ALUOp(subFlag)  <= IR(8);
-                -- mapping to immediate value in IR
-                K <= "00" & IR(7 downto 6) & IR(3 downto 0);
+                LoadReg <= LoadB;
 
                 -- value in IR is offset added to register 24
                 --  possible operands include {24, 26, 28, 30}
@@ -159,16 +160,21 @@ begin
                 --    operation uses the next highest byte
 
                 -- first do low byte addition
-                if cycle = "00" then
+                -- if just loaded value, first cycle in operation
+                if load = '1' then
                     -- carry in mapped in IR
                     --  clear active-hi carry for add
                     --  clear active-lo borrow for sub
                     -- maps same as to subFlag
+                    -- mapping to immediate value in IR
+                    K <= "00" & IR(7 downto 6) & IR(3 downto 0);
                     ALUOp(carryBit) <= IR(8);
                     RegSelA <= "11" & IR(5 downto 4) & '0';
                     RegWSel <= "11" & IR(5 downto 4) & '0';
-                elsif cycle = "01" then
+                elsif load = '0' then
                     -- carry out from low byte carries in to high byte add
+                    -- mapping to immediate value in IR
+                    K <= (others => '0');
                     ALUOp(carryBit) <= SReg(0);
                     RegSelA <= "11" & IR(5 downto 4) & '1';
                     RegWSel <= "11" & IR(5 downto 4) & '1';
@@ -204,6 +210,7 @@ begin
                 ALUOp(subFlag)  <= '1';
                 -- CPI doesn't rewrite register
                 RegWEn <= IR(14);
+                LoadReg <= LoadB;
 
                 RegSelA <= '1' & IR(7 downto 4);
                 RegWSel <= '1' & IR(7 downto 4);
@@ -221,6 +228,7 @@ begin
                 -- add/sub conditional mapped in IR
                 ALUOp(subFlag)  <= IR(3);
                 K <= "00000001";
+                LoadReg <= LoadB;
                 RegWSel <= IR(8 downto 4);
             end if;
 
@@ -247,7 +255,7 @@ begin
                 -- select AND operation
                 ALUOp <= OP_AND;
                 if IR(14) = '1' then
-                    LoadIn <= LdK;
+                    LoadReg <= LoadB;
                 end if;
                 RegWSel <= IR(8 downto 4);
                 if std_match(IR, OpANDI) then
@@ -263,7 +271,7 @@ begin
                 -- select OR operation
                 ALUOp <= OP_OR;
                 if IR(14) = '1' then
-                    LoadIn <= LdK;
+                    LoadReg <= LoadB;
                 end if;
                 RegWSel <= IR(8 downto 4);
                 if std_match(IR, OpORI) then
@@ -316,7 +324,6 @@ begin
             if  std_match(IR, OpBLD) or std_match(IR, OpBST) then
                 ALUSel <= PassThruEn;
                 RegWSel <= IR(8 downto 4);
-                --(conv_integer(IR(6 downto 4)))
             end if;
 
             if std_match(IR, OpSWAP) then
@@ -334,7 +341,7 @@ begin
         end if;
     end process decoder;
 
-    load <= '1' when cycle = cycle_num else
+    load <= '1' when cycle = cycle_num - 1 else
             '0';
 
     FSM_noSM : process (CLK)

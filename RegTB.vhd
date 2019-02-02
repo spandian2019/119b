@@ -24,7 +24,7 @@ use work.constants.all;
 entity REGTB is
     -- timing constants for testing
     constant CLK_PERIOD : time := 20 ns;
-    constant TEST_SIZE: natural := 12;
+    constant TEST_SIZE: integer := 12;
 end REGTB;
 
 architecture TB_ARCHITECTURE of REGTB is
@@ -66,7 +66,7 @@ architecture TB_ARCHITECTURE of REGTB is
 
         -- generate the stimulus and test the design
         TB: process
-        variable  i  :  integer := 0;
+        variable  i  :  integer;
 
         variable IRTest : IRVector(TEST_SIZE downto 0);
         variable casesIn : VectorCases(TEST_SIZE downto 0);
@@ -78,9 +78,7 @@ architecture TB_ARCHITECTURE of REGTB is
             -- initially everything is X, have not started
             IR      <= "0000000000000000";
             RegIn   <= "00000000";
-            RegAOut <= "00000000";
-            RegBOut <= "00000000";
-            wait for CLK_PERIOD*5;
+            wait for CLK_PERIOD*5.5;
 
             IRTest  := ("0111000000000000", -- R16 ANDI $00
                         "0111000000010000", -- R17 ANDI $00
@@ -90,49 +88,87 @@ architecture TB_ARCHITECTURE of REGTB is
                         "0000111100000001", -- R16 <- R16 + R17
                         "1001010100001010", -- R16 <- R16 - 1
                         "0010101100000001", -- R16 <- R16 OR R17
-                        "1001011100110001", -- R31:R30 <- R31:R30 + $01FF
-                        "1001011100110001", -- R31:R30 <- R31:R30 + $01FF
+                        "1001011001111111", -- R31:R30 <- R31:R30 + $1F
+                        "1001011001111111", -- R31:R30 <- R31:R30 + $1F
                         "1001010000001000", -- SReg(0) <- '1'
                         "1111101100000000", -- T <- R16(0)
                         "0001111111100001");-- R30 <- R30 + R17
 
-            casesIn := (X"00", X"00", X"00", X"00", X"0F", X"0F",
-                        X"0E", X"0F", X"FF", X"01", X"FF", X"0F", X"10");
-            casesA  := (X"00", X"00", X"00", X"00", X"0F", X"0F",
-                        X"0E", X"0F", X"FF", X"01", X"FF", X"0F", X"10");
-            casesB  := (X"00", X"00", X"00", X"00", X"0F", X"0F",
-                        X"01", X"0F", X"FF", X"01", X"FF", X"0F", X"0F");
+            casesIn := (X"00",
+                        X"00",
+                        X"00",
+                        X"00",
+                        X"0F",
+                        X"0F",
+                        X"0E",
+                        X"0F",
+                        X"1F",
+                        X"00",
+                        X"FF",
+                        X"0F",
+                        X"2E");
+            casesA  := ("--------",
+                        "--------",
+                        "--------",
+                        "--------",
+                        X"00",
+                        X"0F",
+                        X"0E",
+                        X"0F",
+                        X"FF",
+                        X"01",
+                        X"FF",
+                        X"0F",
+                        X"10");
+            casesB  := (X"00",
+                        X"00",
+                        X"00",
+                        X"00",
+                        X"0F",
+                        X"0F",
+                        X"01",
+                        X"0F",
+                        X"FF",
+                        X"01",
+                        X"FF",
+                        X"0F",
+                        X"0F");
 
-           IR <= IRTest(i);
+            --IR <= IRTest(TEST_SIZE);
 
-           wait for CLK_PERIOD*0.50;
-           RegIn <= casesIn(i);
-           wait for CLK_PERIOD*0.50;
+            --wait for CLK_PERIOD*0.50;
+            --RegIn <= casesIn(TEST_SIZE);
+            --wait for CLK_PERIOD*0.50;
 
-           -- check result
-           assert (std_match(casesA(i), RegAOut))
-                report  "A reg failure"
-                severity  ERROR;
-           -- check pre-masked sreg
-           assert (std_match(casesB(i), RegBOut))
-                report  "B reg failure"
-                severity  ERROR;
-
-            for i in TEST_SIZE to 0 loop
-               IR <= IRTest(i);
-
-               wait for CLK_PERIOD*0.75;
-               RegIn <= casesIn(i);
-               wait for CLK_PERIOD*0.25;
-
-               -- check result
-               assert (std_match(casesA(i), RegAOut))
-                    report  "A reg failure"
+            --wait for CLK_PERIOD*0.1;
+            ---- check result
+            --assert (std_match(casesA(TEST_SIZE), RegAOut))
+            --     report  "A reg failure"
+            --     severity  ERROR;
+            ---- check pre-masked sreg
+            --assert (std_match(casesB(TEST_SIZE), RegBOut))
+            --     report  "B reg failure"
+            --     severity  ERROR;
+            IR <= IRTest(TEST_SIZE);
+            wait for CLK_PERIOD*0.50;
+            RegIn <= casesIn(TEST_SIZE);
+            wait for CLK_PERIOD*0.5;
+            for i in TEST_SIZE-1 downto 0 loop
+                IR <= IRTest(i);
+                wait for CLK_PERIOD*0.50;
+                RegIn <= casesIn(i);
+                wait for CLK_PERIOD*0.4;
+                -- check result
+                assert (std_match(casesA(i+1), RegAOut))
+                    report  "A reg failure at " & integer'image(TEST_SIZE-i-1) &
+                            "th test"
                     severity  ERROR;
-               -- check pre-masked sreg
-               assert (std_match(casesB(i), RegBOut))
-                    report  "B reg failure"
-                    severity  ERROR;
+                -- check pre-masked sreg
+                assert (std_match(casesB(i+1), RegBOut))
+                    report  "B reg failure at " & integer'image(TEST_SIZE-i-1) &
+                            "th test"
+                    severity ERROR;
+                wait for CLK_PERIOD*0.1;
             end loop;
 
             END_SIM <= TRUE;        -- end of stimulus events

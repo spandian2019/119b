@@ -57,6 +57,7 @@ entity Reg is
         RegAOut  :  out std_logic_vector(7 downto 0);       -- register bus A out
         RegBOut  :  out std_logic_vector(7 downto 0);       -- register bus B out
 
+        K_in     : in std_logic_vector(7 downto 0);
         LoadReg  : in std_logic_vector(1 downto 0)  -- for loading immediate values to out buses
     );
 
@@ -81,11 +82,19 @@ begin
         end if;
     end process write_reg;
 
-    RegAOut <=  RegIn when std_match(LoadReg, LoadA) else
+    RegAOut <=  K_in when std_match(LoadReg, LoadA) else
                 registers(conv_integer(RegSelA))(3 downto 0) & registers(conv_integer(RegSelA))(7 downto 4) when std_match(LoadReg, LoadSwap) else
                 registers(conv_integer(RegSelA));
 
-    RegBOut <=  RegIn when std_match(LoadReg, LoadB) else
+    --output_reg : process(LoadReg, RegSelB, K_in, registers)
+    --begin
+    --    if std_match(LoadReg, LoadB) then
+    --        RegBOut <=  K_in;
+    --    else
+    --        RegBOut <=  registers(conv_integer(RegSelB));
+    --    end if;
+    --end process;
+    RegBOut <=  K_in when (LoadReg = LoadB) else
                 registers(conv_integer(RegSelB));
 
 

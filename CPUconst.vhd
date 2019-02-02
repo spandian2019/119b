@@ -39,6 +39,7 @@ package constants is
 
     subtype  LoadReg_selects is std_logic_vector(1 downto 0);
     -- LoadReg select constants
+    constant LoadNone   : LoadReg_selects := "00";
     constant LoadA      : LoadReg_selects := "01";
     constant LoadB      : LoadReg_selects := "10";
     constant LoadSwap   : LoadReg_selects := "11";
