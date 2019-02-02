@@ -82,7 +82,7 @@ begin
         if (rising_edge(CLK)) then
             BIT_OP : for i in 0 to 7 loop
                 if bitmask(i) = '1' then
-                    registers(conv_integer(RegInSel))(i) <= StatusIn(i);
+                    registers(conv_integer(SReg_addr))(i) <= StatusIn(i);
                 end if;
             end loop;
         end if;

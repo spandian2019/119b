@@ -16,10 +16,7 @@ use ieee.std_logic_1164.all;
 package constants is
 
     subtype  ALU_selects  is  std_logic_vector(2 downto 0);
-
     --  ALU select opcode constants
-
-    --constant NoneEn         : ALU_selects := "000";
     constant AddSubEn       : ALU_selects := "000";
     constant FBlockEn       : ALU_selects := "001";
     constant ShiftEn        : ALU_selects := "010";

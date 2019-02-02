@@ -86,14 +86,6 @@ begin
                 registers(conv_integer(RegSelA))(3 downto 0) & registers(conv_integer(RegSelA))(7 downto 4) when std_match(LoadReg, LoadSwap) else
                 registers(conv_integer(RegSelA));
 
-    --output_reg : process(LoadReg, RegSelB, K_in, registers)
-    --begin
-    --    if std_match(LoadReg, LoadB) then
-    --        RegBOut <=  K_in;
-    --    else
-    --        RegBOut <=  registers(conv_integer(RegSelB));
-    --    end if;
-    --end process;
     RegBOut <=  K_in when (LoadReg = LoadB) else
                 registers(conv_integer(RegSelB));
 
