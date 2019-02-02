@@ -7,7 +7,8 @@
 -- This file contains constants for the ALU entity and testbench.
 --
 --  Revision History:
---     01/29/19 Sophia Liu initial revision
+--     01/29/19     Sophia Liu      initial revision
+--     02/01/2019   Sundar Pandian  Debugged with testbench
 --
 ----------------------------------------------------------------------------------
 

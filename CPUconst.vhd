@@ -7,6 +7,7 @@
 --
 --  Revision History
 --      1/30/19   Sundar Pandian    initial revision
+--      02/01/19  Sundar Pandian    Debugged with testbench
 --
 -----------------------------------------------------------------------------
 

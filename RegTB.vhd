@@ -2,14 +2,14 @@
 --
 --  Test Bench for Registers
 --
---  This is a test bench for the SerialDivider entity. The test bench
+--  This is a test bench for the Regteste entity. The test bench
 --  thoroughly tests the entity by exercising it and checking the outputs
 --  through the use of an array of test values (TestVector). The test bench
---  entity is called ALUTB.
+--  entity is called REGTB.
 --
 --
 --  Revision History:
---  01/30/2019 Sophia Liu Initial revision
+--  02/01/2019   Sundar Pandian  Initial Revision
 --
 ----------------------------------------------------------------------------
 library ieee;
