@@ -22,8 +22,9 @@ use work.opcodes.all;
 use work.constants.all;
 
 entity REGTB is
-    -- timing constants for testing
+    -- timing constant for testing
     constant CLK_PERIOD : time := 20 ns;
+    -- Test vector size
     constant TEST_SIZE: integer := 12;
 end REGTB;
 
@@ -45,7 +46,7 @@ architecture TB_ARCHITECTURE of REGTB is
 
     -- Stimulus signals - signals mapped to the input and inout ports of tested entity
     signal IR       : opcode_word;
-    signal clock    : std_logic; -- system clock
+    signal clock    : std_logic;
     signal RegIn    : std_logic_vector(7 downto 0);
     signal RegAOut  : std_logic_vector(7 downto 0);
     signal RegBOut  : std_logic_vector(7 downto 0);
@@ -56,7 +57,6 @@ architecture TB_ARCHITECTURE of REGTB is
     begin
         UUT: REG_TEST
         port map(
-            --Clk     => Clk,
             IR      => IR,
             RegIn   => RegIn,
             clock   => clock,
@@ -75,7 +75,7 @@ architecture TB_ARCHITECTURE of REGTB is
 
         begin
 
-            -- initially everything is X, have not started
+            -- initially everything is 0, have not started
             IR      <= "0000000000000000";
             RegIn   <= "00000000";
             wait for CLK_PERIOD*5.5;
@@ -94,64 +94,65 @@ architecture TB_ARCHITECTURE of REGTB is
                         "1111101100000000", -- T <- R16(0)
                         "0001111111100001");-- R30 <- R30 + R17
 
-            casesIn := (X"00",
-                        X"00",
-                        X"00",
-                        X"00",
-                        X"0F",
-                        X"0F",
-                        X"0E",
-                        X"0F",
-                        X"1F",
-                        X"00",
-                        X"FF",
-                        X"0F",
-                        X"2E");
-            casesA  := ("--------",
-                        "--------",
-                        "--------",
-                        "--------",
-                        X"00",
-                        X"00",
-                        X"0F",
-                        X"0E",
-                        X"00",
-                        X"00",
-                        "--------",
-                        X"0F",
-                        X"1F");
-            casesB  := (X"00",
-                        X"00",
-                        X"00",
-                        X"00",
-                        X"0F",
-                        X"0F",
-                        X"01",
-                        X"0F",
-                        X"1F",
-                        X"00",
-                        X"0F",
-                        X"0F",
-                        X"0F");
+            casesIn := (X"00",              -- $00 AND XX
+                        X"00",              -- $00 AND XX
+                        X"00",              -- $00 AND XX
+                        X"00",              -- $00 AND XX
+                        X"0F",              -- $0F OR $00
+                        X"0F",              -- $0F +  $00
+                        X"0E",              -- $0F DEC
+                        X"0F",              -- $0E OR $0F
+                        X"1F",              -- $00 + $1F low byte
+                        X"00",              -- $00 + $1F low byte
+                        X"FF",              -- reg outputs $FF, bitmask sets
+                        X"0F",              -- reg outputs $0F, bitmask sets
+                        X"2E");             -- $1F + $0F
+            casesA  := ("--------",         -- undef
+                        "--------",         -- undef
+                        "--------",         -- undef
+                        "--------",         -- undef
+                        X"00",              -- 
+                        X"00",              -- 
+                        X"0F",              -- 
+                        X"0E",              -- 
+                        X"00",              -- 
+                        X"00",              -- 
+                        "--------",         -- undef
+                        X"0F",              -- 
+                        X"1F");             -- 
+            casesB  := (X"00",              -- 
+                        X"00",              -- 
+                        X"00",              -- 
+                        X"00",              -- 
+                        X"0F",              -- 
+                        X"0F",              -- 
+                        X"01",              -- 
+                        X"0F",              -- 
+                        X"1F",              -- 
+                        X"00",              -- 
+                        X"0F",              -- 
+                        X"0F",              -- 
+                        X"0F");             -- 
 
+            -- do first operation in test vectors
             IR <= IRTest(TEST_SIZE);
             wait for CLK_PERIOD*0.50;
             RegIn <= casesIn(TEST_SIZE);
             wait for CLK_PERIOD*0.5;
 
+            -- do next operation, checking values from last operation
             for i in TEST_SIZE-1 downto 0 loop
                 IR <= IRTest(i);
                 wait for CLK_PERIOD*0.50;
                 RegIn <= casesIn(i);
                 wait for CLK_PERIOD*0.4;
-                -- check result
+                -- check result A right before next clk rise
                 assert (std_match(casesA(i), RegAOut))
                     report  "A reg failure at test " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
-                -- check pre-masked sreg
+                -- check result B right before next clk rise
                 assert (std_match(casesB(i), RegBOut))
-                    report  "B reg failure at test " & integer'image(TEST_SIZE-i) &
-                            "th test"
+                    report  "B reg failure at test " & integer'image(TEST_SIZE-i)
                     severity ERROR;
                 wait for CLK_PERIOD*0.1;
             end loop;

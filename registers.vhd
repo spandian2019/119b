@@ -49,46 +49,43 @@ entity Reg is
         Clk      :  in  std_logic;                          -- system clock
 
         -- from CU
-        RegWEn  : in std_logic; -- register write enable
-        RegWSel : in std_logic_vector(4 downto 0); -- register write select
-        RegSelA : in std_logic_vector(4 downto 0); -- register A select
-        RegSelB : in std_logic_vector(4 downto 0); -- register B select
+        RegWEn  : in std_logic;                     -- register write enable
+        RegWSel : in std_logic_vector(4 downto 0);  -- register write select
+        RegSelA : in std_logic_vector(4 downto 0);  -- register A select
+        RegSelB : in std_logic_vector(4 downto 0);  -- register B select
 
         RegAOut  :  out std_logic_vector(7 downto 0);       -- register bus A out
         RegBOut  :  out std_logic_vector(7 downto 0);       -- register bus B out
 
-        K_in     : in std_logic_vector(7 downto 0);
+        K_in     : in std_logic_vector(7 downto 0); -- immediate value input
         LoadReg  : in std_logic_vector(1 downto 0)  -- for loading immediate values to out buses
     );
 
 end Reg;
 
 architecture Reg_arc of Reg is
-    type reg_array is array (31 downto 0) of std_logic_vector(7 downto 0); -- difference between subtype and type?
+    type reg_array is array (31 downto 0) of std_logic_vector(7 downto 0);
     signal registers : reg_array;
-
 begin
-
-    -- maybe use for loop to make m:2^m decoder
 
     -- writing to registers occurs synchronously
     write_reg : process (CLK)
     begin
         if (rising_edge(CLK)) then
-            -- writes to register if write enabled
+            -- writes to register only if write enabled
             if RegWEn = '1' then
                 registers(conv_integer(RegWSel)) <= RegIn;
             end if;
         end if;
     end process write_reg;
 
+    -- register outputs either load value in address line, immed value, or perform swap operation
     RegAOut <=  K_in when std_match(LoadReg, LoadA) else
                 registers(conv_integer(RegSelA))(3 downto 0) & registers(conv_integer(RegSelA))(7 downto 4) when std_match(LoadReg, LoadSwap) else
                 registers(conv_integer(RegSelA));
 
     RegBOut <=  K_in when (LoadReg = LoadB) else
                 registers(conv_integer(RegSelB));
-
 
 end Reg_arc;
 
