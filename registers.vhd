@@ -73,20 +73,19 @@ begin
     write_reg : process (CLK)
     begin
         if (rising_edge(CLK)) then
-            -- writes to register only if write enabled
+            -- writes pi register only if write enabled
+            -- holds value otherwise
             if RegWEn = '1' then
                 registers(conv_integer(RegWSel)) <= RegIn;
+            else
+                registers(conv_integer(RegWSel)) <= registers(conv_integer(RegWSel));
             end if;
         end if;
     end process write_reg;
 
-    -- register outputs either load value in address line, immed value, or perform swap operation
-    RegAOut <=  K_in when std_match(LoadReg, LoadA) else
-                registers(conv_integer(RegSelA))(3 downto 0) & registers(conv_integer(RegSelA))(7 downto 4) when std_match(LoadReg, LoadSwap) else
-                registers(conv_integer(RegSelA));
-
-    RegBOut <=  K_in when (LoadReg = LoadB) else
-                registers(conv_integer(RegSelB));
+    -- register outputs load value in address line
+    RegAOut <=  registers(conv_integer(RegSelA));
+    RegBOut <=  registers(conv_integer(RegSelB));
 
 end Reg_arc;
 

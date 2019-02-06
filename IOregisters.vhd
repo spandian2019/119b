@@ -1,14 +1,14 @@
 ----------------------------------------------------------------------------
--- 
--- 
--- I/O Registers 
 --
--- I/O registers for the AVR CPU. There are 64 I/O ports that can be 
--- manipulated, located at addreses 32 to 95. The status registers 
+--
+-- I/O Registers
+--
+-- I/O registers for the AVR CPU. There are 64 I/O ports that can be
+-- manipulated, located at addreses 32 to 95. The status registers
 -- are included in the I/O registers.
--- The inputs include the input data register, address values, 
+-- The inputs include the input data register, address values,
 -- and status register inputs. The output is the 8-bit data output.
--- 
+--
 --
 -- Ports:
 --  Inputs:
@@ -16,11 +16,11 @@
 --        StatusIn - 8-bit status flag input from ALU
 --        Clk      - system clock
 --        K        - 8-bit immediate value to use
---        SregInOut  - in/out control 
+--        SregInOut  - in/out control
 --        IOEn    - io register enable
 --
 --  Outputs:
---        RegOut  - 8-bit output register bus    
+--        RegOut  - 8-bit output register bus
 --
 -- Revision History:
 -- 01/24/2019   Sophia Liu      Initial revision
@@ -34,7 +34,7 @@ use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
 
-use work.opcodes.all; 
+use work.opcodes.all;
 
 use work.constants.all;
 
@@ -62,7 +62,10 @@ begin
     begin
         if (rising_edge(CLK)) then
             -- writes to register only if write enabled
+            -- holds value otherwise
             if RegInEn = '1' then
+                registers(conv_integer(RegInSel)) <= RegIn;
+            else
                 registers(conv_integer(RegInSel)) <= RegIn;
             end if;
         end if;
@@ -71,20 +74,6 @@ begin
     -- can always output IO reg to IO data bus since value needs to be selected
     --  by Control Unit to be used
     RegOut  <=  registers(conv_integer(RegInSel));
-    -- SReg always outputted
-    SRegOut <=  registers(conv_integer(SReg_addr));
-
-    -- if bit set in bitmask, can assign corresponding bit in SReg
-    SREG_write : process (CLK)
-    begin
-        if (rising_edge(CLK)) then
-            BIT_OP : for i in 7 downto 0 loop
-                if bitmask(i) = '1' then
-                    registers(conv_integer(SReg_addr))(i) <= StatusIn(i);
-                end if;
-            end loop;
-        end if;
-    end process SREG_write;
 
 end IOReg_arc;
 
