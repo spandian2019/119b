@@ -50,7 +50,10 @@ entity ALU is
         ALUSel  : in ALU_SELECTS; -- operation select 
         CarrySel : in CARRY_SEL; -- adder carry select 
 		BitMask : in std_logic_vector(REGSIZE-1 downto 0); 
+		
 		CPC : in std_logic; -- control for cpc command, to set zero flag appropriately
+		AClr: in std_logic; -- '0' to set A to x00
+		ASet: in std_logic; -- '1' to set A to xFF
 		
         -- from Regs 
         RegA    : in std_logic_vector(REGSIZE-1 downto 0); -- operand A
@@ -84,6 +87,7 @@ signal CFlag: std_logic;
 signal CIn : std_logic; -- carry in from adder sel
 signal nCarry : std_logic; 
 
+signal Ain : std_logic_vector(REGSIZE-1 downto 0); 
 ---- component declarations 
 component fullAdder is
     port(
@@ -124,6 +128,12 @@ begin
       
     -- adder/subtracter 
     -- low bit, with carry in
+    
+    -- clear or set A
+    GenAClr: for i in REGSIZE-1 downto 0 generate 
+        AIn(i) <= (RegA(i) or ASet) and AClr; 
+    end generate GenAClr; 
+    
     nCarry <= not StatusIn(0); --?
     adderCarry: Mux
         port map(
@@ -137,7 +147,7 @@ begin
       );
     adder0: fullAdder
         port map(
-            A           => RegA(0),
+            A           => AIn(0),
             B           => RegB(0),
             Cin         => CIn,
             Cout        => Carryout(0), 
@@ -147,7 +157,7 @@ begin
       GenAdder:  for i in 1 to REGSIZE - 1 generate
       adderi: fullAdder
         port map(
-            A           => RegA(i),
+            A           => AIn(i),
             B           => RegB(i),
             Cin         => CarryOut(i-1), 
             Cout        => Carryout(i), 
