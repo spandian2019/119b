@@ -89,10 +89,9 @@ architecture RISC of CU is
     signal cycle        :   std_logic_vector(1 downto 0) := "00";
 begin
 
-    -- synchronously decodes IR inputs
+    -- asynchronously decodes IR inputs
     decoder : process (CLK)
     begin
-        if (rising_edge(CLK)) then
             -- sets cycle number for op_codes
             -- defaults to 1
             cycle_num <= "01";
@@ -389,8 +388,6 @@ begin
                 IORegOutEn <= IR(11);
                 LoadIn <= LdIO;
             end if;
-
-        end if;
     end process decoder;
 
     -- load enable signal telling when to fetch next instruction
