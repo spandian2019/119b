@@ -8,6 +8,7 @@
 --  Revision History
 --      1/30/19   Sundar Pandian    initial revision
 --      02/01/19  Sundar Pandian    Debugged with testbench
+--      02/06/19  Sundar Pandian    Added the Mux entities
 --
 -----------------------------------------------------------------------------
 
@@ -50,27 +51,6 @@ package constants is
     constant REGSIZE    : natural := 8;
     constant ZERO8      : std_logic_vector(7 downto 0) := "00000000";
 
-    subtype ALU_OPS is std_logic_vector(3 downto 0);
-
-    -- F-block operands
-    constant OP_ZERO    : ALU_OPS := "0000"; -- zeros
-    constant OP_NOR     : ALU_OPS := "0001"; -- A nor B
-    constant OP_NOTA    : ALU_OPS := "0011"; -- not A
-    constant OP_NOTB    : ALU_OPS := "0101"; -- not B
-    constant OP_XOR     : ALU_OPS := "0110"; -- A xor B
-    constant OP_NAND    : ALU_OPS := "0111"; -- A nand B
-    constant OP_AND     : ALU_OPS := "1000"; -- A and B
-    constant OP_XNOR    : ALU_OPS := "1001"; -- A xnor B
-    constant OP_OR      : ALU_OPS := "1110"; -- A or B
-    constant OP_ONE     : ALU_OPS := "1111"; -- true
-
-    -- Shifter/Rotator operands
-    constant OP_LSR     : ALU_OPS := "--00"; -- Logical shift right
-    constant OP_ASR     : ALU_OPS := "--01"; -- Arithmetic shift right
-    constant OP_ROR     : ALU_OPS := "-010"; -- Rotate right (no carry)
-    constant OP_RORC     : ALU_OPS := "-110"; -- Rotate right (with carry)
-
-
     -- Adder/Subber bit assignments
     constant subFlag    : integer := 3;
     constant carryBit   : integer := 2;
@@ -107,6 +87,84 @@ package constants is
 	 constant MASK_NONE : SREG_MASK:= "00000000"; -- change nothing
 
 end package constants;
+
+----------------------------------------------------------------------------
+--
+--  8:1 mux
+--
+--  Implementation of a 8:1 mux. Includes 3 control bits, 8 input signals, 
+--  and a selected output.
+--
+-- Inputs:
+--      S0 - mux select bit 0
+--      S1 - mux select bit 1
+--      S2 - mux select bit 2
+--      SIn0 - mux input 0 
+--      SIn1 - mux input 1 
+--      SIn2 - mux input 2
+--      SIn3 - mux input 3
+--      SIn4 - mux input 4
+--      SIn5 - mux input 5
+--      SIn6 - mux input 6
+--      SIn7 - mux input 7
+--
+-- Outputs:
+--      SOut - mux output
+--
+--  Revision History:
+--      01/31/18  Sophia Liu        Initial revision.
+--      02/01/18  Sophia Liu        Updated comments.
+--      02/06/19  Sundar Pandian    Refitted for 8:1 Mux
+--
+----------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity Mux8to1 is
+    port(
+        S0          :  in      std_logic;  -- mux sel(0) 
+        S1          :  in      std_logic;  -- mux sel(1) 
+        S2          :  in      std_logic;  -- mux sel(2) 
+        SIn0        :  in      std_logic;  -- mux inputs
+        SIn1        :  in      std_logic;  -- mux inputs
+        SIn2        :  in      std_logic;  -- mux inputs
+        SIn3        :  in      std_logic;  -- mux inputs
+        SIn4        :  in      std_logic;  -- mux inputs
+        SIn5        :  in      std_logic;  -- mux inputs
+        SIn6        :  in      std_logic;  -- mux inputs
+        SIn7        :  in      std_logic;  -- mux inputs
+        SOut        :  out     std_logic   -- mux output
+      );
+end Mux8to1;
+
+architecture Mux8to1 of Mux8to1 is
+    signal sel      : std_logic_vector(2 downto 0) := S2 & S1 & S0;
+    begin
+    process(SIn0, SIn1, SIn2, SIn3, SIn4, SIn5, SIn6, SIn7, S0, S1, S2)
+    begin  -- choose Sout based on S0 & S1 & S2
+        if    sel = "000" then 
+            SOut <= SIn0; 
+        elsif sel = "001" then 
+            SOut <= SIn1; 
+        elsif sel = "010" then 
+            SOut <= SIn2; 
+        elsif sel = "011" then 
+            SOut <= SIn3; 
+        elsif sel = "100" then 
+            SOut <= SIn4; 
+        elsif sel = "101" then 
+            SOut <= SIn5; 
+        elsif sel = "110" then 
+            SOut <= SIn6; 
+        elsif sel = "111" then 
+            SOut <= SIn7; 
+        else 
+            SOut <= 'X'; -- for simulation
+        end if;   
+    end process;
+end Mux8to1;
 
 ----------------------------------------------------------------------------
 --
