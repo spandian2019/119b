@@ -59,11 +59,12 @@ end  ALU_TEST;
 
 architecture ALUTB of ALU_TEST is 
 		-- mapped signals
-		signal load : std_logic; 
-		signal ALUOp   : std_logic_vector(3 downto 0); -- operation control signals 
+	  signal load : std_logic; 
+	  signal ALUOp   : std_logic_vector(3 downto 0); -- operation control signals 
+	  signal ALUOpF   : std_logic_vector(3 downto 0); -- operation control signals 
       signal ALUSel  : std_logic_vector(2 downto 0); -- operation select 
             
-		signal BitMask: std_logic_vector(REGSIZE - 1 downto 0); -- mask for writing to status flags
+	  signal BitMask: std_logic_vector(REGSIZE - 1 downto 0); -- mask for writing to status flags
       signal ALUStatusOut    : std_logic_vector(REGSIZE-1 downto 0); -- status register output
 		  
 		-- to registers
@@ -84,7 +85,7 @@ architecture ALUTB of ALU_TEST is
 	 begin 
 	 UUTALU: entity work.ALU
 		port map(
-		      ALUOp   => ALUOp,
+		    ALUOp   => ALUOp,
             ALUSel  => ALUSel,
             RegA    => OperandA, 
             RegB    => OperandB,

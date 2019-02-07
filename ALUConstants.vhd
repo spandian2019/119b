@@ -21,39 +21,38 @@ use ieee.numeric_std.all;
 use work.opcodes.all;
 
 package ALUConstants is
-	 -- general constants 
+	-- general constants 
     constant REGSIZE    : natural := 8; -- size of registers
     constant ZERO8     : std_logic_vector(7 downto 0) := "00000000";
 
-    subtype ALU_OPS is std_logic_vector(3 downto 0);
+    subtype ALU_FOPS is std_logic_vector(3 downto 0);
     -- F-block operands
-    constant OP_XOR     : ALU_OPS := "0110"; -- A xor B
-    constant OP_AND     : ALU_OPS := "1000"; -- A and B
-    constant OP_OR      : ALU_OPS := "1110"; -- A or B
+    constant OP_XOR     : ALU_FOPS := "0110"; -- A xor B
+    constant OP_AND     : ALU_FOPS := "1000"; -- A and B
+    constant OP_OR      : ALU_FOPS := "1110"; -- A or B
+    constant OP_NOTB    : ALU_FOPS := "0011"; -- not B (set for subtraction)
 
-	 -- F-block operands not used in instruction set
-    constant OP_NOTA    : ALU_OPS := "0101"; -- not A
-    constant OP_ZERO    : ALU_OPS := "0000"; -- zeros
-    constant OP_NOR     : ALU_OPS := "0001"; -- A nor B
-    constant OP_NOTB    : ALU_OPS := "0011"; -- not B
-    constant OP_ONE     : ALU_OPS := "1111"; -- true
-    constant OP_XNOR    : ALU_OPS := "1001"; -- A xnor B
-    constant OP_NAND    : ALU_OPS := "0111"; -- A nand B
+	-- F-block operands not used in instruction set
+    constant OP_NOTA    : ALU_FOPS := "0101"; -- not A
+    constant OP_ZERO    : ALU_FOPS := "0000"; -- zeros
+    constant OP_NOR     : ALU_FOPS := "0001"; -- A nor B
+    constant OP_ONE     : ALU_FOPS := "1111"; -- true
+    constant OP_XNOR    : ALU_FOPS := "1001"; -- A xnor B
+    constant OP_NAND    : ALU_FOPS := "0111"; -- A nand B
 
+    subtype ALU_OPS is std_logic_vector(1 downto 0); -- ops for s/r, add
     -- Shifter/Rotator operands
-    constant OP_LSR     : ALU_OPS := "--00"; -- Logical shift right
-    constant OP_ASR     : ALU_OPS := "--01"; -- Arithmetic shift right
-    constant OP_ROR     : ALU_OPS := "-010"; -- Rotate right (no carry)
-    constant OP_RORC     : ALU_OPS := "-110"; -- Rotate right (with carry)
+    constant OP_LSR     : ALU_OPS := "00"; -- Logical shift right
+    constant OP_ASR     : ALU_OPS := "01"; -- Arithmetic shift right
+    constant OP_ROR     : ALU_OPS := "10"; -- Rotate right
+    --constant OP_RORC     : ALU_OPS := "-110"; -- Rotate right (with carry)
 
-
-	 -- Adder/Subtractor operand indices and values
-    constant SUBFLAG    : integer := 3;	-- index of subtract flag
-    constant CARRYBIT   : integer := 2;	-- index of carry flag
-	 -- values of subtract/carry flags 
-	 constant OP_ADD : std_logic := '0';
-	 constant OP_SUB : std_logic := '1';
-	 constant OP_CARRY : std_logic:= '1';
+	-- Adder/Subtractor operand indices and values
+    constant SUBFLAG    : integer := 0;	-- index of subtract flag
+	
+	-- values of subtract/carry flags 
+	constant OP_ADD : std_logic := '0';
+	constant OP_SUB : std_logic := '1';
 
     -- Testing add/sub
     constant OP_ADDNC     : ALU_OPS := "00--";-- add no carry
@@ -62,12 +61,118 @@ package ALUConstants is
     -- SReg
     constant HALFCARRYBIT : natural := 3; -- half carry is carry out of bit 3
 
-	 -- ALUSel signals
-    subtype ALU_selects is std_logic_vector(2 downto 0);
-	 constant AddSubEn       : ALU_selects := "000";
-    constant FBlockEn       : ALU_selects := "001";
-    constant ShiftEn        : ALU_selects := "010";
-    constant PassThruEn     : ALU_selects := "011";
-    constant MulEn          : ALU_selects := "100"; 
+	-- ALUSel signals
+    subtype ALU_SELECTS is std_logic_vector(2 downto 0);
+	constant ADDSUBEN       : ALU_SELECTS := "000";
+    constant FBLOCKEN       : ALU_SELECTS := "001";
+    constant SHIFTEN        : ALU_SELECTS := "010";
+    constant PASSTHRUEN     : ALU_SELECTS := "011";
+    constant MULEN          : ALU_SELECTS := "100"; 
 
+    subtype CARRY_SEL is std_logic_vector(1 downto 0); 
+    constant CARRY_ZERO : CARRY_SEL := "00"; 
+    constant CARRY_SET : CARRY_SEL := "01"; 
+    constant CARRY_REG : CARRY_SEL := "10"; 
+    constant CARRY_NREG: CARRY_SEL := "11"; 
 end package ALUConstants;
+
+----------------------------------------------------------------------------
+--
+--  1 Bit Full Adder
+--
+--  Implementation of a full adder. This entity takes the one bit 
+--  inputs A and B with a carry in input and outputs the sum and carry 
+--  out bits, using combinational logic. 
+--
+-- Inputs:
+--      A: std_logic - 1 bit adder input
+--      B: std_logic - 1 bit adder input
+--      Cin: std_logic - 1 bit carry in input
+--
+-- Outputs:
+--      Sum: std_logic - 1 bit sum or difference of A, B, and Cin
+--      Cout: std_logic - 1 bit carry out value 
+--
+--  Revision History:
+--      11/21/18  Sophia Liu    Initial revision.
+--      11/22/18  Sophia Liu    Updated comments.
+--
+----------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity fullAdder is
+    port(
+        A           :  in      std_logic;  -- adder input 
+        B           :  in      std_logic;  -- adder input 
+        Cin         :  in      std_logic;  -- carry in value 
+        Cout        :  out     std_logic;  -- carry out value 
+        Sum         :  out     std_logic   -- sum of A, B with carry in
+      );
+end fullAdder;
+
+architecture fullAdder of fullAdder is
+    begin
+        -- combinational logic for calculating A+B with carry in and out bits
+        Sum <= A xor B xor Cin;
+        Cout <= (A and B) or (A and Cin) or (B and Cin); 
+end fullAdder;
+----------------------------------------------------------------------------
+--
+--  4:1 mux
+--
+--  Implementation of a 4:1 mux. Includes 2 control bits, 4 input signals, 
+--  and a selected output.
+--
+-- Inputs:
+--      S0 - mux select bit 0
+--      S1 - mux select bit 1
+--      SIn0 - mux input 0 
+--      SIn1 - mux input 1 
+--      SIn2 - mux input 2
+--      SIn3 - mux input 3
+--
+-- Outputs:
+--      SOut - mux output
+--
+--  Revision History:
+--      01/31/18  Sophia Liu    Initial revision.
+--      02/01/18  Sophia Liu    Updated comments.
+--
+----------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity Mux is
+    port(
+        S0          :  in      std_logic;  -- mux sel (0) 
+        S1          :  in      std_logic;  -- mux sel(1) 
+        SIn0         :  in      std_logic;  -- mux inputs
+        SIn1         :  in      std_logic;  -- mux inputs
+        SIn2         :  in      std_logic;  -- mux inputs
+        SIn3         :  in      std_logic;  -- mux inputs
+        SOut        :  out     std_logic   -- mux output
+      );
+end Mux;
+
+architecture Mux of Mux is
+    begin
+    process(SIn0, SIn1, SIn2, SIn3, S0, S1)
+    begin  -- choose Sout based on S0 & S1
+        if S0 = '0' and S1 = '0' then 
+            SOut <= SIn0; 
+        elsif S0 = '1' and S1 = '0' then 
+            SOut <= SIn1; 
+        elsif S0 = '0' and S1 = '1' then 
+            SOut <= SIn2; 
+        elsif S0 = '1' and S1 = '1' then 
+            SOut <= SIn3; 
+        else 
+            SOut <= 'X'; -- for simulation
+        end if;   
+    end process;
+end Mux;

@@ -1,3 +1,5 @@
+
+
 ----------------------------------------------------------------------------
 -- 
 -- 
@@ -43,12 +45,17 @@ use work.ALUconstants.all;
 entity ALU is
     port(
         -- from CU
-        ALUOp   : in std_logic_vector(3 downto 0); -- operation control signals 
-        ALUSel  : in std_logic_vector(2 downto 0); -- operation select 
-		  
+        ALUOp   : in ALU_OPS; -- add/sub, shift/rotate operation control signals 
+        ALUFOp   : in ALU_FOPS; -- F-block operation control signals 
+        ALUSel  : in ALU_SELECTS; -- operation select 
+        CarrySel : in CARRY_SEL; -- adder carry select 
+		BitMask : in std_logic_vector(REGSIZE-1 downto 0); 
+		CPC : in std_logic; -- control for cpc command, to set zero flag appropriately
+		
         -- from Regs 
         RegA    : in std_logic_vector(REGSIZE-1 downto 0); -- operand A
         RegB    : in std_logic_vector(REGSIZE-1 downto 0); -- operand B, or immediate 
+        StatusIn : in std_logic_vector(REGSIZE-1 downto 0); 
         
         RegOut  : out std_logic_vector(REGSIZE-1 downto 0); -- output result
         StatusOut    : out std_logic_vector(REGSIZE-1 downto 0) -- status register output
@@ -71,13 +78,17 @@ signal RegBuff  : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output res
 
 -- internal status signals 
 signal VFlag : std_logic; -- signed overflow status flag 
+signal NFlag : std_logic; 
+signal CFlag: std_logic; 
+
+signal CIn : std_logic; -- carry in from adder sel
+signal nCarry : std_logic; 
 
 ---- component declarations 
 component fullAdder is
     port(
         A           :  in      std_logic;  -- adder input 
         B           :  in      std_logic;  -- adder input 
-        Subtract    :  in      std_logic;  -- active for subtracting
         Cin         :  in      std_logic;  -- carry in value 
         Cout        :  out     std_logic;  -- carry out value 
         Sum         :  out     std_logic   -- sum of A, B with carry in
@@ -97,15 +108,38 @@ component Mux is
 end component;  
 
 begin
-
+    -- fblock
+    GenFBlock:  for i in REGSIZE-1 downto 0 generate
+      FBlocki: Mux
+        port map(
+            S0          => RegA(i),
+            S1          => RegB(i),
+            SIn0        => ALUFOp(0),
+            SIn1        => ALUFOp(1),
+            SIn2        => ALUFOp(2),
+            SIn3        => ALUFOp(3),
+            SOut        => FOut(i)
+      );
+      end generate GenFBlock;
+      
     -- adder/subtracter 
     -- low bit, with carry in
+    nCarry <= not StatusIn(0); --?
+    adderCarry: Mux
+        port map(
+            S0          => CarrySel(0),
+            S1          => CarrySel(1),
+            SIn0        => '0',
+            SIn1        => '1',
+            SIn2        => StatusIn(0),
+            SIn3        => nCarry,
+            SOut        => CIn 
+      );
     adder0: fullAdder
         port map(
             A           => RegA(0),
             B           => RegB(0),
-            Subtract    => ALUOp(SUBFLAG),
-            Cin         => ALUOp(CARRYBIT),
+            Cin         => CIn,
             Cout        => Carryout(0), 
             Sum         => AdderOut(0)
       );
@@ -115,26 +149,13 @@ begin
         port map(
             A           => RegA(i),
             B           => RegB(i),
-            Subtract    => ALUOp(SUBFLAG),
             Cin         => CarryOut(i-1), 
             Cout        => Carryout(i), 
             Sum         => AdderOut(i)
       );
       end generate GenAdder;
       
-    -- fblocks 
-    GenFBlock:  for i in REGSIZE-1 downto 0 generate
-      FBlocki: Mux
-        port map(
-            S0          => RegA(i),
-            S1          => RegB(i),
-            SIn0        => ALUOp(0),
-            SIn1        => ALUOp(1),
-            SIn2        => ALUOp(2),
-            SIn3        => ALUOp(3),
-            SOut        => FOut(i)
-      );
-      end generate GenFBlock;
+
       
     -- shifter/rotator
     -- assign middle and low bits 
@@ -146,14 +167,14 @@ begin
             S1          => ALUOp(1),
             SIn0        => '0',             -- LSR high bit = 0
             SIn1        => RegA(REGSIZE-1), -- ASR high bit constant
-            SIn2        => ALUOp(CARRYBIT), -- ROR high bit = carry in 
+            SIn2        => StatusIn(0),     -- ROR high bit = carry in 
             SIn3        => 'X',
             SOut        => SROut(REGSIZE-1)
       );
 
     -- transfer bit loading
     BIT_OP : for i in 0 to REGSIZE-1 generate
-        Bout(i) <= ALUOp(0) when i = to_integer(unsigned(RegB)) else 
+        Bout(i) <= StatusIn(6) when i = to_integer(unsigned(RegB)) else 
                    RegA(i);
     end generate; 
 
@@ -162,7 +183,7 @@ begin
     ALUSelMux: Mux
         port map(
             S0          => ALUSel(0),
-				S1 			=> ALUSel(1),
+			S1 			=> ALUSel(1),
             SIn0        => AdderOut(i),
             SIn1        => FOut(i), 
             SIn2        => SROut(i),
@@ -177,143 +198,49 @@ begin
     -- Status Register logic
     
     -- interrupt bits not set through ALU
-    -- StatusOut(7) <= 'X'; 
+     StatusOut(7) <= StatusIn(7); 
 	 
     -- transfer bit
-    StatusOut(6) <= RegA(to_integer(unsigned(RegB))) when ALUSel = PASSTHRUEN else 
+    StatusOut(6) <= StatusIn(6) when BitMask(6) = '0' else  
+                    RegA(to_integer(unsigned(RegB))) when ALUSel = PASSTHRUEN else 
 							'0'; -- update if transfer bit is set or cleared 
     
     -- half carry 
-    StatusOut(5) <= CarryOut(HALFCARRYBIT) when ALUOp(SUBFLAG) = OP_ADD else 
-						  not CarryOut(HALFCARRYBIT);		-- carry flag opposite when subtracting
+    StatusOut(5) <= StatusIn(5) when BitMask(5) = '0' else  
+                    CarryOut(HALFCARRYBIT) when ALUOp(SUBFLAG) = OP_ADD else 
+					not CarryOut(HALFCARRYBIT);		-- carry flag opposite when subtracting
 	 
 	 -- corrected signed 
-    StatusOut(4) <= RegBuff(REGSIZE-1) xor VFlag; -- N xor V 
+    StatusOut(4) <= StatusIn(4) when BitMask(4) = '0' else  
+                    NFlag xor VFlag; 
     
     -- signed overflow 
-    VFlag <= '1' when (ALUSEL = ADDSUBEN and CarryOut(REGSIZE-1) /= CarryOut(REGSIZE-2)) else -- 1 if signed overflow  
-                 '0' when (ALUSEL = ADDSUBEN or  ALUSEL = FBLOCKEN) else -- 0 if no overflow or logical op
-                 (RegBuff(REGSIZE-1) xor RegA(0));  --N xor C for shift operations 
-	 StatusOut(3) <= VFlag; 				  
+    VFlag <= StatusIn(3) when BitMask(3) = '0' else   
+            '1' when (ALUSEL = ADDSUBEN and CarryOut(REGSIZE-1) /= CarryOut(REGSIZE-2)) else -- 1 if signed overflow  
+            '0' when (ALUSEL = ADDSUBEN or  ALUSEL = FBLOCKEN) else -- 0 if no overflow or logical op
+            NFlag xor CFlag;  --N xor C for shift operations 
+    StatusOut(3) <= VFlag; 				  
 	 
     -- negative
-    StatusOut(2) <= RegBuff(REGSIZE-1); -- set based on sign bit 
+    NFlag <= StatusIn(2) when BitMask(2) = '0' else
+            RegBuff(REGSIZE-1); -- set based on sign bit 
+    StatusOut(2) <= NFlag;
     
     -- zero flag 
-    StatusOut(1) <= '1' when RegBuff = ZERO8 else -- compare with 0
+    StatusOut(1) <= StatusIn(1) when BitMask(1) = '0' else 
+                    '0' when CPC = '1' and StatusIn(1) = '0' else -- and zero flag if performing cpc 
+                    '1' when RegBuff = ZERO8 else -- compare with 0
                     '0';
     -- carry
-    StatusOut(0) <= CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN and ALUOp(SUBFLAG) = OP_ADD else 
-						  not CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN else 	-- carry flag opposite when subtracting
-						  '1' when ALUSel = FBLOCKEN else -- set for logical operations 
-                   RegA(0); -- when ALUSel = SHIFTEN; 
-						 
-
+    CFlag <= StatusIn(0) when BitMask(0) = '0' else 
+                    CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN and ALUOp(SUBFLAG) = OP_ADD else 
+					not CarryOut(REGSIZE-1) when ALUSel = ADDSUBEN else 	-- carry flag opposite when subtracting
+					'1' when ALUSel = FBLOCKEN else -- set for logical operations 
+                    RegA(0); -- when ALUSel = SHIFTEN; 
+    StatusOut(0) <= CFlag; 	 
 end behavioral;  
 
 
-----------------------------------------------------------------------------
---
---  1 Bit Full Adder
---
---  Implementation of a full adder/subtracter. This entity takes the one bit 
---  inputs A and B with a carry in input and outputs the sum/diff and carry 
---  out bits, using combinational logic. 
---
--- Inputs:
---      A: std_logic - 1 bit adder input
---      B: std_logic - 1 bit adder input
---      Subtract: std_logic - 1 bit subtract input 
---      Cin: std_logic - 1 bit carry in input
---
--- Outputs:
---      Sum: std_logic - 1 bit sum or difference of A, B, and Cin
---      Cout: std_logic - 1 bit carry out value 
---
---  Revision History:
---      11/21/18  Sophia Liu    Initial revision.
---      11/22/18  Sophia Liu    Updated comments.
---
-----------------------------------------------------------------------------
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
-entity fullAdder is
-    port(
-        A           :  in      std_logic;  -- adder input 
-        B           :  in      std_logic;  -- adder input 
-        Subtract    :  in      std_logic;  -- active for subtracting
-        Cin         :  in      std_logic;  -- carry in value 
-        Cout        :  out     std_logic;  -- carry out value 
-        Sum         :  out     std_logic   -- sum of A, B with carry in
-      );
-end fullAdder;
-
-architecture fullAdder of fullAdder is
-    begin
-        -- combinational logic for calculating A+B or A-B with carry in and out bits
-        Sum <= A xor B xor Cin xor Subtract;
-        Cout <= (A and (B xor Subtract)) or (A and Cin) or ((B xor Subtract) and Cin); 
-end fullAdder;
 
 
 
-----------------------------------------------------------------------------
---
---  4:1 mux
---
---  Implementation of a 4:1 mux. Includes 2 control bits, 4 input signals, 
---  and a selected output.
---
--- Inputs:
---      S0 - mux select bit 0
---      S1 - mux select bit 1
---      SIn0 - mux input 0 
---      SIn1 - mux input 1 
---      SIn2 - mux input 2
---      SIn3 - mux input 3
---
--- Outputs:
---      SOut - mux output
---
---  Revision History:
---      01/31/18  Sophia Liu    Initial revision.
---      02/01/18  Sophia Liu    Updated comments.
---
-----------------------------------------------------------------------------
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
-entity Mux is
-    port(
-        S0          :  in      std_logic;  -- mux sel (0) 
-        S1          :  in      std_logic;  -- mux sel(1) 
-        SIn0         :  in      std_logic;  -- mux inputs
-        SIn1         :  in      std_logic;  -- mux inputs
-        SIn2         :  in      std_logic;  -- mux inputs
-        SIn3         :  in      std_logic;  -- mux inputs
-        SOut        :  out     std_logic   -- mux output
-      );
-end Mux;
-
-architecture Mux of Mux is
-    begin
-    process(SIn0, SIn1, SIn2, SIn3, S0, S1)
-    begin  -- choose Sout based on S0 & S1
-        if S0 = '0' and S1 = '0' then 
-            SOut <= SIn0; 
-        elsif S0 = '1' and S1 = '0' then 
-            SOut <= SIn1; 
-        elsif S0 = '0' and S1 = '1' then 
-            SOut <= SIn2; 
-        elsif S0 = '1' and S1 = '1' then 
-            SOut <= SIn3; 
-        else 
-            SOut <= 'X'; -- for simulation
-        end if;   
-    end process;
-end Mux;
