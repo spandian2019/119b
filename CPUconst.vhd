@@ -106,4 +106,111 @@ package constants is
 	 constant MASK_MUL : SREG_MASK:= "00000001"; -- mul
 	 constant MASK_NONE : SREG_MASK:= "00000000"; -- change nothing
 
-end package;
+end package constants;
+
+----------------------------------------------------------------------------
+--
+--  4:1 mux
+--
+--  Implementation of a 4:1 mux. Includes 2 control bits, 4 input signals, 
+--  and a selected output.
+--
+-- Inputs:
+--      S0 - mux select bit 0
+--      S1 - mux select bit 1
+--      SIn0 - mux input 0 
+--      SIn1 - mux input 1 
+--      SIn2 - mux input 2
+--      SIn3 - mux input 3
+--
+-- Outputs:
+--      SOut - mux output
+--
+--  Revision History:
+--      01/31/18  Sophia Liu    Initial revision.
+--      02/01/18  Sophia Liu    Updated comments.
+--
+----------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity Mux4to1 is
+    port(
+        S0          :  in      std_logic;  -- mux sel (0) 
+        S1          :  in      std_logic;  -- mux sel(1) 
+        SIn0         :  in      std_logic;  -- mux inputs
+        SIn1         :  in      std_logic;  -- mux inputs
+        SIn2         :  in      std_logic;  -- mux inputs
+        SIn3         :  in      std_logic;  -- mux inputs
+        SOut        :  out     std_logic   -- mux output
+      );
+end Mux4to1;
+
+architecture Mux4to1 of Mux4to1 is
+    begin
+    process(SIn0, SIn1, SIn2, SIn3, S0, S1)
+    begin  -- choose Sout based on S0 & S1
+        if S0 = '0' and S1 = '0' then 
+            SOut <= SIn0; 
+        elsif S0 = '1' and S1 = '0' then 
+            SOut <= SIn1; 
+        elsif S0 = '0' and S1 = '1' then 
+            SOut <= SIn2; 
+        elsif S0 = '1' and S1 = '1' then 
+            SOut <= SIn3; 
+        else 
+            SOut <= 'X'; -- for simulation
+        end if;   
+    end process;
+end Mux4to1;
+
+----------------------------------------------------------------------------
+--
+--  2:1 mux
+--
+--  Implementation of a 2:1 mux. Includes 1 control bit, 2 input signals, 
+--  and a selected output.
+--
+-- Inputs:
+--      S0 - mux select bit
+--      SIn0 - mux input 0 
+--      SIn1 - mux input 1 
+--
+-- Outputs:
+--      SOut - mux output
+--
+--  Revision History:
+--      01/31/18  Sophia Liu        Initial revision.
+--      02/01/18  Sophia Liu        Updated comments.
+--      02/06/19  Sundar Pandian    Refitted for 2:1 Mux
+--
+----------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity Mux2to1 is
+    port(
+        S0          :  in      std_logic;  -- mux sel
+        SIn0        :  in      std_logic;  -- mux inputs
+        SIn1        :  in      std_logic;  -- mux inputs
+        SOut        :  out     std_logic   -- mux output
+      );
+end Mux2to1;
+
+architecture Mux2to1 of Mux2to1 is
+    begin
+    process(SIn0, SIn1, S0)
+    begin  -- choose Sout based on S0
+        if S0 = '0' then 
+            SOut <= SIn0; 
+        elsif S0 = '1' then 
+            SOut <= SIn1; 
+        else 
+            SOut <= 'X'; -- for simulation
+        end if;   
+    end process;
+end Mux2to1;
