@@ -1,29 +1,29 @@
 
 
 ----------------------------------------------------------------------------
--- 
--- 
--- Arithmetic Logic Unit  
+--
+--
+-- Arithmetic Logic Unit
 --
 -- ALU implementation for the AVR CPU, responsible for arithmetic and logic
 -- operations, including boolean operations, shifts and rotates, bit functions,
--- addition, subtraction, and comparison. The operands may be registers or 
--- immediate values. 
--- The ALU consists of a functional block for logical operations, 
--- an adder/subtracter, and a shifter/rotator. It takes several control 
--- signals from the control unit as inputs, along with the operands A 
--- and B from the register array, or from an immediate value encoded in the 
+-- addition, subtraction, and comparison. The operands may be registers or
+-- immediate values.
+-- The ALU consists of a functional block for logical operations,
+-- an adder/subtracter, and a shifter/rotator. It takes several control
+-- signals from the control unit as inputs, along with the operands A
+-- and B from the register array, or from an immediate value encoded in the
 -- instruction. It outputs the computed result and computed flags.
 --
--- Ports:      
---  Inputs:  
---        ALUOp   - 4 bit operation control signal 
---        ALUSel  - 3 bit control signal for the final operation select 
---        RegA    - 8 bit operand A 
---        RegB    - 8 bit operand B, or immediate value 
+-- Ports:
+--  Inputs:
+--        ALUOp   - 4 bit operation control signal
+--        ALUSel  - 3 bit control signal for the final operation select
+--        RegA    - 8 bit operand A
+--        RegB    - 8 bit operand B, or immediate value
 --
 --  Outputs:
---        RegOut  - 8 bit output result        
+--        RegOut  - 8 bit output result
 --        StatusOut - 8 bit status flags to status register
 --
 -- Revision History:
@@ -46,60 +46,60 @@ use work.ALUconstants.all;
 entity ALU is
     port(
         -- from CU
-        -- TODO add control lines 
-        ALUOp       : in    ALU_OPS; -- add/sub, shift/rotate operation control signals 
-        ALUFOp      : in    ALU_FOPS; -- F-block operation control signals 
-        ALUSel      : in    ALU_SELECTS; -- operation select 
-        CarrySel    : in    CARRY_SEL; -- adder carry select 
-        BitMask     : in    std_logic_vector(REGSIZE-1 downto 0); 
-        
+        -- TODO add control lines
+        ALUOp       : in    ALU_OPS; -- add/sub, shift/rotate operation control signals
+        ALUFOp      : in    ALU_FOPS; -- F-block operation control signals
+        ALUSel      : in    ALU_SELECTS; -- operation select
+        CarrySel    : in    CARRY_SEL; -- adder carry select
+        BitMask     : in    std_logic_vector(REGSIZE-1 downto 0);
+
         CPC         : in    std_logic; -- control for cpc command, to set zero flag appropriately
         AClr        : in    std_logic; -- '0' to set A to x00
         ASet        : in    std_logic; -- '1' to set A to xFF
-        
-        -- from Regs 
+
+        -- from Regs
         RegA        : in    std_logic_vector(REGSIZE-1 downto 0); -- operand A
-        RegB        : in    std_logic_vector(REGSIZE-1 downto 0); -- operand B, or immediate 
-        StatusIn    : in    std_logic_vector(REGSIZE-1 downto 0); 
-        
+        RegB        : in    std_logic_vector(REGSIZE-1 downto 0); -- operand B, or immediate
+        StatusIn    : in    std_logic_vector(REGSIZE-1 downto 0);
+
         RegOut      : out   std_logic_vector(REGSIZE-1 downto 0); -- output result
         StatusOut   : out   std_logic_vector(REGSIZE-1 downto 0) -- status register output
     );
 end ALU;
 
-architecture behavioral of ALU is 
+architecture behavioral of ALU is
 
 -- internal signals
 signal AdderOut     : std_logic_vector(REGSIZE-1 downto 0); -- adder/subtracter output
 signal ASCout       : std_logic;
 
-signal Fout         : std_logic_vector(REGSIZE-1 downto 0); -- f block output 
+signal Fout         : std_logic_vector(REGSIZE-1 downto 0); -- f block output
 
-signal SRout        : std_logic_vector(REGSIZE-1 downto 0); -- shifter/rotator block output 
+signal SRout        : std_logic_vector(REGSIZE-1 downto 0); -- shifter/rotator block output
 
-signal Bout         : std_logic_vector(REGSIZE-1 downto 0); -- bit set block output 
+signal Bout         : std_logic_vector(REGSIZE-1 downto 0); -- bit set block output
 
-signal SwapOut      : std_logic_vector(REGSIZE-1 downto 0); -- swap block output 
+signal SwapOut      : std_logic_vector(REGSIZE-1 downto 0); -- swap block output
 
-signal MulOut       : std_logic_vector(REGSIZE-1 downto 0); -- MUL block output 
+signal MulOut       : std_logic_vector(REGSIZE-1 downto 0); -- MUL block output
 
-signal RegBuff      : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output result 
+signal RegBuff      : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output result
 
--- internal status signals 
-signal VFlag        : std_logic; -- signed overflow status flag 
-signal NFlag        : std_logic; 
-signal CFlag        : std_logic; 
+-- internal status signals
+signal VFlag        : std_logic; -- signed overflow status flag
+signal NFlag        : std_logic;
+signal CFlag        : std_logic;
 
 signal CIn          : std_logic; -- carry in from adder sel
 
-signal comnegR      : std_logic_vector(REGSIZE-1 downto 0); 
----- component declarations 
+signal comnegR      : std_logic_vector(REGSIZE-1 downto 0);
+---- component declarations
 
 component Mux8to1 is
     port(
-        S0          :  in      std_logic;  -- mux sel(0) 
-        S1          :  in      std_logic;  -- mux sel(1) 
-        S2          :  in      std_logic;  -- mux sel(2) 
+        S0          :  in      std_logic;  -- mux sel(0)
+        S1          :  in      std_logic;  -- mux sel(1)
+        S2          :  in      std_logic;  -- mux sel(2)
         SIn0        :  in      std_logic;  -- mux inputs
         SIn1        :  in      std_logic;  -- mux inputs
         SIn2        :  in      std_logic;  -- mux inputs
@@ -110,25 +110,25 @@ component Mux8to1 is
         SIn7        :  in      std_logic;  -- mux inputs
         SOut        :  out     std_logic   -- mux output
       );
-end component;  
+end component;
 
 component Mux4to1 is
     port(
-        S0          :  in      std_logic;  -- mux sel(0) 
-        S1          :  in      std_logic;  -- mux sel(1) 
+        S0          :  in      std_logic;  -- mux sel(0)
+        S1          :  in      std_logic;  -- mux sel(1)
         SIn0        :  in      std_logic;  -- mux inputs
         SIn1        :  in      std_logic;  -- mux inputs
         SIn2        :  in      std_logic;  -- mux inputs
         SIn3        :  in      std_logic;  -- mux inputs
         SOut        :  out     std_logic   -- mux output
       );
-end component;  
+end component;
 
 component Adder is generic ( bitsize : integer );
     port(
         A, B        :  in      std_logic_vector((bitsize-1) downto 0);  -- addends
-        Cin         :  in      std_logic;  -- carry in value 
-        Cout        :  out     std_logic;  -- carry out value 
+        Cin         :  in      std_logic;  -- carry in value
+        Cout        :  out     std_logic;  -- carry out value
         Sum         :  out     std_logic_vector((bitsize-1) downto 0)   -- sum of A, B with carry in
       );
 end component;
@@ -149,12 +149,12 @@ begin
       end generate GenFBlock;
 
     -- clear or set A, for use with COM or NEG
-    -- TODO explain? 
-    GenAClr: for i in REGSIZE-1 downto 0 generate 
-        comnegR(i) <= (RegA(i) and CNCtrl(OP_CN_ADD)) or CNCtrl(OP_CN_OR); 
-    end generate GenAClr; 
-    
-    -- adder/subtracter carry in MUX    
+    -- TODO explain?
+    GenAClr: for i in REGSIZE-1 downto 0 generate
+        comnegR(i) <= (RegA(i) and CNCtrl(OP_CN_ADD)) or CNCtrl(OP_CN_OR);
+    end generate GenAClr;
+
+    -- adder/subtracter carry in MUX
     adderCarry: Mux4to1
         port map(
             S0          => CarrySel(0),
@@ -163,10 +163,10 @@ begin
             SIn1        => '1',
             SIn2        => StatusIn(0),
             SIn3        => not StatusIn(0),
-            SOut        => CIn 
+            SOut        => CIn
       );
 
-    -- adder/subtracter 
+    -- adder/subtracter
     addersubber: Adder
         generic map (bitsize => 8)
         port map(
@@ -178,25 +178,25 @@ begin
       );
 
     -- shifter/rotator
-    -- assign middle and low bits 
-    SROut(REGSIZE - 2 downto 0) <= RegA(REGSIZE - 1 downto 1); 
-    -- assign high bit 
+    -- assign middle and low bits
+    SROut(REGSIZE - 2 downto 0) <= RegA(REGSIZE - 1 downto 1);
+    -- assign high bit
     SRMux: Mux4to1
         port map(
             S0          => ALUOp(0),
             S1          => ALUOp(1),
             SIn0        => '0',             -- LSR high bit = 0
             SIn1        => RegA(REGSIZE-1), -- ASR high bit constant
-            SIn2        => StatusIn(0),     -- ROR high bit = carry in 
+            SIn2        => StatusIn(0),     -- ROR high bit = carry in
             SIn3        => 'X',
             SOut        => SROut(REGSIZE-1)
       );
 
     -- transfer bit loading
     BIT_OP : for i in REGSIZE-1 downto 0 generate
-        Bout(i) <= StatusIn(6) when i = to_integer(unsigned(RegB)) else 
+        Bout(i) <= StatusIn(6) when i = to_integer(unsigned(RegB)) else
                    RegA(i);
-    end generate; 
+    end generate;
 
     -- SWAP block
     -- switches high and low nibble of A input
@@ -206,9 +206,9 @@ begin
         else
             SwapOut(i) <= RegA(i+NIBBLE);
         end if;
-    end generate; 
+    end generate;
 
-    -- final ALU select mux 
+    -- final ALU select mux
     GenALUSel:  for i in REGSIZE-1 downto 0 generate
     ALUSelMux: Mux8to1
         port map(
@@ -216,67 +216,62 @@ begin
             S1          => ALUSel(1),
             S2          => ALUSel(2),
             SIn0        => AdderOut(i),
-            SIn1        => FOut(i), 
+            SIn1        => FOut(i),
             SIn2        => SROut(i),
-            SIn3        => SwapOut(i), 
+            SIn3        => SwapOut(i),
             SIn4        => MulOut(i),
-            SIn5        => Bout(i), 
+            SIn5        => Bout(i),
             SIn6        => 'X',
-            SIn7        => 'X', 
+            SIn7        => 'X',
             SOut        => RegBuff(i)
       );
       end generate GenALUSel;
-     
-     
+
+
          RegOut <= RegBuff;
-          
+
     -- Status Register logic
-    
+
     -- interrupt bits not set through ALU
-     StatusOut(7) <= StatusIn(7); 
-     
+     StatusOut(7) <= StatusIn(7);
+
     -- transfer bit
-    StatusOut(6) <= StatusIn(6) when BitMask(6) = '0' else  
-                    RegA(to_integer(unsigned(RegB))) when ALUSel = PASSTHRUEN else 
-                            '0'; -- update if transfer bit is set or cleared 
-    
-    -- half carry 
-    StatusOut(5) <= StatusIn(5) when BitMask(5) = '0' else  
-                    CarryOut(HALFCARRYBIT) when ALUOp(SUBFLAG) = OP_ADD else 
+    StatusOut(6) <= StatusIn(6) when BitMask(6) = '0' else
+                    RegA(to_integer(unsigned(RegB))) when ALUSel = PASSTHRUEN and to_integer(unsigned(RegB)) < 8 else 
+                            '0'; -- update if transfer bit is set or cleared
+
+    -- half carry
+    StatusOut(5) <= StatusIn(5) when BitMask(5) = '0' else
+                    CarryOut(HALFCARRYBIT) when ALUOp(SUBFLAG) = OP_ADD else
                     not CarryOut(HALFCARRYBIT);     -- carry flag opposite when subtracting
-     
-     -- corrected signed 
-    StatusOut(4) <= StatusIn(4) when BitMask(4) = '0' else  
-                    NFlag xor VFlag; 
-    
-    -- signed overflow 
-    -- TODO, way to do this without access to CarryOut from REGSIZE-2 ?? 
-    VFlag <= StatusIn(3) when BitMask(3) = '0' else   
-            '1' when (ALUSEL = ADDSUBEN and CarryOut(REGSIZE-1) /= CarryOut(REGSIZE-2)) else -- 1 if signed overflow  
+
+     -- corrected signed
+    StatusOut(4) <= StatusIn(4) when BitMask(4) = '0' else
+                    NFlag xor VFlag;
+
+    -- signed overflow
+    -- TODO, way to do this without access to CarryOut from REGSIZE-2 ??
+    VFlag <= StatusIn(3) when BitMask(3) = '0' else
+            '1' when (ALUSEL = ADDSUBEN and CarryOut(REGSIZE-1) /= CarryOut(REGSIZE-2)) else -- 1 if signed overflow
             '0' when (ALUSEL = ADDSUBEN or  ALUSEL = FBLOCKEN) else -- 0 if no overflow or logical op
-            NFlag xor CFlag;  --N xor C for shift operations 
-    StatusOut(3) <= VFlag;                
-     
+            NFlag xor CFlag;  --N xor C for shift operations
+    StatusOut(3) <= VFlag;
+
     -- negative
     NFlag <= StatusIn(2) when BitMask(2) = '0' else
-            RegBuff(REGSIZE-1); -- set based on sign bit 
+            RegBuff(REGSIZE-1); -- set based on sign bit
     StatusOut(2) <= NFlag;
-    
-    -- zero flag 
-    StatusOut(1) <= StatusIn(1) when BitMask(1) = '0' else 
-                    '0' when CPC = '1' and StatusIn(1) = '0' else -- and zero flag if performing cpc 
+
+    -- zero flag
+    StatusOut(1) <= StatusIn(1) when BitMask(1) = '0' else
+                    '0' when CPC = '1' and StatusIn(1) = '0' else -- and zero flag if performing cpc
                     '1' when RegBuff = ZERO8 else -- compare with 0
                     '0';
     -- carry
-    CFlag <= StatusIn(0) when BitMask(0) = '0' else 
-                    ASCout when ALUSel = ADDSUBEN and ALUOp(SUBFLAG) = OP_ADD else 
+    CFlag <= StatusIn(0) when BitMask(0) = '0' else
+                    ASCout when ALUSel = ADDSUBEN and ALUOp(SUBFLAG) = OP_ADD else
                     not ASCout when ALUSel = ADDSUBEN else     -- carry flag opposite when subtracting
-                    '1' when ALUSel = FBLOCKEN else -- set for logical operations 
-                    RegA(0); -- when ALUSel = SHIFTEN; 
-    StatusOut(0) <= CFlag;   
-end behavioral;  
-
-
-
-
-
+                    '1' when ALUSel = FBLOCKEN else -- set for logical operations
+                    RegA(0); -- when ALUSel = SHIFTEN;
+    StatusOut(0) <= CFlag;
+end behavioral;
