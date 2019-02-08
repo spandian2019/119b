@@ -103,7 +103,6 @@ package constants is
     constant PRE_ADDR   : PREPOST_ADDR := '0';
     constant POST_ADDR  : PREPOST_ADDR := '1';
 
-    -- ASKFAB way to rewrite mux to make this better?
     subtype  OFFSET_SEL is std_logic_vector(1 downto 0);
     -- Address Adder - Offset Mux In Control Signals
     constant ZERO_SEL       : OFFSET_SEL := "00"; -- Selects  0 to add
@@ -111,9 +110,9 @@ package constants is
     constant DEC_SEL        : OFFSET_SEL := "10"; -- Selects -1 to add
     constant OFFS_SEL       : OFFSET_SEL := "11"; -- Selects q offset to add
 
-    subtype OFFSET_CONST is std_logic_vector((2*REGSIZE)-1) downto 0);
+    subtype OFFSET_CONST is std_logic_vector(ADDRSIZE-1) downto 0);
+    -- number of bits in OFFSET_CONST needs to match ADDRSIZE-1 for a 16 bit address bus
     -- Address Adder - Offset constant values to add
-    -- ASKFAB - init?
     constant ZERO_OFFSET    : OFFSET_CONST := "0000000000000000"; --  0 constant to add
     constant INC_OFFSET     : OFFSET_CONST := "0000000000000001"; -- +1 constant to add
     constant DEC_OFFSET     : OFFSET_CONST := "1111111111111111"; -- -1 constant to add
