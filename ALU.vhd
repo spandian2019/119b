@@ -52,6 +52,9 @@ entity ALU is
         ALUSel      : in    ALU_SELECTS; -- operation select
         CarrySel    : in    CARRY_SEL; -- adder carry select
         BitMask     : in    std_logic_vector(REGSIZE-1 downto 0);
+        OffsetSel   : in    OFFSET_SEL;
+        q_offset    : in    std_logic_vector(Q_OFFSET_SIZE-1 downto 0);
+
 
         CPC         : in    std_logic; -- control for cpc command, to set zero flag appropriately
         AClr        : in    std_logic; -- '0' to set A to x00
@@ -63,7 +66,7 @@ entity ALU is
         StatusIn    : in    std_logic_vector(REGSIZE-1 downto 0);
 
         RegOut      : out   std_logic_vector(REGSIZE-1 downto 0); -- output result
-        StatusOut   : out   std_logic_vector(REGSIZE-1 downto 0) -- status register output
+        StatusOut   : out   std_logic_vector(REGSIZE-1 downto 0)  -- status register output
     );
 end ALU;
 
@@ -72,12 +75,13 @@ architecture behavioral of ALU is
 -- internal signals
 signal AdderOut     : std_logic_vector(REGSIZE-1 downto 0); -- adder/subtracter output
 signal ASCout       : std_logic;
+signal Bin          : std_logic_vector(REGSIZE-1 downto 0); -- B Input to the adder/subber
 
 signal Fout         : std_logic_vector(REGSIZE-1 downto 0); -- f block output
 
 signal SRout        : std_logic_vector(REGSIZE-1 downto 0); -- shifter/rotator block output
 
-signal Bout         : std_logic_vector(REGSIZE-1 downto 0); -- bit set block output
+signal Bitout       : std_logic_vector(REGSIZE-1 downto 0); -- bit set block output
 
 signal SwapOut      : std_logic_vector(REGSIZE-1 downto 0); -- swap block output
 
@@ -151,7 +155,7 @@ begin
     -- clear or set A, for use with COM or NEG
     -- TODO explain?
     GenAClr: for i in REGSIZE-1 downto 0 generate
-        comnegR(i) <= (RegA(i) and CNCtrl(OP_CN_ADD)) or CNCtrl(OP_CN_OR);
+        comnegR(i) <= (RegA(i) and CNCtrl(OP_CN_AND)) or CNCtrl(OP_CN_OR);
     end generate GenAClr;
 
     -- adder/subtracter carry in MUX
@@ -166,12 +170,17 @@ begin
             SOut        => CIn
       );
 
-    -- adder/subtracter
+    -- flip bits in B if subtracting
+    SubXOR: for i in REGSIZE-1 downto 0 generate
+        Bin(i) <= FOut(i) xor ALUOp(SUBFLAG);
+    end generate SubXOR;
+
+    -- REGSIZE bit adder/subtracter
     addersubber: Adder
-        generic map (bitsize => 8)
+        generic map (bitsize => REGSIZE)
         port map(
             A           => comnegR,
-            B           => FOut,
+            B           => Bin,
             Cin         => CIn,
             Cout        => ASCout,
             Sum         => AdderOut
@@ -194,8 +203,8 @@ begin
 
     -- transfer bit loading
     BIT_OP : for i in REGSIZE-1 downto 0 generate
-        Bout(i) <= StatusIn(6) when i = to_integer(unsigned(RegB)) else
-                   RegA(i);
+        Bitout(i)   <=  StatusIn(6) when i = to_integer(unsigned(RegB)) else
+                        RegA(i);
     end generate;
 
     -- SWAP block
@@ -220,7 +229,7 @@ begin
             SIn2        => SROut(i),
             SIn3        => SwapOut(i),
             SIn4        => MulOut(i),
-            SIn5        => Bout(i),
+            SIn5        => Bitout(i),
             SIn6        => 'X',
             SIn7        => 'X',
             SOut        => RegBuff(i)
@@ -228,7 +237,7 @@ begin
       end generate GenALUSel;
 
 
-         RegOut <= RegBuff;
+    RegOut <= RegBuff;
 
     -- Status Register logic
 

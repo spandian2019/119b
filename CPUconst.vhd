@@ -17,13 +17,130 @@ use ieee.std_logic_1164.all;
 
 package constants is
 
-    subtype  ALU_selects  is  std_logic_vector(2 downto 0);
-    --  ALU select opcode constants
-    constant AddSubEn       : ALU_selects := "000";
-    constant FBlockEn       : ALU_selects := "001";
-    constant ShiftEn        : ALU_selects := "010";
-    constant PassThruEn     : ALU_selects := "011";
-    constant MulEn          : ALU_selects := "100";
+    -----------------------
+    -- GENERAL CONSTANTS --
+    -----------------------
+    constant NIBBLE     : integer := 4; -- nibble bit size
+    constant REGSIZE    : natural := 8;
+    constant ADDRSIZE   : natural := 16;
+    constant ZERO8      : std_logic_vector(7 downto 0) := "00000000";
+    type byte is array (7 downto 0) of std_logic;
+    type word is array (15 downto 0) of std_logic;
+
+    -------------------
+    -- ALU CONSTANTS --
+    -------------------
+    -- ALU output select signals
+    subtype ALU_SELECTS is std_logic_vector(2 downto 0);
+    constant ADDSUBOUT      : ALU_SELECTS := "000";
+    constant FBLOCKOUT      : ALU_SELECTS := "001";
+    constant SHIFTOUT       : ALU_SELECTS := "010";
+    constant SWAPOUT        : ALU_SELECTS := "011";
+    constant MULOUT         : ALU_SELECTS := "100"; 
+    constant BOUT           : ALU_SELECTS := "101"; 
+
+    -- F-block operands
+    subtype  ALU_FOPS is std_logic_vector(3 downto 0);
+    constant FOP_ONES   : ALU_FOPS := "1111"; -- all ones
+    constant FOP_ZERO   : ALU_FOPS := "0000"; -- all zeros
+    constant FOP_A      : ALU_FOPS := "1100"; -- A
+    constant FOP_NOTA   : ALU_FOPS := "0011"; -- not A
+    constant FOP_B      : ALU_FOPS := "1010"; -- B
+    constant FOP_NOTB   : ALU_FOPS := "0101"; -- not B
+    constant FOP_XOR    : ALU_FOPS := "0110"; -- A xor B
+    constant FOP_XNOR   : ALU_FOPS := "1001"; -- A xnor B
+    constant FOP_AND    : ALU_FOPS := "1000"; -- A and B
+    constant FOP_NAND   : ALU_FOPS := "0111"; -- A nand B
+    constant FOP_OR     : ALU_FOPS := "1110"; -- A or B
+    constant FOP_NOR    : ALU_FOPS := "0001"; -- A nor B
+
+    -- Shifter/Rotator control signals
+    subtype  ALU_SR is std_logic_vector(1 downto 0); -- ops for s/r, add
+    constant SR_LSR     : ALU_SR := "00"; -- Logical shift right
+    constant SR_ASR     : ALU_SR := "01"; -- Arithmetic shift right
+    constant SR_ROR     : ALU_SR := "10"; -- Rotate right -- is this right? carry? 
+
+    -- Adder/Subber control signals
+    -- nSUB bit values OR with carry select values to form ALU_ADDSUB
+    subtype  ALU_ADDSUB is std_logic_vector(2 downto 0);
+    -- subtract flag values
+    constant ALU_ADD    : ALU_ADDSUB := "000"; -- add
+    constant ALU_SUB    : ALU_ADDSUB := "001"; -- sub
+    -- carry select values
+    constant RST_CARRY  : ALU_ADDSUB := "000"; -- carry in = '0'
+    constant SET_CARRY  : ALU_ADDSUB := "010"; -- carry in = '1'
+    constant CARRY_IN   : ALU_ADDSUB := "100"; -- carry in = Cin
+    constant NCARRY_IN  : ALU_ADDSUB := "110"; -- carry in = nCin
+    -- Adder/Subtractor operand indices and values
+    constant SUBFLAG    : integer := 0;     -- index of subtract flag
+    constant OP_ADD     : std_logic := '0'; -- value for adding
+    constant OP_SUB     : std_logic := '1'; -- value for subbing
+
+    -- COM and NEG control signals for AND and OR gates
+    subtype  ALU_COMNEG is std_logic_vector(1 downto 0);
+    constant OP_CN_OR   : integer := 1;
+    -- ALU_COMNEG(1) = control signal into OR gate
+    --                    set to 0 for pass thru
+    --                    set to 1 for setting high
+    constant OP_CN_AND  : integer := 0;
+    -- ALU_COMNEG(0) = control signal into AND gate
+    --                    set to 1 for pass thru
+    --                    set to 0 for setting low
+    constant COMNEG_NONE : ALU_COMNEG := "01"; -- pass thru
+    constant ALU_COM     : ALU_COMNEG := "00"; -- set to all 0s
+    constant ALU_NEG     : ALU_COMNEG := "11"; -- set to all 1s
+
+    -----------------------
+    -- DataMIU CONSTANTS --
+    -----------------------
+    -- pre and post inc/dec on the indirect addressing
+    subtype PREPOST_ADDR is std_logic;
+    constant PRE_ADDR   : PREPOST_ADDR := '0';
+    constant POST_ADDR  : PREPOST_ADDR := '1';
+
+    -- ASKFAB way to rewrite mux to make this better?
+    subtype  OFFSET_SEL is std_logic_vector(1 downto 0);
+    -- Address Adder - Offset Mux In Control Signals
+    constant ZERO_SEL       : OFFSET_SEL := "00"; -- Selects  0 to add
+    constant INC_SEL        : OFFSET_SEL := "01"; -- Selects +1 to add
+    constant DEC_SEL        : OFFSET_SEL := "10"; -- Selects -1 to add
+    constant OFFS_SEL       : OFFSET_SEL := "11"; -- Selects q offset to add
+
+    subtype OFFSET_CONST is std_logic_vector((2*REGSIZE)-1) downto 0);
+    -- Address Adder - Offset constant values to add
+    -- ASKFAB - init? 
+    constant ZERO_OFFSET    : OFFSET_CONST := "0000000000000000"; --  0 constant to add
+    constant INC_OFFSET     : OFFSET_CONST := "0000000000000001"; -- +1 constant to add
+    constant DEC_OFFSET     : OFFSET_CONST := "1111111111111111"; -- -1 constant to add
+                                                                      -- xFF is 2s complement of 1, so adding
+                                                                  -- xFF is the same as subtracting -1
+
+    -- ASKFAB
+    constant Q_OFFSET_SIZE   : integer := 6;
+    constant Q_OFFS_ZERO_PAD : std_logic_vector(ADDRSIZE-Q_OFFSET_SIZE-1 downto 0) := "0000000000";
+
+
+    ------------------------
+    -- Register CONSTANTS --
+    ------------------------
+    -- Address Adder - Address Mux In Control Signals
+    subtype  ADDR_SEL is std_logic_vector(1 downto 0);
+    constant X_SEL          : ADDR_SEL := "11"; -- Selects X Indirect Register
+    constant Y_SEL          : ADDR_SEL := "10"; -- Selects Z Indirect Register
+    constant Z_SEL          : ADDR_SEL := "00"; -- Selects Y Indirect Register
+    constant SP_SEL         : ADDR_SEL := "01"; -- Selects Stack Pointer to inc/dec
+
+    -- Address Adder - Indirect Register Address constant values
+    subtype ADDR_CONST is integer;
+    constant X_CONST    : ADDR_CONST := 26; -- location of X indirect addressing mode register
+    constant Y_CONST    : ADDR_CONST := 28; -- location of Y indirect addressing mode register
+    constant Z_CONST    : ADDR_CONST := 30; -- location of Z indirect addressing mode register
+    constant SP_CONST   : ADDR_CONST := 24; -- location of SP
+
+
+    -- Adder/Subber bit assignments
+    constant subFlag    : integer := 3;
+    constant carryBit   : integer := 2;
 
     -- Register Data In Select constants
     subtype  RegData_selects is std_logic_vector(3 downto 0);
@@ -47,44 +164,34 @@ package constants is
     constant LdSRCtrlU    : SRegLd_selects := '1';
     constant LdSRALU      : SRegLd_selects := '0';
 
-
-    constant REGSIZE    : natural := 8;
-    constant ZERO8      : std_logic_vector(7 downto 0) := "00000000";
-
-    -- Adder/Subber bit assignments
-    constant subFlag    : integer := 3;
-    constant carryBit   : integer := 2;
-
-    type byte is array (7 downto 0) of std_logic;
-    type word is array (15 downto 0) of std_logic;
-
-    type reg_array is array (31 downto 0) of byte; -- difference between subtype and type?
-    type IO_reg_array is array (63 downto 0) of byte; -- difference between subtype and type?
-
     constant SReg_addr : std_logic_vector(5 downto 0) := "111111";
 
-	 -- flag masks
-	 -- Sreg: I T H S V N Z C
-	 subtype SREG_MASK is std_logic_vector(7 downto 0);
-	 constant MASK_ADD : SREG_MASK:= "00111111"; -- add sub(except adiw, sbiw), including neg
-	 constant MASK_CP : SREG_MASK:= "00111111"; -- compares
-	 constant MASK_ADIW : SREG_MASK:= "00011111"; -- adiw, sbiw
-	 constant MASK_DECINC : SREG_MASK:= "00011110"; -- dec, inc
+    ------------------------------
+    -- Status Register Bitmasks --
+    ------------------------------
+    -- Sreg: I T H S V N Z C
+    subtype SREG_MASK is std_logic_vector(7 downto 0);
+    constant MASK_ADD : SREG_MASK:= "00111111"; -- add sub(except adiw, sbiw), including neg
+    constant MASK_CP : SREG_MASK:= "00111111"; -- compares
+    constant MASK_ADIW : SREG_MASK:= "00011111"; -- adiw, sbiw
+    constant MASK_DECINC : SREG_MASK:= "00011110"; -- dec, inc
 
-	 constant MASK_ANDOR : SREG_MASK:= "00011110"; -- and, or
-	 constant MASK_COM : SREG_MASK:= "00011111"; -- com
-	 constant MASK_NEG : SREG_MASK:= "00111111"; -- neg
-	 constant MASK_EOR : SREG_MASK:= "00011110"; -- eor
+    constant MASK_ANDOR : SREG_MASK:= "00011110"; -- and, or
+    constant MASK_COM : SREG_MASK:= "00011111"; -- com
+    constant MASK_NEG : SREG_MASK:= "00111111"; -- neg
+    constant MASK_EOR : SREG_MASK:= "00011110"; -- eor
 
-	 constant MASK_SHIFT : SREG_MASK:= "00011111"; -- asr, lsr, ror
+    constant MASK_SHIFT : SREG_MASK:= "00011111"; -- asr, lsr, ror
 
-	 constant MASK_BLD : SREG_MASK:= "00000000"; -- bld
-	 constant MASK_BST : SREG_MASK:= "01000000"; -- bst
-	 constant T_SREG : natural := 6; -- transfer bit number in sreg
-	 constant T_IR : natural := 9; -- transfer bit number in IR
+    constant MASK_BLD : SREG_MASK:= "00000000"; -- bld
+    constant MASK_BST : SREG_MASK:= "01000000"; -- bst
 
-	 constant MASK_MUL : SREG_MASK:= "00000001"; -- mul
-	 constant MASK_NONE : SREG_MASK:= "00000000"; -- change nothing
+    constant MASK_MUL : SREG_MASK:= "00000001"; -- mul
+    constant MASK_NONE : SREG_MASK:= "00000000"; -- change nothing
+
+    constant T_SREG : natural := 6; -- transfer bit number in sreg
+    constant T_IR : natural := 9; -- transfer bit number in IR
+
 
 end package constants;
 
