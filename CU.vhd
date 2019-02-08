@@ -92,7 +92,7 @@ begin
     -- synchronously decodes IR inputs
     decoder : process (CLK)
     begin
-        if (rising_edge(CLK)) then
+        --if (rising_edge(CLK)) then
             -- sets cycle number for op_codes
             -- defaults to 1
             cycle_num <= "01";
@@ -390,7 +390,7 @@ begin
                 LoadIn <= LdIO;
             end if;
 
-        end if;
+        --end if;
     end process decoder;
 
     -- load enable signal telling when to fetch next instruction
