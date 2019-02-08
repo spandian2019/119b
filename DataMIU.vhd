@@ -1,30 +1,30 @@
 ----------------------------------------------------------------------------
--- 
--- 
+--
+--
 -- Data Memory Interface Unit
 --
--- The data memory access unit generates the addresses and reads/writes 
--- data for the data memory. The data is addressed as 8-bits with 16-bits 
--- of address. The address may come from the instruction, the X, Y, Z, or 
--- SP registers, and may be pre/post incremented/decremented or with 
--- a 6-bit unsigned offset. The CU handles this with select signals for 
--- the source, offset, and pre/post changes. 
+-- The data memory access unit generates the addresses and reads/writes
+-- data for the data memory. The data is addressed as 8-bits with 16-bits
+-- of address. The address may come from the instruction, the X, Y, Z, or
+-- SP registers, and may be pre/post incremented/decremented or with
+-- a 6-bit unsigned offset. The CU handles this with select signals for
+-- the source, offset, and pre/post changes.
 --
 -- Ports:
---  Input: 
+--  Input:
 --        DataAddr - 16-bit data address source from CU
 --        XAddr    - 16-bit address source from register X
 --        YAddr    - 16-bit address source from register Y
 --        ZAddr    - 16-bit address source from register Z
---        AddrSel  - 2-bit address source select, from CU 
---        QOffset  - 6-bit unsigned address offset source from CU 
---        OffsetSel - 2-bit address offset source select from CU 
---        PreSel   - pre/post address select from CU 
+--        AddrSel  - 2-bit address source select, from CU
+--        QOffset  - 6-bit unsigned address offset source from CU
+--        OffsetSel - 2-bit address offset source select from CU
+--        PreSel   - pre/post address select from CU
 --        DataRd   - indicates data memory is being read
---        DataWr   - indicates data memory is being 
+--        DataWr   - indicates data memory is being
 --
 --  Outputs:
---        DataReg - 16-bit data address register source 
+--        DataReg - 16-bit data address register source
 --        DataAB  - 16-bit program address bus
 --
 -- Revision History:
@@ -38,22 +38,22 @@ use ieee.numeric_std.all;
 
 use work.opcodes.all;
 
-entity DataMIU is 
+entity DataMIU is
     port(
         DataAddr    : in std_logic_vector(ADDRSIZE-1 downto 0); -- data address source from registers
-        
-        QOffset     : in std_logic_vector(Q_OFFSET_SIZE-1 downto 0);  -- unsigned address offset source from CU 
-        OffsetSel   : in OFFSET_SEL;-- address offset source select from CU 
-        
-        PreSel      : in PREPOST_ADDR; -- pre/post address select from CU 
-        
+
+        QOffset     : in std_logic_vector(Q_OFFSET_SIZE-1 downto 0);  -- unsigned address offset source from CU
+        OffsetSel   : in OFFSET_SEL;-- address offset source select from CU
+
+        PreSel      : in PREPOST_ADDR; -- pre/post address select from CU
+
         --DataRd      : in std_logic; -- indicates data memory is being read
         --DataWr      : in std_logic; -- indicates data memory is being written
-        
-        DataReg     : out std_logic_vector(ADDRSIZE-1 downto 0); -- data address register source 
+
+        DataReg     : out std_logic_vector(ADDRSIZE-1 downto 0); -- data address register source
         DataAB      : out std_logic_vector(ADDRSIZE-1 downto 0) -- program address bus
      );
-end DataMIU; 
+end DataMIU;
 
 architecture DataMIU_arc of DataMIU is
 
@@ -95,9 +95,9 @@ begin
     PrePostMux:  for i in ADDRSIZE-1 downto 0 generate
       OffsetMuxIni: Mux2to1
         port map(
-            S0          => ALUOp(PREPOSTFLAG),
-            SIn0        => AddrAdderOut(i),
-            SIn1        => DataAddr(i),
+            S0          => PreSel,
+            SIn0        => DataAddr(i),
+            SIn1        => AddrAdderOut(i),
             SOut        => DataAB(i)
       );
       end generate PrePostMux;

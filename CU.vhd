@@ -34,28 +34,38 @@ entity CU is
         SReg    : in std_logic_vector(REGSIZE-1 downto 0);      -- status flags
         load    : buffer std_logic;                     -- load output to tell IR register
                                                         --  when to fetch new instruction
-        -- to registers
+
+        Immed       : out std_logic_vector(REGSIZE-1 downto 0);   -- immediate value K
+        ImmedEn     : out std_logic;
+
+        -- to register unit
         RegWEn      : out std_logic;                    -- register write enable
         RegWSel     : out std_logic_vector(RADDRSIZE-1 downto 0); -- register write select
         RegSelA     : out std_logic_vector(RADDRSIZE-1 downto 0); -- register A select
         RegSelB     : out std_logic_vector(RADDRSIZE-1 downto 0); -- register B select
-        LoadIn      : out std_logic_vector(1 downto 0); -- selects data line into reg
-        LoadReg     : out std_logic_vector(1 downto 0); -- signals which reg output immediate 
-                                                        --  value gets outputted through
+        IORegWEn    : out std_logic;                      -- IN command enable
+        IORegWSel   : out std_logic_vector(IOADDRSIZE-1 downto 0);   -- IO register address bus
+        IndWEn      : out std_logic;
+        IndAddrSel  : out ADDR_SEL;
+        IOOutSel    : out std_logic;
+
+        DataRd          : out std_logic; -- indicates data memory is being read
+        DataWr          : out std_logic; -- indicates data memory is being written
+
+        IORegOutEn  : out   std_logic;                      -- OUT command enable
+
         -- to ALU and SReg
-        ALUfop      : out ALU_FOPS; -- operation control signals
-        ALUsr       : out ALU_SR;
         ALUaddsub   : out ALU_ADDSUB;
+        ALUsr       : out ALU_SR;
+        ALUfop      : out ALU_FOPS; -- operation control signals
         ALUcomneg   : out ALU_COMNEG;
         ALUSel      : out ALU_SELECTS; -- operation select
         bitmask     : out BIT_MASK; -- mask for writing to flags (SReg)
+        CPC         : out std_logic;
 
-        -- I/O
-        IORegInEn   : out   std_logic;                      -- IN command enable
-        IORegOutEn  : out   std_logic;                      -- OUT command enable
-        SRegOut     : out   std_logic_vector(REGSIZE-1 downto 0);   -- status reg output bus
+        LoadIn      : out std_logic_vector(1 downto 0); -- selects data line into reg
         SRegLd      : out   std_logic;                      -- select line to mux status reg source
-        K           : out   std_logic_vector(REGSIZE-1 downto 0);   -- immediate value K
+
 
         ---- Program memory access
         --ProgAddr: out std_logic_vector(15 downto 0); -- address source for program memory unit
@@ -66,15 +76,12 @@ entity CU is
         DataAddrSel     : out ADDR_SEL;  -- data address source select
         DataOffsetSel   : out OFFSET_SEL;-- data address offset source select
         PreSel          : out PREPOST_ADDR; -- data pre/post address select
-        DataRd          : out std_logic; -- indicates data memory is being read
-        DataWr          : out std_logic; -- indicates data memory is being written
-        DataAddr        : out std_logic_vector(ADDRSIZE-1 downto 0); -- address source for data memory unit
-        AddrOffset      : out std_logic_vector(Q_OFFSET_SIZE-1 downto 0); -- address offset for data memory unit
+        QOffset         : out std_logic_vector(Q_OFFSET_SIZE-1 downto 0); -- address offset for data memory unit
 
         ---- Stack
         --StackEn     : out std_logic; -- stack enable signal
         --StackPush   : out std_logic; -- stack push/pop control
-        --Reset       : out std_logic -- active low reset signal
+        Reset       : out std_logic -- active low reset signal
 
         CLK         : in    std_logic                       -- system clock
     );
@@ -86,306 +93,365 @@ end CU;
 --
 
 architecture RISC of CU is
-    signal cycle_num    :   std_logic_vector(1 downto 0) := "00";
+    signal cycle_num    :   OP_CYCLE := 0CYCLES;
     signal cycle        :   std_logic_vector(1 downto 0) := "00";
 begin
 
     -- asynchronously decodes IR inputs
-    decoder : process (CLK)
+    decoder : process
     begin
             -- sets cycle number for op_codes
-            -- defaults to 1
-            cycle_num <= "01";
-            -- register default values
-            K           <= IR(11 downto 8) & IR(3 downto 0);
-            RegSelA     <= IR(8 downto 4);
-            RegWEn      <= REG_WRITE_EN;
-            IORegInEn   <= '0';
-            IORegOutEn  <= '0';
-            LoadIn      <= LdALU;
-            LoadReg     <= LoadNone;
-            SRegLd      <= LdSRALU;
+            -- defaults operations to 1 cycle
+            cycle_num <= 1CYCLE;
+            -- control signals default values, reset all
+            -- this way each operation only enables actions
+            RegWEn      <= WRITE_DIS;
+            IORegWEn    <= WRITE_DIS;
+            IndWEn      <= WRITE_DIS;
+            ImmedEn     <= IMM_DIS;
             bitmask     <= MASK_NONE;
+            CPC         <= CPC_RST;
+            -- set F Block to pass through B Register Value
+            ALUfop      <= FOP_B;
+            -- set COMNEG block to pass through B Register Value
+            ALUcomneg   <= COMNEG_NONE;
 
-            -- 3 MSBs of IR for AVR all use adder/subber
-            --  block for ALU ops except for those that
-            --  are MULS ops. These are not supported so:
-            -- considering single byte adder/subber ops
-            if  std_match(IR, "000-------------") then
-                -- enable Adder/Subber operation
-                ALUSel <= AddSubEn;
-                -- subber flag mapped in IR as function of 2 bits
-                ALUOp(subFlag)  <= IR(11) xor IR(10);
-                -- carry/nborrow bit mapped in IR
-                if (IR(12) xor IR(11) xor IR(10)) = '1' then
-                    -- send carry bit to ALU
-                    ALUOp(carryBit) <= SReg(0);
-                else
-                    -- all no carry operations use same logic block with 
-                    -- carry in mapped in IR
-                    --  clear active-hi carry for add
-                    --  clear active-lo borrow for sub
-                    -- maps same as to subFlag
-                    ALUOp(carryBit) <= IR(11) xor IR(10);
-                end if;
-                -- CP and CPC doesn't rewrite register value, mapped in IR
-                RegWEn <= IR(11);
+      --      -- considering single byte adder/subber ops:
+      --      -- ADC, ADD, SBC, SUB, CPC, CP
+      --      -- all of these have the top three bits in IR cleared
+      --      if  std_match(IR, "000-------------") then
+      --      --  000ooordddddrrrr  -- IR
+      --          RegSelA <= IR(8 downto 4);
+      --          RegSelB <= IR(9) & IR(3 downto 0);
+      --          RegWSel <= IR(8 downto 4);
+      --          BitMask <= MASK_ADD;
 
-                RegSelB <= IR(9) & IR(3 downto 0);
-                RegWSel <= IR(8 downto 4);
-                BitMask <= MASK_ADD;
-            end if;
+      --          -- enable Adder/Subber output
+      --          ALUSel <= ADDSUBOUT;
+      --          -- write enable encoded in IR
+      --          -- CP and CPC doesn't rewrite register value, mapped in IR
+      --          RegWEn <= IR(11);
+      --          -- subber flag mapped in IR as function of 2 bits
+      --          ALUaddsub(subFlag)  <= IR(11) xor IR(10);
+      --          -- carry/nborrow bit mapped in IR
+      --          if (IR(12) xor IR(11) xor IR(10)) = '1' then
+      --              -- send carry bit to ALU
+      --              ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
+      --          else
+      --              -- all no carry operations use same logic block with 
+      --              -- carry in mapped in IR
+      --              --  clear active-hi carry for add
+      --              --  clear active-lo borrow for sub
+      --              -- maps same as to subFlag
+      --              if IR(11) xor IR(10) = '1' then
+      --                  ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;
+      --              else
+      --                  ALUaddsub(CARRY_S1 downto CARRY_S0) <= RST_CARRY;
+      --              end if;
+      --          end if;
+      --      end if;
 
-            -- considering word adder/subber ops
-            if  std_match(IR, OpADIW) or std_match(IR, OpSBIW) then
-                -- takes 2 cycles to complete operation
-                cycle_num <= "10";
-                -- enable Adder/Subber operation
-                ALUSel <= AddSubEn;
-                -- subFlag mapped in IR
-                ALUOp(subFlag) <= IR(8);
-                -- immediate value loads into second operand
-                LoadReg <= LoadB;
+      --      -- considering word adder/subber ops
+      --      if  std_match(IR, OpADIW) or std_match(IR, OpSBIW) then
+      --      --  1001011oKKddKKKK  -- IR
+      --          RegSelA <= IR(8 downto 4);
+      --          RegSelB <= IR(9) & IR(3 downto 0);
+      --          RegWSel <= IR(8 downto 4);
+      --          BitMask <= MASK_ADIW;
 
-                -- value in IR is offset added to register 24
-                --  possible operands include {24, 26, 28, 30}
-                --  low byte operation uses above bytes while high byte
-                --    operation uses the next highest byte
+      --          -- takes 2 cycles to complete operation
+      --          cycle_num <= 2CYCLES;
+      --          -- enable Adder/Subber operation
+      --          ALUSel <= ADDSUBOUT;
+      --          -- subFlag mapped in IR
+      --          ALUaddsub(subFlag) <= IR(8);
+      --          -- immediate value loads into second operand
+      --          LoadReg <= LoadB;
 
-                -- if just loaded IR, doing first cycle
-                if load = '1' then
-                    -- mapping to immediate value in IR, max value of 63
-                    K <= "00" & IR(7 downto 6) & IR(3 downto 0);
-                    -- add/sub op mapped in 
-                    ALUOp(subFlag)  <= IR(8);
-                    -- carry/nborrow cleared
-                    ALUOp(carryBit) <= IR(8);
-                    -- limits operand addresses
-                    RegSelA <= "11" & IR(5 downto 4) & '0';
-                    RegWSel <= "11" & IR(5 downto 4) & '0';
-                elsif load = '0' then
-                    -- add in 0
-                    K <= (others => '0');
-                    -- carry out from low byte carries in to high byte add
-                    ALUOp(carryBit) <= SReg(0);
-                    -- previous operand addresses + 1
-                    RegSelA <= "11" & IR(5 downto 4) & '1';
-                    RegWSel <= "11" & IR(5 downto 4) & '1';
-                end if;
+      --          -- value in IR is offset added to register 24
+      --          --  possible operands include {24, 26, 28, 30}
+      --          --  low byte operation uses above bytes while high byte
+      --          --    operation uses the next highest byte
+
+      --          -- if just loaded IR, doing first cycle
+      --          if load = '1' then
+      --              -- mapping to immediate value in IR, max value of 63
+      --              K <= "00" & IR(7 downto 6) & IR(3 downto 0);
+      --              -- add/sub op mapped in 
+      --              ALUaddsub(subFlag)  <= IR(8);
+      --              -- carry/nborrow cleared
+      --              if IR(8) = '1' then
+      --                  ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;
+      --              else
+      --                  ALUaddsub(CARRY_S1 downto CARRY_S0) <= RST_CARRY;
+      --              end if;
+      --              -- limits operand addresses
+      --              RegSelA <= "11" & IR(5 downto 4) & '0';
+      --              RegWSel <= "11" & IR(5 downto 4) & '0';
+      --          elsif load = '0' then
+      --              -- add in 0
+      --              K <= (others => '0');
+      --              -- carry out from low byte carries in to high byte add
+      --              ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
+      --              -- previous operand addresses + 1
+      --              RegSelA <= "11" & IR(5 downto 4) & '1';
+      --              RegWSel <= "11" & IR(5 downto 4) & '1';
+      --          end if;
                 
-                BitMask <= MASK_ADIW;
-            end if;
+      --      end if;
 
-            -- considering word multiply op
-            if  std_match(IR, OpMUL) then
-                -- takes 2 cycles to complete operation
-                cycle_num <= "10";
-                -- enable MUL operation
-                ALUSel <= MulEn;
+      --      -- considering word multiply op
+      --      if  std_match(IR, OpMUL) then
+      --          -- takes 2 cycles to complete operation
+      --          cycle_num <= "10";
+      --          -- enable MUL operation
+      --          ALUSel <= MulEn;
 
-                -- output of MUL op is saved in R1:R0
-                --  low byte operation uses above bytes while high byte
-                --    operation uses the next highest byte
+      --          -- output of MUL op is saved in R1:R0
+      --          --  low byte operation uses above bytes while high byte
+      --          --    operation uses the next highest byte
 
-                RegSelB <= IR(9) & IR(3 downto 0);
-                -- first do low byte multiply
-                if cycle = "00" then
-                    RegWSel <= "00000";
-                elsif cycle = "01" then
-                    RegWSel <= "00001";
-                end if;
+      --          RegSelB <= IR(9) & IR(3 downto 0);
+      --          -- first do low byte multiply
+      --          if cycle = "00" then
+      --              RegWSel <= "00000";
+      --          elsif cycle = "01" then
+      --              RegWSel <= "00001";
+      --          end if;
                 
-                BitMask <= MASK_MUL;
+      --          BitMask <= MASK_MUL;
+      --      end if;
+
+      --      -- considering immediate subber operations
+      --      if  std_match(IR, OpSUBI) or std_match(IR, OpSBCI) or std_match(IR, OpCPI) then
+      --          -- enable Adder/Subber operation
+      --          ALUSel <= AddSubEn;
+      --          -- carry/nborrow bit mapped in IR
+      --          if IR(12) = '1' then
+      --              -- send carry bit to ALU
+      --              ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
+      --          else
+      --              -- all no carry operations use same logic block with 
+      --              -- carry in mapped in IR
+      --              --  clear active-hi carry for add
+      --              --  clear active-lo borrow for sub
+      --              -- maps same as to subFlag
+      --              ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;
+      --          end if;
+      --          -- subbing so subFlag active
+      --          ALUaddsub(subFlag)  <= '1';
+      --          -- CPI doesn't rewrite register, mapped in IR
+      --          RegWEn <= IR(14);
+      --          -- immediate value loads into second operand
+      --          LoadReg <= LoadB;
+      --          RegSelA <= '1' & IR(7 downto 4);
+      --          RegWSel <= '1' & IR(7 downto 4);
+      --          BitMask <= MASK_ADD;
+      --      end if;
+
+      --      -- considering incrementing/decrementing operations
+      --      if  std_match(IR, OpINC) or std_match(IR, OpDEC) then
+      --          -- enable Adder/Subber operation
+      --          ALUSel <= AddSubEn;
+      --          -- carry in mapped in IR
+      --          --  clear active-hi carry for add
+      --          --  clear active-lo borrow for sub
+      --          -- maps same as to subFlag
+      --          if IR(3) = '1' then
+      --              ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;
+      --          else
+      --              ALUaddsub(CARRY_S1 downto CARRY_S0) <= RST_CARRY;
+      --          end if;
+      --          -- add/sub conditional mapped in IR
+      --          ALUaddsub(subFlag)  <= IR(3);
+      --          K <= "00000001";
+      --          -- immediate value loads into second operand
+      --          LoadReg <= LoadB;
+      --          RegWSel <= IR(8 downto 4);
+      --          BitMask <= MASK_DECINC;
+      --      end if;
+
+      --      -- considering COM and NEG operations
+      --      if  std_match(IR, OpCOM) or std_match(IR, OpNEG) then
+      --          -- enable Adder/Subber operation
+      --          ALUSel <= AddSubEn;
+      --          -- carry in mapped in IR
+      --          --  clear active-hi carry for add
+      --          --  clear active-lo borrow for sub
+      --          -- clear nborrow
+      --          ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;
+      --          -- always subbing so set
+      --          ALUaddsub(subFlag)  <= '1';
+      --          -- either subtract operand from xFF or x00
+      --          -- xFF for NEG
+      --          -- x00 for COM
+      --          K <= (others => IR(0));
+      --          -- immediate value loads into first operand
+      --          LoadReg <= LoadA;
+      --          -- data into register value from register A output
+      --          LoadIn  <= LdRegA;
+      --          RegWSel <= IR(8 downto 4);
+      --          -- set bitmask based on if COM op or NEG op
+      --          if IR(0) = '0' then
+      --              BitMask <= MASK_COM;
+      --          else
+      --              BitMask <= MASK_NEG;
+      --          end if;
+      --      end if;
+
+      --      if  std_match(IR, OpAND) or std_match(IR, OpANDI) then
+      --          -- enable F Block Operation
+      --          ALUSel <= FBlockEn;
+      --          -- select AND operation
+      --          ALUfop <= OP_AND;
+      --          if IR(14) = '1' then
+      --              -- immediate value loads into second operand if ANDI op
+      --              LoadReg <= LoadB;
+      --          end if;
+      --          RegWSel <= IR(8 downto 4);
+      --          -- ANDI operation only maps to upper half of register space
+      --          if IR(14) = '1' then
+      --              RegSelA(4) <= '1';
+      --              RegWSel(4) <= '1';
+      --          end if;
+      --          RegSelB <= IR(9) & IR(3 downto 0);
+      --          BitMask <= MASK_ANDOR;
+      --      end if;
+
+      --      if  std_match(IR, OpOR) or std_match(IR, OpORI) then
+      --          -- enable F Block Operation
+      --          ALUSel <= FBlockEn;
+      --          -- select OR operation
+      --          ALUfop <= OP_OR;
+      --          if IR(14) = '1' then
+      --              -- immediate value loads into second operand
+      --              LoadReg <= LoadB;
+      --          end if;
+      --          RegWSel <= IR(8 downto 4);
+      --          -- ORI operation only maps to upper half of register space
+      --          if IR(14) = '1' then
+      --              RegSelA(4) <= '1';
+      --              RegWSel(4) <= '1';
+      --          end if;
+      --          RegSelB <= IR(9) & IR(3 downto 0);
+      --          BitMask <= MASK_ANDOR;
+      --      end if;
+
+      --      if  std_match(IR, OpEOR) then
+      --          -- enable F Block Operation
+      --          ALUSel <= FBlockEn;
+      --          -- select XOR operation
+      --          ALUfop <= OP_XOR;
+      --          RegWSel <= IR(8 downto 4);
+      --          RegSelB <= IR(9) & IR(3 downto 0);
+      --          BitMask <= MASK_EOR;
+      --      end if;
+
+      --      if  std_match(IR, OpLSR) then
+      --          -- enable shifter/rotator operation
+      --          ALUSel <= ShiftEn;
+      --          -- select LSR operation
+      --          ALUsr <= OP_LSR;
+      --          RegWSel <= IR(8 downto 4);
+      --          BitMask <= MASK_SHIFT;
+      --      end if;
+
+      --      if  std_match(IR, OpASR) then
+      --          -- enable shifter/rotator operation
+      --          ALUSel <= ShiftEn;
+      --          -- select LSR operation
+      --          ALUsr <= OP_ASR;
+      --          RegWSel <= IR(8 downto 4);
+      --          BitMask <= MASK_SHIFT;
+      --      end if;
+
+      --      if  std_match(IR, OpROR) then
+      --          -- enable shifter/rotator operation
+      --          ALUSel <= ShiftEn;
+      --          -- select LSR operation
+      --          ALUOp <= OP_ROR;
+      --          -- ROR op uses carry bit from last operation ----------- TODO
+      --          ALUsr(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
+      --          RegWSel <= IR(8 downto 4);
+      --          BitMask <= MASK_SHIFT;
+      --      end if;
+
+      --      if  std_match(IR, OpBCLR) or std_match(IR, OpBSET) then
+      --          -- status register source is Control Unit
+      --          SRegLd <= LdSRCtrlU;
+      --          -- set or reset all status register outputs
+      --          SRegOut <= (others => not IR(7));
+      --          -- specific bit to be cleared/set uses bitmask
+      --          --  clear bitmask
+      --          bitmask <= (others => '0');
+      --          --  then set proper bit high in bitmask
+      --          bitmask(conv_integer(IR(6 downto 4))) <= '1';
+      --      end if;
+
+      --      if  std_match(IR, OpBLD) or std_match(IR, OpBST) then
+					 --ALUOp(0) <= SReg(6); -- send transfer bit to ALU
+      --          ALUSel <= PassThruEn;
+      --          RegWSel <= IR(8 downto 4);
+      --          -- clear bitmask
+      --          BitMask <= (others => '0');
+      --          -- store/loads T bit
+      --          BitMask(T_SREG) <= IR(T_IR);
+      --      end if;
+
+      --      if std_match(IR, OpSWAP) then
+      --          -- register array handles nibble swapping
+      --          LoadReg <= LoadSwap;
+      --          LoadIn <= LdRegA;
+      --          RegWSel <= IR(8 downto 4);
+      --          BitMask <= MASK_NONE;
+      --      end if;
+
+      --      if std_match(IR, OpIN) or std_match(IR, OpOUT) then
+      --          -- not done
+      --          RegWSel <= IR(8 downto 4);
+      --          RegWEn     <= IR(11);
+      --          IORegInEn  <= not IR(11);
+      --          IORegOutEn <= IR(11);
+      --          LoadIn <= LdIO;
+      --      end if;
+
+            if  std_match(IR, OpLDX) or
+                std_match(IR, OpLDXI) or
+                std_match(IR, OpLDXD) or
+                std_match(IR, OpLDYI) or
+                std_match(IR, OpLDYD) or
+                std_match(IR, OpLDZI) or
+                std_match(IR, OpLDZD) then
+                -- 1001000dddddoooo
+                    -- takes 2 cycles to complete operation
+                    cycle_num <= 2CYCLES;
+                    -- offset values for 0, +1, -1 stored in low two bits of IR
+                    -- add  0 -> "00" = ZERO_SEL
+                    -- add +1 -> "01" = INC_SEL
+                    -- add -1 -> "10" = DEC_SEL
+                    DataOffsetSel <= IR(1 downto 0);
+                    -- pre flag setting stored in IR(1)
+                    -- pre-op -> IR(1) = '1' = PRE_ADDR
+                    -- pre-op -> IR(0) = '0' = POST_ADDR
+                    PreSel <= IR(1);
+                    -- indirect addressing stored in IR(3..2)
+                    -- X -> IR(3..2) = "11" = X_SEL
+                    -- Y -> IR(3..2) = "10" = Y_SEL
+                    -- Z -> IR(3..2) = "00" = Z_SEL
+                    DataAddrSel <= IR(3 downto 2);
+                    -- Operand 1 is the register being written to, loc in IR(8..4)
+                    RegWSel <= IR(8 downto 4);
+                    -- during first cycle
+                    if load = '1' then
+                        -- do nothing
+                    else
+                        -- DataRd = CLK for the second cycle in Ld operations
+                        DataRd <= CLK;
+                        RegWEn <= WRITE_EN;
+                        -- RegIn into register needs to be DataDB here
+                    end if;
             end if;
 
-            -- considering immediate subber operations
-            if  std_match(IR, OpSUBI) or std_match(IR, OpSBCI) or std_match(IR, OpCPI) then
-                -- enable Adder/Subber operation
-                ALUSel <= AddSubEn;
-                -- carry/nborrow bit mapped in IR
-                if IR(12) = '1' then
-                    -- send carry bit to ALU
-                    ALUOp(carryBit) <= SReg(0);
-                else
-                    -- all no carry operations use same logic block with 
-                    -- carry in mapped in IR
-                    --  clear active-hi carry for add
-                    --  clear active-lo borrow for sub
-                    -- maps same as to subFlag
-                    ALUOp(carryBit) <= '1';
-                end if;
-                -- subbing so subFlag active
-                ALUOp(subFlag)  <= '1';
-                -- CPI doesn't rewrite register, mapped in IR
-                RegWEn <= IR(14);
-                -- immediate value loads into second operand
-                LoadReg <= LoadB;
-                RegSelA <= '1' & IR(7 downto 4);
-                RegWSel <= '1' & IR(7 downto 4);
-                BitMask <= MASK_ADD;
-            end if;
-
-            -- considering incrementing/decrementing operations
-            if  std_match(IR, OpINC) or std_match(IR, OpDEC) then
-                -- enable Adder/Subber operation
-                ALUSel <= AddSubEn;
-                -- carry in mapped in IR
-                --  clear active-hi carry for add
-                --  clear active-lo borrow for sub
-                -- maps same as to subFlag
-                ALUOp(carryBit) <= IR(3);
-                -- add/sub conditional mapped in IR
-                ALUOp(subFlag)  <= IR(3);
-                K <= "00000001";
-                -- immediate value loads into second operand
-                LoadReg <= LoadB;
-                RegWSel <= IR(8 downto 4);
-                BitMask <= MASK_DECINC;
-            end if;
-
-            -- considering COM and NEG operations
-            if  std_match(IR, OpCOM) or std_match(IR, OpNEG) then
-                -- enable Adder/Subber operation
-                ALUSel <= AddSubEn;
-                -- carry in mapped in IR
-                --  clear active-hi carry for add
-                --  clear active-lo borrow for sub
-                -- clear nborrow
-                ALUOp(carryBit) <= '1';
-                -- always subbing so set
-                ALUOp(subFlag)  <= '1';
-                -- either subtract operand from xFF or x00
-                -- xFF for NEG
-                -- x00 for COM
-                K <= (others => IR(0));
-                -- immediate value loads into first operand
-                LoadReg <= LoadA;
-                -- data into register value from register A output
-                LoadIn  <= LdRegA;
-                RegWSel <= IR(8 downto 4);
-                -- set bitmask based on if COM op or NEG op
-                if IR(0) = '0' then
-                    BitMask <= MASK_COM;
-                else
-                    BitMask <= MASK_NEG;
-                end if;
-            end if;
-
-            if  std_match(IR, OpAND) or std_match(IR, OpANDI) then
-                -- enable F Block Operation
-                ALUSel <= FBlockEn;
-                -- select AND operation
-                ALUOp <= OP_AND;
-                if IR(14) = '1' then
-                    -- immediate value loads into second operand if ANDI op
-                    LoadReg <= LoadB;
-                end if;
-                RegWSel <= IR(8 downto 4);
-                -- ANDI operation only maps to upper half of register space
-                if IR(14) = '1' then
-                    RegSelA(4) <= '1';
-                    RegWSel(4) <= '1';
-                end if;
-                RegSelB <= IR(9) & IR(3 downto 0);
-                BitMask <= MASK_ANDOR;
-            end if;
-
-            if  std_match(IR, OpOR) or std_match(IR, OpORI) then
-                -- enable F Block Operation
-                ALUSel <= FBlockEn;
-                -- select OR operation
-                ALUOp <= OP_OR;
-                if IR(14) = '1' then
-                    -- immediate value loads into second operand
-                    LoadReg <= LoadB;
-                end if;
-                RegWSel <= IR(8 downto 4);
-                -- ORI operation only maps to upper half of register space
-                if IR(14) = '1' then
-                    RegSelA(4) <= '1';
-                    RegWSel(4) <= '1';
-                end if;
-                RegSelB <= IR(9) & IR(3 downto 0);
-                BitMask <= MASK_ANDOR;
-            end if;
-
-            if  std_match(IR, OpEOR) then
-                -- enable F Block Operation
-                ALUSel <= FBlockEn;
-                -- select XOR operation
-                ALUOp <= OP_XOR;
-                RegWSel <= IR(8 downto 4);
-                RegSelB <= IR(9) & IR(3 downto 0);
-                BitMask <= MASK_EOR;
-            end if;
-
-            if  std_match(IR, OpLSR) then
-                -- enable shifter/rotator operation
-                ALUSel <= ShiftEn;
-                -- select LSR operation
-                ALUOp <= OP_LSR;
-                RegWSel <= IR(8 downto 4);
-                BitMask <= MASK_SHIFT;
-            end if;
-
-            if  std_match(IR, OpASR) then
-                -- enable shifter/rotator operation
-                ALUSel <= ShiftEn;
-                -- select LSR operation
-                ALUOp <= OP_ASR;
-                RegWSel <= IR(8 downto 4);
-                BitMask <= MASK_SHIFT;
-            end if;
-
-            if  std_match(IR, OpROR) then
-                -- enable shifter/rotator operation
-                ALUSel <= ShiftEn;
-                -- select LSR operation
-                ALUOp <= OP_ROR;
-                -- ROR op uses carry bit from last operation
-                ALUOp(carryBit) <= SReg(0);
-                RegWSel <= IR(8 downto 4);
-                BitMask <= MASK_SHIFT;
-            end if;
-
-            if  std_match(IR, OpBCLR) or std_match(IR, OpBSET) then
-                -- status register source is Control Unit
-                SRegLd <= LdSRCtrlU;
-                -- set or reset all status register outputs
-                SRegOut <= (others => not IR(7));
-                -- specific bit to be cleared/set uses bitmask
-                --  clear bitmask
-                bitmask <= (others => '0');
-                --  then set proper bit high in bitmask
-                bitmask(conv_integer(IR(6 downto 4))) <= '1';
-            end if;
-
-            if  std_match(IR, OpBLD) or std_match(IR, OpBST) then
-					 ALUOp(0) <= SReg(6); -- send transfer bit to ALU
-                ALUSel <= PassThruEn;
-                RegWSel <= IR(8 downto 4);
-                -- clear bitmask
-                BitMask <= (others => '0');
-                -- store/loads T bit
-                BitMask(T_SREG) <= IR(T_IR);
-            end if;
-
-            if std_match(IR, OpSWAP) then
-                -- register array handles nibble swapping
-                LoadReg <= LoadSwap;
-                LoadIn <= LdRegA;
-                RegWSel <= IR(8 downto 4);
-                BitMask <= MASK_NONE;
-            end if;
-
-            if std_match(IR, OpIN) or std_match(IR, OpOUT) then
-                -- not done
-                RegWSel <= IR(8 downto 4);
-                RegWEn     <= IR(11);
-                IORegInEn  <= not IR(11);
-                IORegOutEn <= IR(11);
-                LoadIn <= LdIO;
-            end if;
     end process decoder;
 
     -- load enable signal telling when to fetch next instruction

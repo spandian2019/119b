@@ -46,19 +46,15 @@ use work.ALUconstants.all;
 entity ALU is
     port(
         -- from CU
-        -- TODO add control lines
-        ALUOp       : in    ALU_OPS; -- add/sub, shift/rotate operation control signals
-        ALUFOp      : in    ALU_FOPS; -- F-block operation control signals
-        ALUSel      : in    ALU_SELECTS; -- operation select
-        CarrySel    : in    CARRY_SEL; -- adder carry select
-        BitMask     : in    std_logic_vector(REGSIZE-1 downto 0);
-        OffsetSel   : in    OFFSET_SEL;
-        q_offset    : in    std_logic_vector(Q_OFFSET_SIZE-1 downto 0);
+        ALUASOp     : in    ALU_ADDSUB;     -- add/sub operation control signals
+        ALUSROp     : in    ALU_SR;         -- shift/rotate operation control signals
+        ALUFOp      : in    ALU_FOPS;       -- F-block operation control signals
+        ALUCNOp     : in    ALU_COMNEG;     -- COM/NEG operation control signals
+        ALUSel      : in    ALU_SELECTS;    -- operation select
 
+        BitMask     : in    std_logic_vector(REGSIZE-1 downto 0);
 
         CPC         : in    std_logic; -- control for cpc command, to set zero flag appropriately
-        AClr        : in    std_logic; -- '0' to set A to x00
-        ASet        : in    std_logic; -- '1' to set A to xFF
 
         -- from Regs
         RegA        : in    std_logic_vector(REGSIZE-1 downto 0); -- operand A
@@ -161,8 +157,8 @@ begin
     -- adder/subtracter carry in MUX
     adderCarry: Mux4to1
         port map(
-            S0          => CarrySel(0),
-            S1          => CarrySel(1),
+            S0          => ALUASOp(CARRY_S0),
+            S1          => ALUASOp(CARRY_S1),
             SIn0        => '0',
             SIn1        => '1',
             SIn2        => StatusIn(0),

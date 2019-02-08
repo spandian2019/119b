@@ -26,15 +26,27 @@ package constants is
     constant IRSIZE     : natural := 16;    -- number of bits in IR
     constant RADDRSIZE  : natural := 5;     -- number of bits in register addr
     constant IOADDRSIZE : natural := 6;     -- number of bits in IO reg addr
-    constant REG_ARRAY_SIZE : natural := 32;--
-    constant REG_ARRAY_SIZE : natural := 32;--
+    constant REG_LENGTH     : natural := 32;--
+    constant IO_REG_LENGTH  : natural := 64;--
     constant ZERO8      : std_logic_vector(7 downto 0) := "00000000"; -- 8 bit zero
     type byte is array (7 downto 0) of std_logic;
     type word is array (15 downto 0) of std_logic;
 
+    ---------------------------
+    -- ControlUnit CONSTANTS --
+    ---------------------------
+    -- Cycle Num Constants
+    subtype OP_CYCLE is std_logic_vector(1 downto 0);
+    constant 0CYCLES        : OP_CYCLE := "00";
+    constant 1CYCLE         : OP_CYCLE := "01";
+    constant 2CYCLES        : OP_CYCLE := "10";
+    constant 3CYCLES        : OP_CYCLE := "11";
+
     -------------------
     -- ALU CONSTANTS --
     -------------------
+    constant CPC_SET : std_logic := '1';
+    constant CPC_RST : std_logic := '0';
     -- ALU output select signals
     subtype ALU_SELECTS is std_logic_vector(2 downto 0);
     constant ADDSUBOUT      : ALU_SELECTS := "000";
@@ -66,20 +78,22 @@ package constants is
     constant SR_ROR     : ALU_SR := "10"; -- Rotate right -- is this right? carry?
 
     -- Adder/Subber control signals
-    -- nSUB bit values OR with carry select values to form ALU_ADDSUB
     subtype  ALU_ADDSUB is std_logic_vector(2 downto 0);
     -- subtract flag values
     constant ALU_ADD    : ALU_ADDSUB := "000"; -- add
     constant ALU_SUB    : ALU_ADDSUB := "001"; -- sub
     -- carry select values
-    constant RST_CARRY  : ALU_ADDSUB := "000"; -- carry in = '0'
-    constant SET_CARRY  : ALU_ADDSUB := "010"; -- carry in = '1'
-    constant CARRY_IN   : ALU_ADDSUB := "100"; -- carry in = Cin
-    constant NCARRY_IN  : ALU_ADDSUB := "110"; -- carry in = nCin
-    -- Adder/Subtractor operand indices and values
+    constant RST_CARRY  : ALU_ADDSUB := "00"; -- carry in = '0'
+    constant SET_CARRY  : ALU_ADDSUB := "01"; -- carry in = '1'
+    constant CARRY_IN   : ALU_ADDSUB := "10"; -- carry in = Cin
+    constant NCARRY_IN  : ALU_ADDSUB := "11"; -- carry in = nCin
+    -- Subflag operand indices and values
     constant SUBFLAG    : integer := 0;     -- index of subtract flag
     constant OP_ADD     : std_logic := '0'; -- value for adding
     constant OP_SUB     : std_logic := '1'; -- value for subbing
+    -- carry operand indices
+    constant CARRY_S0   : integer := 1;     -- index of lower bit of carry CTRL
+    constant CARRY_S1   : integer := 2;     -- index of higher bit of carry CTRL
 
     -- COM and NEG control signals for AND and OR gates
     subtype  ALU_COMNEG is std_logic_vector(1 downto 0);
@@ -100,8 +114,8 @@ package constants is
     -----------------------
     -- pre and post inc/dec on the indirect addressing
     subtype PREPOST_ADDR is std_logic;
-    constant PRE_ADDR   : PREPOST_ADDR := '0';
-    constant POST_ADDR  : PREPOST_ADDR := '1';
+    constant PRE_ADDR   : PREPOST_ADDR := '1';
+    constant POST_ADDR  : PREPOST_ADDR := '0';
 
     subtype  OFFSET_SEL is std_logic_vector(1 downto 0);
     -- Address Adder - Offset Mux In Control Signals
@@ -128,9 +142,29 @@ package constants is
     -- Register CONSTANTS --
     ------------------------
     -- miscellaneous constants
-    constant REG_WRITE_EN   : std_logic := '1';
-    constant REG_WRITE_DIS  : std_logic := '0';
-
+    constant IMM_EN         : std_logic := '1';
+    constant IMM_DIS        : std_logic := '0';
+    constant WRITE_EN       : std_logic := '1';
+    constant WRITE_DIS      : std_logic := '0';
+    constant REG_A_OUT      : std_logic := '0';
+    constant IO_OUTPUT      : std_logic := '1';
+    constant SREG_ADDR      : std_logic_vector(IOADDRSIZE-1 downto 0) := "111111";  -- TODO explain how its 32 offset
+    constant SP_ADDR_L      : std_logic_vector(IOADDRSIZE-1 downto 0) := "111101";  -- base address for stack pointer
+                                                                                    -- low byte located at addr 61 in IO
+    constant SP_ADDR_H      : std_logic_vector(IOADDRSIZE-1 downto 0) := "111110";  -- address for stack pointer high byte
+                                                                                    -- high byte located at addr 62 in IO
+    constant X_ADDR_L       : std_logic_vector(RADDRSIZE-1 downto 0) := "11010";    -- base address for X pointer
+                                                                                    -- low byte located at addr 26 in reg
+    constant X_ADDR_H       : std_logic_vector(RADDRSIZE-1 downto 0) := "11011";    -- address for X pointer high byte
+                                                                                    -- high byte located at addr 27 in reg
+    constant Y_ADDR_L       : std_logic_vector(RADDRSIZE-1 downto 0) := "11100";    -- base address for Y pointer
+                                                                                    -- low byte located at addr 28 in reg
+    constant Y_ADDR_H       : std_logic_vector(RADDRSIZE-1 downto 0) := "11101";    -- address for Y pointer high byte
+                                                                                    -- high byte located at addr 29 in reg
+    constant Z_ADDR_L       : std_logic_vector(RADDRSIZE-1 downto 0) := "11110";    -- base address for Z pointer
+                                                                                    -- low byte located at addr 30 in reg
+    constant Z_ADDR_H       : std_logic_vector(RADDRSIZE-1 downto 0) := "11111";    -- address for Z pointer high byte
+                                                                                    -- high byte located at addr 31 in reg
 
     -- Address Adder - Address Mux In Control Signals
     subtype  ADDR_SEL is std_logic_vector(1 downto 0);
@@ -173,7 +207,6 @@ package constants is
     constant LdSRCtrlU    : SRegLd_selects := '1';
     constant LdSRALU      : SRegLd_selects := '0';
 
-    constant SReg_addr : std_logic_vector(5 downto 0) := "111111";
 
     ------------------------------
     -- Status Register Bitmasks --
