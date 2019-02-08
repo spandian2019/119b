@@ -74,6 +74,8 @@ architecture behavioral of ALU is
 
 -- internal signals
 signal AdderOut     : std_logic_vector(REGSIZE-1 downto 0); -- adder/subtracter output
+signal CarryOut     : std_logic_vector(REGSIZE-1 downto 0); -- carry for adder/subtracter
+
 signal ASCout       : std_logic;
 signal Bin          : std_logic_vector(REGSIZE-1 downto 0); -- B Input to the adder/subber
 
@@ -175,16 +177,25 @@ begin
         Bin(i) <= FOut(i) xor ALUOp(SUBFLAG);
     end generate SubXOR;
 
-    -- REGSIZE bit adder/subtracter
-    addersubber: Adder
-        generic map (bitsize => REGSIZE)
-        port map(
-            A           => comnegR,
-            B           => Bin,
-            Cin         => CIn,
-            Cout        => ASCout,
-            Sum         => AdderOut
-      );
+    adder0: fullAdder --TODO check
+    port map(
+        A           => comnegR(0),
+        B           => RegB(0),
+        Cin         => CIn,
+        Cout        => Carryout(0),
+        Sum         => AdderOut(0)
+  );
+  -- other bits
+  GenAdder:  for i in 1 to REGSIZE - 1 generate
+  adderi: fullAdder
+    port map(
+        A           => comnegR(i),
+        B           => RegB(i),
+        Cin         => CarryOut(i-1),
+        Cout        => Carryout(i),
+        Sum         => AdderOut(i)
+  );
+  end generate GenAdder;
 
     -- shifter/rotator
     -- assign middle and low bits
@@ -246,7 +257,7 @@ begin
 
     -- transfer bit
     StatusOut(6) <= StatusIn(6) when BitMask(6) = '0' else
-                    RegA(to_integer(unsigned(RegB))) when ALUSel = PASSTHRUEN and to_integer(unsigned(RegB)) < 8 else 
+                    RegA(to_integer(unsigned(RegB))) when ALUSel = PASSTHRUEN and to_integer(unsigned(RegB)) < 8 else
                             '0'; -- update if transfer bit is set or cleared
 
     -- half carry
@@ -259,7 +270,7 @@ begin
                     NFlag xor VFlag;
 
     -- signed overflow
-    -- TODO, way to do this without access to CarryOut from REGSIZE-2 ??
+    -- TODO, magic
     VFlag <= StatusIn(3) when BitMask(3) = '0' else
             '1' when (ALUSEL = ADDSUBEN and CarryOut(REGSIZE-1) /= CarryOut(REGSIZE-2)) else -- 1 if signed overflow
             '0' when (ALUSEL = ADDSUBEN or  ALUSEL = FBLOCKEN) else -- 0 if no overflow or logical op
