@@ -21,54 +21,55 @@
 ----------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
---use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
 
 use work.opcodes.all;
-
 use work.constants.all;
 
 entity CU is
     port(
-        --ProgDB  : in std_logic_vector(15 downto 0);     -- program memory data bus
-        IR      : in std_logic_vector(15 downto 0);     -- instruction register input
-        SReg    : in std_logic_vector(7 downto 0);      -- status flags
+        ProgDB  : in std_logic_vector(ADDRSIZE-1 downto 0);     -- program memory data bus
+        IR      : in std_logic_vector(IRSIZE-1 downto 0);     -- instruction register input
+        SReg    : in std_logic_vector(REGSIZE-1 downto 0);      -- status flags
         load    : buffer std_logic;                     -- load output to tell IR register
                                                         --  when to fetch new instruction
         -- to registers
         RegWEn      : out std_logic;                    -- register write enable
-        RegWSel     : out std_logic_vector(4 downto 0); -- register write select
-        RegSelA     : out std_logic_vector(4 downto 0); -- register A select
-        RegSelB     : out std_logic_vector(4 downto 0); -- register B select
+        RegWSel     : out std_logic_vector(RADDRSIZE-1 downto 0); -- register write select
+        RegSelA     : out std_logic_vector(RADDRSIZE-1 downto 0); -- register A select
+        RegSelB     : out std_logic_vector(RADDRSIZE-1 downto 0); -- register B select
         LoadIn      : out std_logic_vector(1 downto 0); -- selects data line into reg
         LoadReg     : out std_logic_vector(1 downto 0); -- signals which reg output immediate 
                                                         --  value gets outputted through
         -- to ALU and SReg
-        ALUOp   : out std_logic_vector(3 downto 0); -- operation control signals
-        ALUSel  : out std_logic_vector(2 downto 0); -- operation select
-        bitmask : out std_logic_vector(7 downto 0); -- mask for writing to flags (SReg)
+        ALUfop      : out ALU_FOPS; -- operation control signals
+        ALUsr       : out ALU_SR;
+        ALUaddsub   : out ALU_ADDSUB;
+        ALUcomneg   : out ALU_COMNEG;
+        ALUSel      : out ALU_SELECTS; -- operation select
+        bitmask     : out BIT_MASK; -- mask for writing to flags (SReg)
 
         -- I/O
         IORegInEn   : out   std_logic;                      -- IN command enable
         IORegOutEn  : out   std_logic;                      -- OUT command enable
-        SRegOut     : out   std_logic_vector(7 downto 0);   -- status reg output bus
+        SRegOut     : out   std_logic_vector(REGSIZE-1 downto 0);   -- status reg output bus
         SRegLd      : out   std_logic;                      -- select line to mux status reg source
-        K           : out   std_logic_vector(7 downto 0);   -- immediate value K
+        K           : out   std_logic_vector(REGSIZE-1 downto 0);   -- immediate value K
 
         ---- Program memory access
         --ProgAddr: out std_logic_vector(15 downto 0); -- address source for program memory unit
         --ProgLoad: out std_logic;                    -- load select for PC
         --ProgAddrSel : in std_logic_vector(1 downto 0);  -- program address source select
 
-        ---- Data memory access
-        --DataAddrSel : out std_logic_vector(1 downto 0);  -- data address source select
-        --DataOffsetSel : out std_logic_vector(1 downto 0);-- data address offset source select
-        --PreSel  : out std_logic; -- data pre/post address select
-        --DataRd  : out std_logic; -- indicates data memory is being read
-        --DataWr  : out std_logic; -- indicates data memory is being written
-        --DataAddr: out std_logic_vector(15 downto 0); -- address source for data memory unit
-        --AddrOffset: out std_logic_vector(5 downto 0); -- address offset for data memory unit
+        -- Data memory access
+        DataAddrSel     : out ADDR_SEL;  -- data address source select
+        DataOffsetSel   : out OFFSET_SEL;-- data address offset source select
+        PreSel          : out PREPOST_ADDR; -- data pre/post address select
+        DataRd          : out std_logic; -- indicates data memory is being read
+        DataWr          : out std_logic; -- indicates data memory is being written
+        DataAddr        : out std_logic_vector(ADDRSIZE-1 downto 0); -- address source for data memory unit
+        AddrOffset      : out std_logic_vector(Q_OFFSET_SIZE-1 downto 0); -- address offset for data memory unit
 
         ---- Stack
         --StackEn     : out std_logic; -- stack enable signal
@@ -95,17 +96,10 @@ begin
             -- sets cycle number for op_codes
             -- defaults to 1
             cycle_num <= "01";
-            -- 
-            if (std_match(IR, OpADIW) or
-                std_match(IR, OpSBIW) or
-                std_match(IR, OpMUL)) then
-                    cycle_num <= "10";
-            end if;
-
             -- register default values
             K           <= IR(11 downto 8) & IR(3 downto 0);
             RegSelA     <= IR(8 downto 4);
-            RegWEn      <= '1';
+            RegWEn      <= REG_WRITE_EN;
             IORegInEn   <= '0';
             IORegOutEn  <= '0';
             LoadIn      <= LdALU;
@@ -144,6 +138,8 @@ begin
 
             -- considering word adder/subber ops
             if  std_match(IR, OpADIW) or std_match(IR, OpSBIW) then
+                -- takes 2 cycles to complete operation
+                cycle_num <= "10";
                 -- enable Adder/Subber operation
                 ALUSel <= AddSubEn;
                 -- subFlag mapped in IR
@@ -182,6 +178,8 @@ begin
 
             -- considering word multiply op
             if  std_match(IR, OpMUL) then
+                -- takes 2 cycles to complete operation
+                cycle_num <= "10";
                 -- enable MUL operation
                 ALUSel <= MulEn;
 

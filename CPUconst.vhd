@@ -20,10 +20,15 @@ package constants is
     -----------------------
     -- GENERAL CONSTANTS --
     -----------------------
-    constant NIBBLE     : integer := 4; -- nibble bit size
-    constant REGSIZE    : natural := 8;
-    constant ADDRSIZE   : natural := 16;
-    constant ZERO8      : std_logic_vector(7 downto 0) := "00000000";
+    constant NIBBLE     : integer := 4;     -- number of bits in nibble
+    constant REGSIZE    : natural := 8;     -- number of bits in register
+    constant ADDRSIZE   : natural := 16;    -- number of bits in memory
+    constant IRSIZE     : natural := 16;    -- number of bits in IR
+    constant RADDRSIZE  : natural := 5;     -- number of bits in register addr
+    constant IOADDRSIZE : natural := 6;     -- number of bits in IO reg addr
+    constant REG_ARRAY_SIZE : natural := 32;--
+    constant REG_ARRAY_SIZE : natural := 32;--
+    constant ZERO8      : std_logic_vector(7 downto 0) := "00000000"; -- 8 bit zero
     type byte is array (7 downto 0) of std_logic;
     type word is array (15 downto 0) of std_logic;
 
@@ -36,8 +41,8 @@ package constants is
     constant FBLOCKOUT      : ALU_SELECTS := "001";
     constant SHIFTOUT       : ALU_SELECTS := "010";
     constant SWAPOUT        : ALU_SELECTS := "011";
-    constant MULOUT         : ALU_SELECTS := "100"; 
-    constant BOUT           : ALU_SELECTS := "101"; 
+    constant MULOUT         : ALU_SELECTS := "100";
+    constant BOUT           : ALU_SELECTS := "101";
 
     -- F-block operands
     subtype  ALU_FOPS is std_logic_vector(3 downto 0);
@@ -58,7 +63,7 @@ package constants is
     subtype  ALU_SR is std_logic_vector(1 downto 0); -- ops for s/r, add
     constant SR_LSR     : ALU_SR := "00"; -- Logical shift right
     constant SR_ASR     : ALU_SR := "01"; -- Arithmetic shift right
-    constant SR_ROR     : ALU_SR := "10"; -- Rotate right -- is this right? carry? 
+    constant SR_ROR     : ALU_SR := "10"; -- Rotate right -- is this right? carry?
 
     -- Adder/Subber control signals
     -- nSUB bit values OR with carry select values to form ALU_ADDSUB
@@ -108,7 +113,7 @@ package constants is
 
     subtype OFFSET_CONST is std_logic_vector((2*REGSIZE)-1) downto 0);
     -- Address Adder - Offset constant values to add
-    -- ASKFAB - init? 
+    -- ASKFAB - init?
     constant ZERO_OFFSET    : OFFSET_CONST := "0000000000000000"; --  0 constant to add
     constant INC_OFFSET     : OFFSET_CONST := "0000000000000001"; -- +1 constant to add
     constant DEC_OFFSET     : OFFSET_CONST := "1111111111111111"; -- -1 constant to add
@@ -123,6 +128,11 @@ package constants is
     ------------------------
     -- Register CONSTANTS --
     ------------------------
+    -- miscellaneous constants
+    constant REG_WRITE_EN   : std_logic := '1';
+    constant REG_WRITE_DIS  : std_logic := '0';
+
+
     -- Address Adder - Address Mux In Control Signals
     subtype  ADDR_SEL is std_logic_vector(1 downto 0);
     constant X_SEL          : ADDR_SEL := "11"; -- Selects X Indirect Register
@@ -152,12 +162,12 @@ package constants is
     constant LdIO      : LoadIn_selects := "10";
     constant LdRegA    : LoadIn_selects := "11";
 
-    subtype  LoadReg_selects is std_logic_vector(1 downto 0);
-    -- LoadReg select constants
-    constant LoadNone   : LoadReg_selects := "00";
-    constant LoadA      : LoadReg_selects := "01";
-    constant LoadB      : LoadReg_selects := "10";
-    constant LoadSwap   : LoadReg_selects := "11";
+    --subtype  LoadReg_selects is std_logic_vector(1 downto 0);
+    ---- LoadReg select constants
+    --constant LoadNone   : LoadReg_selects := "00";
+    --constant LoadA      : LoadReg_selects := "01";
+    --constant LoadB      : LoadReg_selects := "10";
+    --constant LoadSwap   : LoadReg_selects := "11";
 
     subtype  SRegLd_selects is std_logic;
     -- LoadReg select constants
@@ -170,24 +180,24 @@ package constants is
     -- Status Register Bitmasks --
     ------------------------------
     -- Sreg: I T H S V N Z C
-    subtype SREG_MASK is std_logic_vector(7 downto 0);
-    constant MASK_ADD : SREG_MASK:= "00111111"; -- add sub(except adiw, sbiw), including neg
-    constant MASK_CP : SREG_MASK:= "00111111"; -- compares
-    constant MASK_ADIW : SREG_MASK:= "00011111"; -- adiw, sbiw
-    constant MASK_DECINC : SREG_MASK:= "00011110"; -- dec, inc
+    subtype BIT_MASK is std_logic_vector(7 downto 0);
+    constant MASK_ADD : BIT_MASK:= "00111111"; -- add sub(except adiw, sbiw), including neg
+    constant MASK_CP : BIT_MASK:= "00111111"; -- compares
+    constant MASK_ADIW : BIT_MASK:= "00011111"; -- adiw, sbiw
+    constant MASK_DECINC : BIT_MASK:= "00011110"; -- dec, inc
 
-    constant MASK_ANDOR : SREG_MASK:= "00011110"; -- and, or
-    constant MASK_COM : SREG_MASK:= "00011111"; -- com
-    constant MASK_NEG : SREG_MASK:= "00111111"; -- neg
-    constant MASK_EOR : SREG_MASK:= "00011110"; -- eor
+    constant MASK_ANDOR : BIT_MASK:= "00011110"; -- and, or
+    constant MASK_COM : BIT_MASK:= "00011111"; -- com
+    constant MASK_NEG : BIT_MASK:= "00111111"; -- neg
+    constant MASK_EOR : BIT_MASK:= "00011110"; -- eor
 
-    constant MASK_SHIFT : SREG_MASK:= "00011111"; -- asr, lsr, ror
+    constant MASK_SHIFT : BIT_MASK:= "00011111"; -- asr, lsr, ror
 
-    constant MASK_BLD : SREG_MASK:= "00000000"; -- bld
-    constant MASK_BST : SREG_MASK:= "01000000"; -- bst
+    constant MASK_BLD : BIT_MASK:= "00000000"; -- bld
+    constant MASK_BST : BIT_MASK:= "01000000"; -- bst
 
-    constant MASK_MUL : SREG_MASK:= "00000001"; -- mul
-    constant MASK_NONE : SREG_MASK:= "00000000"; -- change nothing
+    constant MASK_MUL : BIT_MASK:= "00000001"; -- mul
+    constant MASK_NONE : BIT_MASK:= "00000000"; -- change nothing
 
     constant T_SREG : natural := 6; -- transfer bit number in sreg
     constant T_IR : natural := 9; -- transfer bit number in IR
@@ -199,15 +209,15 @@ end package constants;
 --
 --  8:1 mux
 --
---  Implementation of a 8:1 mux. Includes 3 control bits, 8 input signals, 
+--  Implementation of a 8:1 mux. Includes 3 control bits, 8 input signals,
 --  and a selected output.
 --
 -- Inputs:
 --      S0 - mux select bit 0
 --      S1 - mux select bit 1
 --      S2 - mux select bit 2
---      SIn0 - mux input 0 
---      SIn1 - mux input 1 
+--      SIn0 - mux input 0
+--      SIn1 - mux input 1
 --      SIn2 - mux input 2
 --      SIn3 - mux input 3
 --      SIn4 - mux input 4
@@ -231,9 +241,9 @@ use ieee.numeric_std.all;
 
 entity Mux8to1 is
     port(
-        S0          :  in      std_logic;  -- mux sel(0) 
-        S1          :  in      std_logic;  -- mux sel(1) 
-        S2          :  in      std_logic;  -- mux sel(2) 
+        S0          :  in      std_logic;  -- mux sel(0)
+        S1          :  in      std_logic;  -- mux sel(1)
+        S2          :  in      std_logic;  -- mux sel(2)
         SIn0        :  in      std_logic;  -- mux inputs
         SIn1        :  in      std_logic;  -- mux inputs
         SIn2        :  in      std_logic;  -- mux inputs
@@ -251,25 +261,25 @@ architecture Mux8to1 of Mux8to1 is
     begin
     process(SIn0, SIn1, SIn2, SIn3, SIn4, SIn5, SIn6, SIn7, S0, S1, S2)
     begin  -- choose Sout based on S0 & S1 & S2
-        if    sel = "000" then 
-            SOut <= SIn0; 
-        elsif sel = "001" then 
-            SOut <= SIn1; 
-        elsif sel = "010" then 
-            SOut <= SIn2; 
-        elsif sel = "011" then 
-            SOut <= SIn3; 
-        elsif sel = "100" then 
-            SOut <= SIn4; 
-        elsif sel = "101" then 
-            SOut <= SIn5; 
-        elsif sel = "110" then 
-            SOut <= SIn6; 
-        elsif sel = "111" then 
-            SOut <= SIn7; 
-        else 
+        if    sel = "000" then
+            SOut <= SIn0;
+        elsif sel = "001" then
+            SOut <= SIn1;
+        elsif sel = "010" then
+            SOut <= SIn2;
+        elsif sel = "011" then
+            SOut <= SIn3;
+        elsif sel = "100" then
+            SOut <= SIn4;
+        elsif sel = "101" then
+            SOut <= SIn5;
+        elsif sel = "110" then
+            SOut <= SIn6;
+        elsif sel = "111" then
+            SOut <= SIn7;
+        else
             SOut <= 'X'; -- for simulation
-        end if;   
+        end if;
     end process;
 end Mux8to1;
 
@@ -277,14 +287,14 @@ end Mux8to1;
 --
 --  4:1 mux
 --
---  Implementation of a 4:1 mux. Includes 2 control bits, 4 input signals, 
+--  Implementation of a 4:1 mux. Includes 2 control bits, 4 input signals,
 --  and a selected output.
 --
 -- Inputs:
 --      S0 - mux select bit 0
 --      S1 - mux select bit 1
---      SIn0 - mux input 0 
---      SIn1 - mux input 1 
+--      SIn0 - mux input 0
+--      SIn1 - mux input 1
 --      SIn2 - mux input 2
 --      SIn3 - mux input 3
 --
@@ -303,8 +313,8 @@ use ieee.numeric_std.all;
 
 entity Mux4to1 is
     port(
-        S0          :  in      std_logic;  -- mux sel (0) 
-        S1          :  in      std_logic;  -- mux sel(1) 
+        S0          :  in      std_logic;  -- mux sel (0)
+        S1          :  in      std_logic;  -- mux sel(1)
         SIn0         :  in      std_logic;  -- mux inputs
         SIn1         :  in      std_logic;  -- mux inputs
         SIn2         :  in      std_logic;  -- mux inputs
@@ -317,17 +327,17 @@ architecture Mux4to1 of Mux4to1 is
     begin
     process(SIn0, SIn1, SIn2, SIn3, S0, S1)
     begin  -- choose Sout based on S0 & S1
-        if S0 = '0' and S1 = '0' then 
-            SOut <= SIn0; 
-        elsif S0 = '1' and S1 = '0' then 
-            SOut <= SIn1; 
-        elsif S0 = '0' and S1 = '1' then 
-            SOut <= SIn2; 
-        elsif S0 = '1' and S1 = '1' then 
-            SOut <= SIn3; 
-        else 
+        if S0 = '0' and S1 = '0' then
+            SOut <= SIn0;
+        elsif S0 = '1' and S1 = '0' then
+            SOut <= SIn1;
+        elsif S0 = '0' and S1 = '1' then
+            SOut <= SIn2;
+        elsif S0 = '1' and S1 = '1' then
+            SOut <= SIn3;
+        else
             SOut <= 'X'; -- for simulation
-        end if;   
+        end if;
     end process;
 end Mux4to1;
 
@@ -335,13 +345,13 @@ end Mux4to1;
 --
 --  2:1 mux
 --
---  Implementation of a 2:1 mux. Includes 1 control bit, 2 input signals, 
+--  Implementation of a 2:1 mux. Includes 1 control bit, 2 input signals,
 --  and a selected output.
 --
 -- Inputs:
 --      S0 - mux select bit
---      SIn0 - mux input 0 
---      SIn1 - mux input 1 
+--      SIn0 - mux input 0
+--      SIn1 - mux input 1
 --
 -- Outputs:
 --      SOut - mux output
@@ -370,12 +380,12 @@ architecture Mux2to1 of Mux2to1 is
     begin
     process(SIn0, SIn1, S0)
     begin  -- choose Sout based on S0
-        if S0 = '0' then 
-            SOut <= SIn0; 
-        elsif S0 = '1' then 
-            SOut <= SIn1; 
-        else 
+        if S0 = '0' then
+            SOut <= SIn0;
+        elsif S0 = '1' then
+            SOut <= SIn1;
+        else
             SOut <= 'X'; -- for simulation
-        end if;   
+        end if;
     end process;
 end Mux2to1;

@@ -52,9 +52,9 @@ entity Reg is
 
         -- from CU
         RegWEn      : in std_logic;                     -- register write enable
-        RegWSel     : in std_logic_vector(4 downto 0);  -- register write select
-        RegSelA     : in std_logic_vector(4 downto 0);  -- register A select
-        RegSelB     : in std_logic_vector(4 downto 0);  -- register B select
+        RegWSel     : in std_logic_vector(RADDRSIZE-1 downto 0);  -- register write select
+        RegSelA     : in std_logic_vector(RADDRSIZE-1 downto 0);  -- register A select
+        RegSelB     : in std_logic_vector(RADDRSIZE-1 downto 0);  -- register B select
 
         IndRegWEn   : in std_logic;                             -- Update X, Y, Z, or SP
         AddrIn      : in std_logic_vector(ADDRSIZE-1 downto 0); -- 
@@ -64,15 +64,14 @@ entity Reg is
         RegBOut     :  out std_logic_vector(REGSIZE-1 downto 0);       -- register bus B out
         AddrMuxOut  :  out std_logic_vector(ADDRSIZE-1 downto 0);
 
-        K_in     : in std_logic_vector(REGSIZE-1 downto 0); -- immediate value input
         LoadReg  : in std_logic_vector(1 downto 0)  -- for loading immediate values to out buses
     );
 
 end Reg;
 
 architecture Reg_arc of Reg is
-    type reg_array is array (31 downto 0) of std_logic_vector(REGSIZE-1 downto 0);
-    type IO_reg_array is array (63 downto 0) of std_logic_vector(7 downto 0);
+    type reg_array is array (REG_LENGTH-1 downto 0) of std_logic_vector(REGSIZE-1 downto 0);
+    type IO_reg_array is array (IO_REG_LENGTH-1 downto 0) of std_logic_vector(REGSIZE-1 downto 0);
     signal registers : reg_array;
     signal IOregisters : IO_reg_array;
     signal AddrMux   : integer;

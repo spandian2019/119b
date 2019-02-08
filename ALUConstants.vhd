@@ -31,9 +31,9 @@ end package ALUConstants;
 --
 --  1 Bit Full Adder
 --
---  Implementation of a full adder. This entity takes the one bit 
---  inputs A and B with a carry in input and outputs the sum and carry 
---  out bits, using combinational logic. 
+--  Implementation of a full adder. This entity takes the one bit
+--  inputs A and B with a carry in input and outputs the sum and carry
+--  out bits, using combinational logic.
 --
 -- Inputs:
 --      A: std_logic - 1 bit adder input
@@ -42,7 +42,7 @@ end package ALUConstants;
 --
 -- Outputs:
 --      Sum: std_logic - 1 bit sum of A, B, and Cin
---      Cout: std_logic - 1 bit carry out value 
+--      Cout: std_logic - 1 bit carry out value
 --
 --  Revision History:
 --      11/21/18  Sophia Liu    Initial revision.
@@ -56,10 +56,10 @@ use ieee.numeric_std.all;
 
 entity fullAdder is
     port(
-        A           :  in      std_logic;  -- adder input 
-        B           :  in      std_logic;  -- adder input 
-        Cin         :  in      std_logic;  -- carry in value 
-        Cout        :  out     std_logic;  -- carry out value 
+        A           :  in      std_logic;  -- adder input
+        B           :  in      std_logic;  -- adder input
+        Cin         :  in      std_logic;  -- carry in value
+        Cout        :  out     std_logic;  -- carry out value
         Sum         :  out     std_logic   -- sum of A, B with carry in
       );
 end fullAdder;
@@ -68,16 +68,16 @@ architecture fullAdder of fullAdder is
     begin
         -- combinational logic for calculating A+B with carry in and out bits
         Sum <= A xor B xor Cin;
-        Cout <= (A and B) or (A and Cin) or (B and Cin); 
+        Cout <= (A and B) or (A and Cin) or (B and Cin);
 end fullAdder;
 
 ----------------------------------------------------------------------------
 --
 --  n Bit Full Adder
 --
---  Implementation of an n bit full adder. This entity takes generic n bit 
---  inputs A and B with a carry in input and outputs the sum and carry 
---  out n bits, using combinational logic. 
+--  Implementation of an n bit full adder. This entity takes generic n bit
+--  inputs A and B with a carry in input and outputs the sum and carry
+--  out n bits, using combinational logic.
 --
 -- Inputs:
 --      A: std_logic - n bit adder input
@@ -86,7 +86,7 @@ end fullAdder;
 --
 -- Outputs:
 --      Sum: std_logic - n bit sum of A, B, and Cin
---      Cout: std_logic - 1 bit carry out value 
+--      Cout: std_logic - 1 bit carry out value
 --
 --  Revision History:
 --      02/06/19  Sundar Pandian    Initial revision.
@@ -100,8 +100,8 @@ use ieee.numeric_std.all;
 entity Adder is generic ( bitsize : integer := 8 );
     port(
         A, B        :  in      std_logic_vector((bitsize-1) downto 0);  -- addends
-        Cin         :  in      std_logic;  -- carry in value 
-        Cout        :  out     std_logic;  -- carry out value 
+        Cin         :  in      std_logic;  -- carry in value
+        Cout        :  out     std_logic;  -- carry out value
         Sum         :  out     std_logic_vector((bitsize-1) downto 0)   -- sum of A, B with carry in
       );
 end Adder;
@@ -109,10 +109,10 @@ end Adder;
 architecture nAdder of Adder is
     component fullAdder is
         port(
-            Ai          :  in      std_logic;  -- adder input 
-            Bi          :  in      std_logic;  -- adder input 
-            Cini        :  in      std_logic;  -- carry in value 
-            Couti       :  out     std_logic;  -- carry out value 
+            Ai          :  in      std_logic;  -- adder input
+            Bi          :  in      std_logic;  -- adder input
+            Cini        :  in      std_logic;  -- carry in value
+            Couti       :  out     std_logic;  -- carry out value
             Sumi        :  out     std_logic   -- sum of A, B with carry in
           );
     end component;
@@ -121,7 +121,7 @@ architecture nAdder of Adder is
 
     begin
         carry(0) <= Cin;        -- put carry in into our carry vector
-        
+
         Adders: for i in bitsize generate -- generate bitsize full adders
         begin
             FAx: fullAdder port map (A(i), B(i), carry(i), Sum(i), carry(i + 1));
