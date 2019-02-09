@@ -22,7 +22,7 @@ use work.opcodes.all;
 
 entity MemTB is
     -- constants for testing
-    constant CLK_PERIOD : time := 20 ns;
+    constant CLK_PERIOD : time := 50 ns;
     constant TEST_SIZE : natural := 47;
 
     --constant EDGE_TEST_SIZE: natural := 5;
@@ -254,10 +254,11 @@ architecture TB_ARCHITECTURE of MemTB is
             Reset <= '1'; -- begin with reset
 			IR      <= (others => '0');
             ProgDB  <= (others => 'Z');
-        	wait for 100 ns; -- wait for a bit
+        	wait for CLK_PERIOD*5; -- wait for a bit
             Reset <= '0'; -- de-assert reset
 
 			-- loop through test vector
+			wait for CLK_PERIOD*0.2; 
 			for i in TEST_SIZE downto 0 loop
 				IR <= IRTest(i);
                 ProgDB <= (others => 'Z');
@@ -305,6 +306,7 @@ architecture TB_ARCHITECTURE of MemTB is
                     end if;
                     wait for CLK_PERIOD/2; -- wait for rest of clock
                 end if;
+
 
 			end loop;
 
