@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------------
 --
---  Test Bench for data memory interface unit 
+--  Test Bench for data memory interface unit
 --
 --  This is a test bench for the MEM_TEST entity. The test bench
 --  tests the entity by exercising it and checking the data ab and db
@@ -74,11 +74,11 @@ architecture TB_ARCHITECTURE of MemTB is
     signal DataCheck : CheckVector; -- '1' to check data ab
     signal DataRdCheck: CheckVector; -- '1' to input data db
     signal ProgDBIn : CheckVector;-- '1' to input prog db
-    
+
     -- for handling in/out dataDB
-    signal DataData : std_logic_vector(REGSIZE-1 downto 0); 
-    signal WriteToDataDB : std_logic; 
-    
+    signal DataData : std_logic_vector(REGSIZE-1 downto 0);
+    signal WriteToDataDB : std_logic;
+
     begin
 	   -- Memory test component
         UUT: MEM_TEST
@@ -99,7 +99,7 @@ architecture TB_ARCHITECTURE of MemTB is
             variable j : integer;
         begin
             -- assign test vectors
---            test instructions:             
+--            test instructions:
 --            "LDI R27, $01", "LDI R26, $23", "LD R6, X+", "LD R1, X", "LD R2 -X", -- test ldx +-
 --            "STS $FFFF, R6", "STS $2222, R1", "STS $5678, R2" -- check loaded regs correctly
 --            "LDI R29, $55", "LDI R28, $55", "LD R6, Y+", "LDD R1, Y+5", "LD R2 -Y", -- test ldy+-
@@ -187,7 +187,7 @@ architecture TB_ARCHITECTURE of MemTB is
             '0', '0',
             '0', '0', '0',
             '0', '0', '0');
-            
+
             DataABTest <= (
             "----------------", "----------------", X"0123", X"0124", X"0123",-- ldi, ldx
             X"FFFF", X"2222", X"5678", -- sts
@@ -303,15 +303,15 @@ architecture TB_ARCHITECTURE of MemTB is
 			IR      <= (others => '0');
             ProgDB  <= (others => 'Z');
         	wait for CLK_PERIOD*5; -- wait for a bit
-        	
+
             Reset <= '0'; -- de-assert reset
             wait for CLK_PERIOD*0.7; -- offset for clock edge
-            
+
 			-- loop through test vector
 			for i in TEST_SIZE downto 0 loop
 				IR <= IRTest(i);
                 ProgDB <= (others => 'Z');
-                WriteToDataDB <= '0'; 
+                WriteToDataDB <= '0';
                 wait for CLK_PERIOD;
                 -- output progDB, if necessary
                 if ProgDBIn(i) = '1' then
@@ -324,36 +324,36 @@ architecture TB_ARCHITECTURE of MemTB is
                 if DataCheck(i) = '1' then
                     -- check address bus
 					assert (DataABTest(i) = DataAB)
-						report  "DataAB failure at test number " & integer'image(j)
+						report  "DataAB failure at test number " & integer'image(TEST_SIZE-i)
 						severity  ERROR;
 
                     -- wait to check data db/ab
                     wait for CLK_PERIOD/2;
                     if DataRdCheck(i) = '1' then
-                        WriteToDataDB <= '1'; 
+                        WriteToDataDB <= '1';
                         DataData <= DataDBRdTest(i); -- input to data db
                         -- make sure rd/wr signals correct
-                        -- check read asserted 
+                        -- check read asserted
                         assert (DataRd = '0')
-    						report  "DataRd DataDBRd failure at test number " & integer'image(j)
+    						report  "DataRd DataDBRd failure at test number " & integer'image(TEST_SIZE-i)
     						severity  ERROR;
                         -- check write not asserted
                         assert (DataWr = '1')
-    						report  "DataWr DataDBRd at test number " & integer'image(j)
+    						report  "DataWr DataDBRd at test number " & integer'image(TEST_SIZE-i)
     						severity  ERROR;
                     else
                         -- check data db output
                         assert (DataDBWrTest(i) = DataDB)
-    						report  "DataDB failure at test number " & integer'image(j)
+    						report  "DataDB failure at test number " & integer'image(TEST_SIZE-i)
     						severity  ERROR;
                         -- make sure rd/wr signals correct
-                        -- check read not asserted 
+                        -- check read not asserted
                         assert (DataRd = '1')
-    						report  "DataRd DataDBWr failure at test number " & integer'image(j)
+    						report  "DataRd DataDBWr failure at test number " & integer'image(TEST_SIZE-i)
     						severity  ERROR;
-                        -- check write asserted 
+                        -- check write asserted
                         assert (DataWr = '0')
-    						report  "DataWr DataDBWr at test number " & integer'image(j)
+    						report  "DataWr DataDBWr at test number " & integer'image(TEST_SIZE-i)
     						severity  ERROR;
                     end if;
                     wait for CLK_PERIOD/2; -- wait for rest of clock
@@ -364,9 +364,9 @@ architecture TB_ARCHITECTURE of MemTB is
             wait;                   -- wait for simulation to end
         end process;
 
-        -- hi-z unless writing to inout dataDB 
-        dataDB <= DataData when WriteToDataDB = '1' else (others => 'Z'); 
-        
+        -- hi-z unless writing to inout dataDB
+        dataDB <= DataData when WriteToDataDB = '1' else (others => 'Z');
+
         -- process for generating system clock
         CLOCK_CLK : process
         begin

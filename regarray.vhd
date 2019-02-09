@@ -76,22 +76,6 @@ architecture regspace of RegArray is
 
 begin
 
-    ---- writing to registers occurs synchronously
-    --write_reg : process (CLK)
-    --begin
-    --    if (rising_edge(CLK)) then
-    --        -- writes to register only if write enabled
-    --        -- holds value otherwise
-    --        if RegWEn = '1' then
-    --            registers(conv_integer(RegWSel)) <= RegIn;
-    --        else
-    --            if RegWSel(RADDRSIZE-1 downto 1) /= IndAddrIn(RADDRSIZE-1 downto 1) then
-    --                registers(conv_integer(RegWSel)) <= registers(conv_integer(RegWSel));
-    --            end if;
-    --        end if;
-    --    end if;
-    --end process write_reg;
-
     -- writing to regular registers and X, Y, Z Registers occurs synchronously
     -- use same process block to avoid driving same registers simultaneously
     write_addr_reg : process (CLK)
@@ -99,15 +83,42 @@ begin
         if (rising_edge(CLK)) then
             -- writes to register only if write enabled
             -- holds value otherwise
-            if RegWEn = '1' then
+
+            --if RegWEn = WRITE_EN then
+            --    registers(conv_integer(RegWSel)) <= RegIn;
+            --    if IndWEn = WRITE_EN and IndAddrIn(0) = '0' then
+            --        registers(conv_integer(IndAddrIn))
+            --            <= IndDataIn((ADDRSIZE/2)-1 downto 0);
+            --        registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
+            --            <= IndDataIn(ADDRSIZE-1 downto ADDRSIZE/2);
+            --    else
+            --        registers(conv_integer(IndAddrIn))
+            --            <= registers(conv_integer(IndAddrIn));
+            --        registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
+            --            <= registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'));
+            --    end if;
+            --else
+            --    registers(conv_integer(RegWSel)) <= registers(conv_integer(RegWSel));
+            --    if IndWEn = WRITE_EN and IndAddrIn(0) = '0' then
+            --        registers(conv_integer(IndAddrIn))
+            --            <= IndDataIn((ADDRSIZE/2)-1 downto 0);
+            --        registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
+            --            <= IndDataIn(ADDRSIZE-1 downto ADDRSIZE/2);
+            --    else
+            --        registers(conv_integer(IndAddrIn))
+            --            <= registers(conv_integer(IndAddrIn));
+            --        registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
+            --            <= registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'));
+            --    end if;
+            --end if;
+
+            if RegWEn = WRITE_EN then
                 registers(conv_integer(RegWSel)) <= RegIn;
             else
                 if RegWSel(RADDRSIZE-1 downto 1) /= IndAddrIn(RADDRSIZE-1 downto 1) then
                     registers(conv_integer(RegWSel)) <= registers(conv_integer(RegWSel));
                 end if;
             end if;
-        end if;
-        if (rising_edge(CLK)) then
             -- writes to register only if write enabled and indirect address is even
             --  possible values for indirect address are X, Y, Z, and SP base addresses.
             --  Only SP base address is odd.
@@ -131,13 +142,20 @@ begin
     -- register outputs load value in address line
     RegAOut <=  registers(conv_integer(RegSelA));
     RegBOut <=  registers(conv_integer(RegSelB));
-    -- X,Y,Z pointers also always gets outputted to addr line MUX and control unit
-    --  selects which address line to be used
-    RegXOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(X_ADDR_L));
-    RegXOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(X_ADDR_H));
-    RegYOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(Y_ADDR_L));
-    RegYOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(Y_ADDR_H));
-    RegZOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(Z_ADDR_L));
-    RegZOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(Z_ADDR_H));
+
+    read_addr_reg : process (CLK)
+    begin
+        if (rising_edge(CLK)) then
+
+        -- X,Y,Z pointers also always gets outputted to addr line MUX and control unit
+        --  selects which address line to be used
+        RegXOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(X_ADDR_L));
+        RegXOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(X_ADDR_H));
+        RegYOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(Y_ADDR_L));
+        RegYOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(Y_ADDR_H));
+        RegZOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(Z_ADDR_L));
+        RegZOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(Z_ADDR_H));
+        end if;
+    end process read_addr_reg;
 
 end regspace;

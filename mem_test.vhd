@@ -91,7 +91,7 @@ signal DataOffsetSel   :  OFFSET_SEL;-- data address offset source select
 signal PreSel          :  PREPOST_ADDR; -- data pre/post address select
 signal QOffset         :  std_logic_vector(Q_OFFSET_SIZE-1 downto 0); -- address offset for data memory unit
 signal DataDBWEn       :  std_logic;
-signal DataDBMux       :  std_logic;
+signal DataABMux       :  std_logic;
 
 
 signal RegIn        : std_logic_vector(REGSIZE-1 downto 0);
@@ -107,7 +107,7 @@ begin
                                     RegSelA, RegSelB, IORegWEn, IORegWSel, IndWEn, IndAddrSel,
                                     IOOutSel, DataRd, DataWr, IORegOutEn, ALUaddsub, ALUsr, ALUfop,
                                     ALUcomneg, ALUSel, bitmask, CPC, LoadIn, SRegLd,
-                                    DataOffsetSel, PreSel, QOffset, DataDBWEn, DataDBMux, clock);
+                                    DataOffsetSel, PreSel, QOffset, DataDBWEn, DataABMux, clock);
 
     RegIn <= Immed      when LoadIn = LD_IMM else
              DataDB     when LoadIn = LD_DB else
@@ -115,13 +115,13 @@ begin
              (others => 'X');
 
     -- hi-z unless writing to inout DataDB
-    DataDB <= (others => 'Z');
+    --DataDB <= (others => 'Z');
     RegU    : entity work.RegUnit port map(clock, RegIn, RegWEn, RegWSel, RegSelA, RegSelB, IORegWEn,
                                     IORegWSel, IndDataIn, IndWEn, IndAddrSel, IOOutSel,
                                     RegAOut, RegBOut, AddrMuxOut);
 
     DataMemU : entity work.DataMIU port map(AddrMuxOut, RegIn, QOffset, DataOffsetSel, PreSel, DataDBWEn,
-                                    DataDBMux, ProgDB, IndDataIn, DataDB, DataAB);
+                                    DataABMux, ProgDB, IndDataIn, DataDB, DataAB);
 
 end architecture ; -- behavioral
 

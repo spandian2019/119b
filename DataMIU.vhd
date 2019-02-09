@@ -50,7 +50,7 @@ entity DataMIU is
 
         PreSel      : in PREPOST_ADDR; -- pre/post address select from CU
         DataDBWEn   : in std_logic;
-        DataDBMux   : in std_logic;
+        DataABMux   : in std_logic;
 
         --DataRd      : in std_logic; -- indicates data memory is being read
         --DataWr      : in std_logic; -- indicates data memory is being written
@@ -102,6 +102,7 @@ end component;
 signal offset_buffer : std_logic_vector(ADDRSIZE-1 downto 0);
 signal IndAddrMuxOut : std_logic_vector(ADDRSIZE-1 downto 0);
 signal CarryOut     : std_logic_vector(ADDRSIZE-1 downto 0); -- carry for adder/subtracter
+signal ProgDBLatch  : std_logic_vector(ADDRSIZE-1 downto 0);
 
 begin
 
@@ -153,8 +154,19 @@ begin
       );
       end generate PrePostMux;
 
-    DataAB <= IndAddrMuxOut when DataDBMux = IND_ADDR else
-              ProgDB;
+    DataReg <= AddrAdderOut;
+
+    -- latch ProgDB when DataABMux signals to output ProgDB to DataAB
+    latch_ProgDB : process (DataABMux)
+    begin
+        if (rising_edge(DataABMux)) then
+            ProgDBLatch <= ProgDB;
+        end if;
+    end process latch_ProgDB;
+
+
+    DataAB <= IndAddrMuxOut when DataABMux = IND_ADDR else
+              ProgDBLatch;
 
     DataDB <= RegIn  when DataDBWEn = WRITE_EN else
               "ZZZZZZZZ";

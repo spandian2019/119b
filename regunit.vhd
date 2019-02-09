@@ -72,7 +72,6 @@ end RegUnit;
 
 architecture RegUnit_arc of RegUnit is
 
-signal AddrMux  : integer;
 signal XMuxOut  : std_logic_vector(ADDRSIZE-1 downto 0);
 signal YMuxOut  : std_logic_vector(ADDRSIZE-1 downto 0);
 signal ZMuxOut  : std_logic_vector(ADDRSIZE-1 downto 0);
@@ -222,13 +221,13 @@ begin
       end generate OutAddrMux;
 
     -- Reg A Mux Out
-    OutAMux:  for i in RADDRSIZE-1 downto 0 generate
+    OutAMux:  for i in REGSIZE-1 downto 0 generate
       OutAMuxi: Mux2to1
         port map(
             S0          => IOOutSel,
             SIn0        => AMuxOut(i),
             SIn1        => IOMuxOut(i),
-            SOut        => RegBOut(i)
+            SOut        => RegAOut(i)
       );
       end generate OutAMux;
 end RegUnit_arc;
