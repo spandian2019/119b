@@ -24,7 +24,7 @@ use work.constants.all;
 entity MemTB is
     -- constants for testing
     constant CLK_PERIOD : time := 20 ns;
-    constant TEST_SIZE : natural := 60;
+    constant TEST_SIZE : natural := 67;
 
 end MemTB;
 
@@ -110,16 +110,18 @@ architecture TB_ARCHITECTURE of MemTB is
 --            "STD Z+0, R1", "STD Z+$3F, R0"
 --            "LDD R1, Z+0", "LDD R0, Z+$3F"
 --            "STD Y+0, R1", "STD Y+$3F, R0"
---            "LDI R4, $88", -- test sts, lds -- TODO add 16 to regs after here 
---            "STS $ABCD, R4", "LDS R5, $ABCD", "LDS R0, $FFFF", --sts -> (m) = R4
---            "MOV R8, R5", "LDI R2, $EE", "MOV R3, R2"-- test mov
+--            "LDI R20, $88", -- test sts, lds 
+--            "STS $ABCD, R20", "LDS R21, $ABCD", "LDS R16, $FFFF", --sts -> (m) = R4
+--            "MOV R24, R21", "LDI R18, $EE", "MOV R19, R18"-- test mov
 --            "LDI R27, $FF", "LDI R26, $FF", -- test stx+- extremes (X=$FFFF)
---            "ST X+, R8", "ST X, R5", "ST -X, R2", "ST -X, R3" -- test stx+-, check mov
---            "LDI R2, $00", "ST Y+, R2", "STD Y+10, R2", "ST -Y, R2", -- test sty+-
---            "LDI R2, $56", "ST Z+, R2", "STD Z+3, R2", "ST -Z, R2", -- test stz+-
---            "LDI R1, $FF", "LDI R3, $11" -- test push/pop
---            "PUSH R1", "PUSH R2", "PUSH R3",
---            "POP R3", "POP R2", "POP R1"
+--            "ST X+, R24", "ST X, R21", "ST -X, R18", "ST -X, R19" -- test stx+-, check mov
+--            "LDI R18, $00", "ST Y+, R18", "STD Y+10, R18", "ST -Y, R18", -- test sty+-
+--            "LDI R18, $56", "ST Z+, R18", "STD Z+3, R18", "ST -Z, R18", -- test stz+-
+--             -- undefined behaviors; doesn't change xyz addr
+--            "LD R27, X", "ST X, R18", "LD R28, Y+", "ST -Y, R18", "LD R31, -Z", "ST Z+, R30", "ST Z+, R16" -- loading to/from xyz
+--            "LDI R17, $FF", "LDI R19, $11" -- test push/pop
+--            "PUSH R17", "PUSH R18", "PUSH R19",
+--            "POP R19", "POP R18", "POP R17"
 
             IRTest <= (
             "1110000010110001","1110001010100011","1001000001101101","1001000000011100","1001000000101110",--ldi,ldx
@@ -139,6 +141,7 @@ architecture TB_ARCHITECTURE of MemTB is
             "1001001110001101","1001001101011100","1001001100101110","1001001100111110",--stx
             "1110000000100000","1001001100101001","1000011100101010","1001001100101010",--ldi,sty
             "1110010100100110","1001001100100001","1000001100100011","1001001100100010",--ldi,stz
+            "1001000110111100", "1001001100101100","1001000111001001","1001001100101010","1001000111110010","1001001111100001","1001001100000001",--ld/stxyz
             "1110111100011111","1110000100110001",--ldi
             "1001001100011111","1001001100101111","1001001100111111",--push
             "1001000100111111","1001000100101111","1001000100011111");--pop
@@ -163,6 +166,7 @@ architecture TB_ARCHITECTURE of MemTB is
             "----------------", "----------------", "----------------","----------------", -- stx
             "----------------", "----------------", "----------------", "----------------", -- ldi, sty
             "----------------", "----------------", "----------------", "----------------", -- ldi, stz
+            "----------------", "----------------", "----------------", "----------------", "----------------", "----------------", "----------------", --ld/stxyz
             "----------------", "----------------", -- ldi
             "----------------", "----------------", "----------------", -- push
             "----------------", "----------------", "----------------"); -- pop
@@ -185,6 +189,7 @@ architecture TB_ARCHITECTURE of MemTB is
             '0', '0', '0', '0',
             '0', '0', '0', '0',
             '0', '0', '0', '0',
+            '0', '0', '0', '0', '0', '0', '0',
             '0', '0',
             '0', '0', '0',
             '0', '0', '0');
@@ -207,6 +212,7 @@ architecture TB_ARCHITECTURE of MemTB is
             X"FFFF", X"0000", X"FFFF", X"FFFE", -- stx
             "----------------", X"5555", X"5560", X"5555", -- ldi, sty
             "----------------", X"EFA0", X"EFA4", X"EFA0", -- ldi, stz
+            X"FFFE", X"FFFE", X"5555", X"5555", X"EF9F", X"EF9F", X"EFA0", --ld/stxyz
             "----------------", "----------------", -- ldi
              X"FFFF", X"FFFE",X"FFFD",  -- push
              X"FFFD", X"FFFE", X"FFFF"); -- pop
@@ -229,6 +235,7 @@ architecture TB_ARCHITECTURE of MemTB is
             X"88", X"88", X"EE", X"EE", -- stx
             "--------", X"00", X"00", X"00", -- ldi, sty
             "--------", X"56", X"56", X"56", -- ldi, stz
+            "--------", X"56", "--------", X"56", "--------", X"9F", X"01",--ld/stxyz
             "--------", "--------", -- ldi
             X"FF", X"56", X"11",  -- push
             "--------", "--------", "--------"); -- pop
@@ -251,6 +258,7 @@ architecture TB_ARCHITECTURE of MemTB is
             "--------", "--------", "--------", "--------", -- stx
             "--------", "--------", "--------", "--------", -- ldi, sty
             "--------", "--------", "--------", "--------", -- ldi, stz
+            X"EE", "--------", X"56", "--------", X"AA", "--------", "--------", --ld/stxyz
             "--------", "--------", -- ldi
             "--------", "--------", "--------",  -- push
             X"11", X"56", X"FF"); -- pop
@@ -273,6 +281,7 @@ architecture TB_ARCHITECTURE of MemTB is
             '0', '0', '0', '0',
             '0', '0', '0', '0',
             '0', '0', '0', '0',
+            '1', '0', '1', '0', '1', '0', '0',
             '0', '0',
             '0', '0', '0',
             '1', '1', '1');
@@ -295,6 +304,7 @@ architecture TB_ARCHITECTURE of MemTB is
             '1', '1', '1', '1',
             '0', '1', '1', '1',
             '0', '1', '1', '1',
+            '1', '1', '1', '1', '1', '1', '1',
             '0', '0',
             '1', '1', '1',
             '1', '1', '1');
