@@ -98,7 +98,7 @@ architecture RISC of CU is
 begin
 
     -- asynchronously decodes IR inputs
-    decoder : process(IR)
+    decoder : process(IR, CLK)
     begin
             -- sets cycle number for op_codes
             -- defaults operations to 1 cycle
@@ -115,6 +115,8 @@ begin
             ALUfop      <= FOP_B;
             -- set COMNEG block to pass through B Register Value
             ALUcomneg   <= COMNEG_NONE;
+            -- default writing outputs from Reg A back into Reg space
+            LoadIn <= LD_REGA;
 
       --      -- considering single byte adder/subber ops:
       --      -- ADC, ADD, SBC, SUB, CPC, CP
@@ -425,6 +427,8 @@ begin
                 -- 1001000dddddoooo
                     -- takes 2 cycles to complete operation
                     cycle_num <= TWO_CYCLES;
+                    -- loading values into register space from DataDB
+                    LoadIn <= LD_DB;
                     -- offset values for 0, +1, -1 stored in low two bits of IR
                     -- add  0 -> "00" = ZERO_SEL
                     -- add +1 -> "01" = INC_SEL
@@ -442,7 +446,7 @@ begin
                     -- Operand 1 is the register being written to, loc in IR(8..4)
                     RegWSel <= IR(8 downto 4);
                     -- during first cycle
-                    if load = '1' then
+                    if load = '0' then
                         -- do nothing
                     else
                         -- DataRd = CLK for the second cycle in Ld operations
@@ -452,10 +456,26 @@ begin
                     end if;
             end if;
 
+            if  std_match(IR, OpLDI) then
+                -- 1110kkkkddddkkkk
+                    -- takes 1 cycle to complete operation
+                    cycle_num <= ONE_CYCLE;
+                    -- loading values into register space from DataDB
+                    LoadIn <= LD_IMM;
+                    -- Operand 1 is the register being written to
+                    -- Immediate operations limited to upper half of register space
+                    -- so, MSB of RADDRSIZE = '1' and rest is loc in IR(7..4)
+                    RegWSel <= '1' & IR(7 downto 4);
+                    -- immediate value found in k locs in IR, IR(11..8)&IR(3..0)
+                    Immed <= IR(11 downto 8) & IR(3 downto 0);
+                    RegWEn <= '1';
+            end if;
+
+
     end process decoder;
 
     -- load enable signal telling when to fetch next instruction
-    load <= '1' when cycle = cycle_num - 1 else
+    load <= '1' when cycle = cycle_num-1 else
             '0';
 
     -- cycle counter, only operates when cycle_num /= 1

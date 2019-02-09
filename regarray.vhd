@@ -82,7 +82,7 @@ begin
         if (rising_edge(CLK)) then
             -- writes to register only if write enabled
             -- holds value otherwise
-            if RegWEn = WRITE_EN then
+            if RegWEn = '1' then
                 registers(conv_integer(RegWSel)) <= RegIn;
             else
                 registers(conv_integer(RegWSel)) <= registers(conv_integer(RegWSel));
@@ -90,7 +90,7 @@ begin
         end if;
     end process write_reg;
 
-    -- writing to SP Register occurs synchronously
+    -- writing to X, Y, Z Registers occurs synchronously
     write_addr_reg : process (CLK)
     begin
         if (rising_edge(CLK)) then

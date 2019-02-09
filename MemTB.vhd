@@ -256,7 +256,7 @@ architecture TB_ARCHITECTURE of MemTB is
             ProgDB  <= (others => 'Z');
         	wait for 100 ns; -- wait for a bit
             Reset <= '0'; -- de-assert reset
-
+            wait for CLK_PERIOD*0.7;
 			-- loop through test vector
 			for i in TEST_SIZE downto 0 loop
 				IR <= IRTest(i);

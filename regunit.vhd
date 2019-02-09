@@ -158,7 +158,7 @@ begin
         RegWEn      => RegWEn,
         RegWSel     => RegWSel,
         RegSelA     => RegSelA,
-        RegSelB     => RegSelA,
+        RegSelB     => RegSelB,
 
         IndDataIn   => IndDataIn,
         IndAddrIn   => IndAddrIn(RADDRSIZE-1 downto 0),
