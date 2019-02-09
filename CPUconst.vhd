@@ -79,14 +79,6 @@ package constants is
 
     -- Adder/Subber control signals
     subtype  ALU_ADDSUB is std_logic_vector(2 downto 0);
-    -- subtract flag values
-    constant ALU_ADD    : ALU_ADDSUB := "000"; -- add
-    constant ALU_SUB    : ALU_ADDSUB := "001"; -- sub
-    -- carry select values
-    constant RST_CARRY  : ALU_ADDSUB := "00"; -- carry in = '0'
-    constant SET_CARRY  : ALU_ADDSUB := "01"; -- carry in = '1'
-    constant CARRY_IN   : ALU_ADDSUB := "10"; -- carry in = Cin
-    constant NCARRY_IN  : ALU_ADDSUB := "11"; -- carry in = nCin
     -- Subflag operand indices and values
     constant SUBFLAG    : integer := 0;     -- index of subtract flag
     constant OP_ADD     : std_logic := '0'; -- value for adding
@@ -94,6 +86,14 @@ package constants is
     -- carry operand indices
     constant CARRY_S0   : integer := 1;     -- index of lower bit of carry CTRL
     constant CARRY_S1   : integer := 2;     -- index of higher bit of carry CTRL
+    -- subtract flag values
+    constant ALU_ADD    : ALU_ADDSUB := "000"; -- add
+    constant ALU_SUB    : ALU_ADDSUB := "001"; -- sub
+    -- carry select values
+    constant RST_CARRY  : std_logic_vector(1 downto 0) := "00"; -- carry in = '0'
+    constant SET_CARRY  : std_logic_vector(1 downto 0) := "01"; -- carry in = '1'
+    constant CARRY_IN   : std_logic_vector(1 downto 0) := "10"; -- carry in = Cin
+    constant NCARRY_IN  : std_logic_vector(1 downto 0) := "11"; -- carry in = nCin
 
     -- COM and NEG control signals for AND and OR gates
     subtype  ALU_COMNEG is std_logic_vector(1 downto 0);
