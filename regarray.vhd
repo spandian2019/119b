@@ -84,34 +84,6 @@ begin
             -- writes to register only if write enabled
             -- holds value otherwise
 
-            --if RegWEn = WRITE_EN then
-            --    registers(conv_integer(RegWSel)) <= RegIn;
-            --    if IndWEn = WRITE_EN and IndAddrIn(0) = '0' then
-            --        registers(conv_integer(IndAddrIn))
-            --            <= IndDataIn((ADDRSIZE/2)-1 downto 0);
-            --        registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
-            --            <= IndDataIn(ADDRSIZE-1 downto ADDRSIZE/2);
-            --    else
-            --        registers(conv_integer(IndAddrIn))
-            --            <= registers(conv_integer(IndAddrIn));
-            --        registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
-            --            <= registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'));
-            --    end if;
-            --else
-            --    registers(conv_integer(RegWSel)) <= registers(conv_integer(RegWSel));
-            --    if IndWEn = WRITE_EN and IndAddrIn(0) = '0' then
-            --        registers(conv_integer(IndAddrIn))
-            --            <= IndDataIn((ADDRSIZE/2)-1 downto 0);
-            --        registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
-            --            <= IndDataIn(ADDRSIZE-1 downto ADDRSIZE/2);
-            --    else
-            --        registers(conv_integer(IndAddrIn))
-            --            <= registers(conv_integer(IndAddrIn));
-            --        registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
-            --            <= registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'));
-            --    end if;
-            --end if;
-
             if RegWEn = WRITE_EN then
                 registers(conv_integer(RegWSel)) <= RegIn;
             else
@@ -129,12 +101,14 @@ begin
                 registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
                     <= IndDataIn(ADDRSIZE-1 downto ADDRSIZE/2);
             else
-                if RegWSel(RADDRSIZE-1 downto 1) /= IndAddrIn(RADDRSIZE-1 downto 1) then
+                --if RegWSel /= IndAddrIn then
                     registers(conv_integer(IndAddrIn))
                         <= registers(conv_integer(IndAddrIn));
+                --end if;
+                --if RegWSel /= IndAddrIn(RADDRSIZE-1 downto 1) & '1' then
                     registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
                         <= registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'));
-                end if;
+                --end if;
             end if;
         end if;
     end process write_addr_reg;

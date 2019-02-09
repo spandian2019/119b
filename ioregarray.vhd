@@ -64,19 +64,6 @@ architecture regspace of IORegArray is
 
 begin
 
-    ---- writing to registers occurs synchronously
-    --write_IO_reg : process (CLK)
-    --begin
-    --    if (rising_edge(CLK)) then
-    --        -- writes to register only if write enabled
-    --        -- holds value otherwise
-    --        if IORegWEn = WRITE_EN then
-    --            IOregisters(conv_integer(IORegWSel)) <= RegIn;
-    --        else
-    --            IOregisters(conv_integer(IORegWSel)) <= IOregisters(conv_integer(IORegWSel));
-    --        end if;
-    --    end if;
-    --end process write_IO_reg;
 
     -- writing to SP Register occurs synchronously
     write_addr_reg : process (CLK)
@@ -86,12 +73,23 @@ begin
             -- holds value otherwise
             if IORegWEn = WRITE_EN then
                 IOregisters(conv_integer(IORegWSel)) <= RegIn;
-            elsif IndWEn = WRITE_EN and IndAddrIn = SP_ADDR_L then
+            else
+                if IORegWSel /= SP_ADDR_L or IORegWSel /= SP_ADDR_H then
+                    IOregisters(conv_integer(IORegWSel)) <= IOregisters(conv_integer(IORegWSel));
+                end if;
+            end if;
+            -- writes to register only if write enabled and indirect address is SP_ADDR_L
+            -- holds value otherwise
+            if IndWEn = WRITE_EN and IndAddrIn = SP_ADDR_L then
                 IOregisters(conv_integer(SP_ADDR_H)) <= IndDataIn((ADDRSIZE/2)-1 downto 0);
                 IOregisters(conv_integer(SP_ADDR_L)) <= IndDataIn(ADDRSIZE-1 downto ADDRSIZE/2);
             else
-                IOregisters(conv_integer(SP_ADDR_H)) <= IOregisters(conv_integer(SP_ADDR_H));
-                IOregisters(conv_integer(SP_ADDR_L)) <= IOregisters(conv_integer(SP_ADDR_L));
+                --if IORegWSel /= SP_ADDR_H then
+                    IOregisters(conv_integer(SP_ADDR_H)) <= IOregisters(conv_integer(SP_ADDR_H));
+                --end if;
+                --if IORegWSel /= SP_ADDR_L then
+                    IOregisters(conv_integer(SP_ADDR_L)) <= IOregisters(conv_integer(SP_ADDR_L));
+                --end if;
             end if;
         end if;
     end process write_addr_reg;
@@ -99,9 +97,15 @@ begin
     -- can always output IO reg to IO data bus since value needs to be selected
     --  by Control Unit to be used
     IORegOut <= IOregisters(conv_integer(IORegWSel));
-    -- stack pointer also always gets outputted to addr line MUX and control unit
-    --  selects which address line to be used
-    SPRegOut((ADDRSIZE/2)-1 downto 0)      <= IOregisters(conv_integer(SP_ADDR_L));
-    SPRegOut(ADDRSIZE-1 downto ADDRSIZE/2) <= IOregisters(conv_integer(SP_ADDR_H));
+
+    read_addr_reg : process (CLK)
+    begin
+        if (rising_edge(CLK)) then
+        -- stack pointer also always gets outputted to addr line MUX and control unit
+        --  selects which address line to be used
+        SPRegOut((ADDRSIZE/2)-1 downto 0)      <= IOregisters(conv_integer(SP_ADDR_L));
+        SPRegOut(ADDRSIZE-1 downto ADDRSIZE/2) <= IOregisters(conv_integer(SP_ADDR_H));
+        end if;
+    end process read_addr_reg;
 
 end regspace;
