@@ -308,7 +308,6 @@ architecture TB_ARCHITECTURE of MemTB is
             wait for CLK_PERIOD*0.7; -- offset for clock edge
             
 			-- loop through test vector
-			wait for CLK_PERIOD*0.2; 
 			for i in TEST_SIZE downto 0 loop
 				IR <= IRTest(i);
                 ProgDB <= (others => 'Z');

@@ -104,7 +104,7 @@ begin
     CtrlU   : entity work.CU port map(ProgDB, IR, SReg, load, Immed, ImmedEn, RegWEn, RegWSel,
                                     RegSelA, RegSelB, IORegWEn, IORegWSel, IndWEn, IndAddrSel,
                                     IOOutSel, DataRd, DataWr, IORegOutEn, ALUaddsub, ALUsr, ALUfop,
-                                    ALUcomneg, ALUSel, bitmask, CPC, LoadIn, SRegLd, DataAddrSel,
+                                    ALUcomneg, ALUSel, bitmask, CPC, LoadIn, SRegLd,
                                     DataOffsetSel, PreSel, QOffset, clock);
     
     RegIn <= Immed      when LoadIn = LD_IMM else
