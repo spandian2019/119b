@@ -337,7 +337,7 @@ end TB_ARCHITECTURE;
 configuration TESTBENCH_FOR_MEM of MemTB is
     for TB_ARCHITECTURE
 		  for UUT : MEM_TEST
-            use entity work.ALU;
+            use entity work.MEM_TEST;
         end for;
     end for;
 end TESTBENCH_FOR_MEM;
