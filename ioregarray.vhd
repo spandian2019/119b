@@ -64,19 +64,19 @@ architecture regspace of IORegArray is
 
 begin
 
-    -- writing to registers occurs synchronously
-    write_IO_reg : process (CLK)
-    begin
-        if (rising_edge(CLK)) then
-            -- writes to register only if write enabled
-            -- holds value otherwise
-            if IORegWEn = WRITE_EN then
-                IOregisters(conv_integer(IORegWSel)) <= RegIn;
-            else
-                IOregisters(conv_integer(IORegWSel)) <= IOregisters(conv_integer(IORegWSel));
-            end if;
-        end if;
-    end process write_IO_reg;
+    ---- writing to registers occurs synchronously
+    --write_IO_reg : process (CLK)
+    --begin
+    --    if (rising_edge(CLK)) then
+    --        -- writes to register only if write enabled
+    --        -- holds value otherwise
+    --        if IORegWEn = WRITE_EN then
+    --            IOregisters(conv_integer(IORegWSel)) <= RegIn;
+    --        else
+    --            IOregisters(conv_integer(IORegWSel)) <= IOregisters(conv_integer(IORegWSel));
+    --        end if;
+    --    end if;
+    --end process write_IO_reg;
 
     -- writing to SP Register occurs synchronously
     write_addr_reg : process (CLK)
@@ -84,7 +84,9 @@ begin
         if (rising_edge(CLK)) then
             -- writes to register only if write enabled
             -- holds value otherwise
-            if IndWEn = WRITE_EN and IndAddrIn = SP_ADDR_L then
+            if IORegWEn = WRITE_EN then
+                IOregisters(conv_integer(IORegWSel)) <= RegIn;
+            elsif IndWEn = WRITE_EN and IndAddrIn = SP_ADDR_L then
                 IOregisters(conv_integer(SP_ADDR_H)) <= IndDataIn((ADDRSIZE/2)-1 downto 0);
                 IOregisters(conv_integer(SP_ADDR_L)) <= IndDataIn(ADDRSIZE-1 downto ADDRSIZE/2);
             else
