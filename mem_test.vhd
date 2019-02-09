@@ -76,7 +76,7 @@ signal IORegWSel   :  std_logic_vector(IOADDRSIZE-1 downto 0);   -- IO register 
 signal IndWEn      :  std_logic;
 signal IndAddrSel  :  ADDR_SEL;
 signal IOOutSel    :  std_logic;
-signal IORegOutEn  :    std_logic;                      -- OUT command enable
+signal IORegOutEn  :  std_logic;                      -- OUT command enable
 signal ALUaddsub   :  ALU_ADDSUB;
 signal ALUsr       :  ALU_SR;
 signal ALUfop      :  ALU_FOPS; -- operation control signals
@@ -85,7 +85,7 @@ signal ALUSel      :  ALU_SELECTS; -- operation select
 signal bitmask     :  BIT_MASK; -- mask for writing to flags (SReg)
 signal CPC         :  std_logic;
 signal LoadIn      :  LOADIN_SEL; -- selects data line into reg
-signal SRegLd      :    std_logic;                      -- select line to mux status reg source
+signal SRegLd      :  std_logic;                      -- select line to mux status reg source
 signal DataAddrSel     :  ADDR_SEL;  -- data address source select
 signal DataOffsetSel   :  OFFSET_SEL;-- data address offset source select
 signal PreSel          :  PREPOST_ADDR; -- data pre/post address select
@@ -105,23 +105,14 @@ begin
                                     RegSelA, RegSelB, IORegWEn, IORegWSel, IndWEn, IndAddrSel,
                                     IOOutSel, DataRd, DataWr, IORegOutEn, ALUaddsub, ALUsr, ALUfop,
                                     ALUcomneg, ALUSel, bitmask, CPC, LoadIn, SRegLd, DataAddrSel,
-                                    DataOffsetSel, PreSel, QOffset, Reset, clock);
+                                    DataOffsetSel, PreSel, QOffset, clock);
+    
+    RegIn <= Immed      when LoadIn = LD_IMM else
+             DataDB     when LoadIn = LD_DB else
+             RegAOut    when LoadIn = LD_REGA else
+             (others => 'X');
 
-    if LoadIn = LD_IMM then
-        RegIn <= Immed;
-    end if;
-    if LoadIn = LD_ALU then
-        --RegIn <= ALURegOut;
-        RegIn <= (others => 'X');
-    end if;
-    if LoadIn = LD_DB then
-        RegIn <= DataDB;
-    end if;
-    if LoadIn = LD_REGA then
-        RegIn <= RegAOut;
-    end if;
-
-    RegU    : entity work.RegUnit port map(clock, RegIn, RegWEn, RegWSel, RegSelA, RegSelB, IORegWEn
+    RegU    : entity work.RegUnit port map(clock, RegIn, RegWEn, RegWSel, RegSelA, RegSelB, IORegWEn,
                                     IORegWSel, IndDataIn, IndWEn, IndAddrSel, IOOutSel,
                                     RegAOut, RegBOut, AddrMuxOut);
 

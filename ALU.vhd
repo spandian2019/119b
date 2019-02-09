@@ -126,12 +126,13 @@ component Mux4to1 is
       );
 end component;
 
-component Adder is generic ( bitsize : integer );
+component fullAdder is
     port(
-        A, B        :  in      std_logic_vector((bitsize-1) downto 0);  -- addends
+        A           :  in      std_logic;  -- adder input
+        B           :  in      std_logic;  -- adder input
         Cin         :  in      std_logic;  -- carry in value
         Cout        :  out     std_logic;  -- carry out value
-        Sum         :  out     std_logic_vector((bitsize-1) downto 0)   -- sum of A, B with carry in
+        Sum         :  out     std_logic   -- sum of A, B with carry in
       );
 end component;
 
@@ -176,7 +177,7 @@ begin
     adder0: fullAdder --TODO check
     port map(
         A           => comnegR(0),
-        B           => RegB(0),
+        B           => Bin(0),
         Cin         => CIn,
         Cout        => Carryout(0),
         Sum         => AdderOut(0)
@@ -186,7 +187,7 @@ begin
   adderi: fullAdder
     port map(
         A           => comnegR(i),
-        B           => RegB(i),
+        B           => Bin(i),
         Cin         => CarryOut(i-1),
         Cout        => Carryout(i),
         Sum         => AdderOut(i)

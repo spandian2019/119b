@@ -51,7 +51,7 @@ entity IORegArray is
         IndAddrIn 	: in std_logic_vector(IOADDRSIZE-1 downto 0); -- 
         IndWEn 		: in std_logic;
 
-        RegOut      :  out std_logic_vector(REGSIZE-1 downto 0);       -- register bus B out
+        IORegOut    :  out std_logic_vector(REGSIZE-1 downto 0);       -- register bus B out
         SPRegOut    :  out std_logic_vector(ADDRSIZE-1 downto 0)
     );
 

@@ -37,10 +37,10 @@ package constants is
     ---------------------------
     -- Cycle Num Constants
     subtype OP_CYCLE is std_logic_vector(1 downto 0);
-    constant 0CYCLES        : OP_CYCLE := "00";
-    constant 1CYCLE         : OP_CYCLE := "01";
-    constant 2CYCLES        : OP_CYCLE := "10";
-    constant 3CYCLES        : OP_CYCLE := "11";
+    constant ZERO_CYCLES    : OP_CYCLE := "00";
+    constant ONE_CYCLE      : OP_CYCLE := "01";
+    constant TWO_CYCLES     : OP_CYCLE := "10";
+    constant THREE_CYCLES   : OP_CYCLE := "11";
 
     -------------------
     -- ALU CONSTANTS --
@@ -124,7 +124,7 @@ package constants is
     constant DEC_SEL        : OFFSET_SEL := "10"; -- Selects -1 to add
     constant OFFS_SEL       : OFFSET_SEL := "11"; -- Selects q offset to add
 
-    subtype OFFSET_CONST is std_logic_vector(ADDRSIZE-1) downto 0);
+    subtype OFFSET_CONST is std_logic_vector(ADDRSIZE-1 downto 0);
     -- number of bits in OFFSET_CONST needs to match ADDRSIZE-1 for a 16 bit address bus
     -- Address Adder - Offset constant values to add
     constant ZERO_OFFSET    : OFFSET_CONST := "0000000000000000"; --  0 constant to add
@@ -180,20 +180,15 @@ package constants is
     constant Z_CONST    : ADDR_CONST := 30; -- location of Z indirect addressing mode register
     constant SP_CONST   : ADDR_CONST := 24; -- location of SP
 
-
-    -- Adder/Subber bit assignments
-    constant subFlag    : integer := 3;
-    constant carryBit   : integer := 2;
-
     -- Register Data In Select constants
     subtype  RegData_selects is std_logic_vector(3 downto 0);
 
     subtype  LOADIN_SEL is std_logic_vector(1 downto 0);
     -- LoadIn select constants
-    constant LD_IMM    : LoadIn_selects := "00";
-    constant LD_ALU    : LoadIn_selects := "01";
-    constant LD_DB     : LoadIn_selects := "10";
-    constant LD_REGA   : LoadIn_selects := "11";
+    constant LD_IMM    : LOADIN_SEL := "00";
+    constant LD_ALU    : LOADIN_SEL := "01";
+    constant LD_DB     : LOADIN_SEL := "10";
+    constant LD_REGA   : LOADIN_SEL := "11";
 
     --subtype  LoadReg_selects is std_logic_vector(1 downto 0);
     ---- LoadReg select constants

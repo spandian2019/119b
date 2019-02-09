@@ -81,7 +81,9 @@ signal AMuxOut  : std_logic_vector(REGSIZE-1  downto 0);
 signal IOMuxOut : std_logic_vector(REGSIZE-1  downto 0);
 
 signal IndAddrIn : std_logic_vector(IOADDRSIZE-1 downto 0);
-
+signal XAddr : std_logic_vector(IOADDRSIZE-1 downto 0);
+signal YAddr : std_logic_vector(IOADDRSIZE-1 downto 0);
+signal ZAddr : std_logic_vector(IOADDRSIZE-1 downto 0);
 
 component RegArray is
     port(
@@ -114,13 +116,13 @@ component IORegArray is
 
         -- from CU
         IORegWEn    : in std_logic;                     -- register write enable
-        IORegWSel   : in s td_logic_vector(IOADDRSIZE-1 downto 0);   -- IO register address bus
+        IORegWSel   : in std_logic_vector(IOADDRSIZE-1 downto 0);   -- IO register address bus
 
         IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0); --
         IndAddrIn   : in std_logic_vector(IOADDRSIZE-1 downto 0); --
         IndWEn      : in std_logic;
 
-        RegOut      :  out std_logic_vector(REGSIZE-1 downto 0);       -- register bus B out
+        IORegOut    :  out std_logic_vector(REGSIZE-1 downto 0);       -- register bus B out
         SPRegOut    :  out std_logic_vector(ADDRSIZE-1 downto 0)
     );
 end component;
@@ -159,7 +161,7 @@ begin
         RegSelB     => RegSelA,
 
         IndDataIn   => IndDataIn,
-        IndAddrIn   => IndAddrIn(RADDRSIZE-1 downto 0);,
+        IndAddrIn   => IndAddrIn(RADDRSIZE-1 downto 0),
         IndWEn      => IndWEn,
 
         RegAOut     => AMuxOut,
@@ -183,9 +185,13 @@ begin
         IndAddrIn   => IndAddrIn,
         IndWEn      => IndWEn,
 
-        RegOut      => IOMuxOut,
+        IORegOut    => IOMuxOut,
         SPRegOut    => SPMuxOut
     );
+
+    ZAddr <= '0' & Z_ADDR_L;
+    YAddr <= '0' & Y_ADDR_L;
+    XAddr <= '0' & X_ADDR_L;
 
     -- Address Mux In
     InAddrMux:  for i in IOADDRSIZE-1 downto 0 generate
@@ -193,11 +199,11 @@ begin
         port map(
             S0          => IndAddrSel(0),
             S1          => IndAddrSel(1),
-            SIn0        => '0' & Z_ADDR_L,
-            SIn1        => SP_ADDR_L,
-            SIn2        => '0' & Y_ADDR_L,
-            SIn3        => '0' & X_ADDR_L,
-            SOut        => IndAddrIn
+            SIn0        => ZAddr(i),
+            SIn1        => SP_ADDR_L(i),
+            SIn2        => YAddr(i),
+            SIn3        => XAddr(i),
+            SOut        => IndAddrIn(i)
       );
       end generate InAddrMux;
 
@@ -207,11 +213,11 @@ begin
         port map(
             S0          => IndAddrSel(0),
             S1          => IndAddrSel(1),
-            SIn0        => ZMuxOut,
-            SIn1        => SPMuxOut,
-            SIn2        => YMuxOut,
-            SIn3        => XMuxOut,
-            SOut        => AddrMuxOut
+            SIn0        => ZMuxOut(i),
+            SIn1        => SPMuxOut(i),
+            SIn2        => YMuxOut(i),
+            SIn3        => XMuxOut(i),
+            SOut        => AddrMuxOut(i)
       );
       end generate OutAddrMux;
 
@@ -220,9 +226,9 @@ begin
       OutAMuxi: Mux2to1
         port map(
             S0          => IOOutSel,
-            SIn0        => AMuxOut,
-            SIn1        => IOMuxOut,
-            SOut        => RegBOut
+            SIn0        => AMuxOut(i),
+            SIn1        => IOMuxOut(i),
+            SOut        => RegBOut(i)
       );
       end generate OutAMux;
 end RegUnit_arc;

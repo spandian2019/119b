@@ -81,7 +81,7 @@ entity CU is
         ---- Stack
         --StackEn     : out std_logic; -- stack enable signal
         --StackPush   : out std_logic; -- stack push/pop control
-        Reset       : out std_logic -- active low reset signal
+        --Reset       : out std_logic; -- active low reset signal
 
         CLK         : in    std_logic                       -- system clock
     );
@@ -93,16 +93,16 @@ end CU;
 --
 
 architecture RISC of CU is
-    signal cycle_num    :   OP_CYCLE := 0CYCLES;
+    signal cycle_num    :   OP_CYCLE := ZERO_CYCLES;
     signal cycle        :   std_logic_vector(1 downto 0) := "00";
 begin
 
     -- asynchronously decodes IR inputs
-    decoder : process
+    decoder : process(IR)
     begin
             -- sets cycle number for op_codes
             -- defaults operations to 1 cycle
-            cycle_num <= 1CYCLE;
+            cycle_num <= ONE_CYCLE;
             -- control signals default values, reset all
             -- this way each operation only enables actions
             RegWEn      <= WRITE_DIS;
@@ -160,7 +160,7 @@ begin
       --          BitMask <= MASK_ADIW;
 
       --          -- takes 2 cycles to complete operation
-      --          cycle_num <= 2CYCLES;
+      --          cycle_num <= TWO_CYCLES;
       --          -- enable Adder/Subber operation
       --          ALUSel <= ADDSUBOUT;
       --          -- subFlag mapped in IR
@@ -424,7 +424,7 @@ begin
                 std_match(IR, OpLDZD) then
                 -- 1001000dddddoooo
                     -- takes 2 cycles to complete operation
-                    cycle_num <= 2CYCLES;
+                    cycle_num <= TWO_CYCLES;
                     -- offset values for 0, +1, -1 stored in low two bits of IR
                     -- add  0 -> "00" = ZERO_SEL
                     -- add +1 -> "01" = INC_SEL

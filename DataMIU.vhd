@@ -37,6 +37,8 @@ use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 
 use work.opcodes.all;
+use work.constants.all;
+use work.ALUconstants.all;
 
 entity DataMIU is
     port(
@@ -60,8 +62,44 @@ architecture DataMIU_arc of DataMIU is
 signal OffsetMuxOut : std_logic_vector(ADDRSIZE-1 downto 0); -- address adder - offset mux output
 signal AddrAdderOut : std_logic_vector(ADDRSIZE-1 downto 0); -- address adder output
 
+component Mux4to1 is
+    port(
+        S0          :  in      std_logic;  -- mux sel(0)
+        S1          :  in      std_logic;  -- mux sel(1)
+        SIn0        :  in      std_logic;  -- mux inputs
+        SIn1        :  in      std_logic;  -- mux inputs
+        SIn2        :  in      std_logic;  -- mux inputs
+        SIn3        :  in      std_logic;  -- mux inputs
+        SOut        :  out     std_logic   -- mux output
+      );
+end component;
+
+component Mux2to1 is
+    port(
+        S0          :  in      std_logic;  -- mux sel(0)
+        SIn0        :  in      std_logic;  -- mux inputs
+        SIn1        :  in      std_logic;  -- mux inputs
+        SOut        :  out     std_logic   -- mux output
+      );
+end component;
+
+component fullAdder is
+    port(
+        A           :  in      std_logic;  -- adder input
+        B           :  in      std_logic;  -- adder input
+        Cin         :  in      std_logic;  -- carry in value
+        Cout        :  out     std_logic;  -- carry out value
+        Sum         :  out     std_logic   -- sum of A, B with carry in
+      );
+end component;
+
+signal offset_buffer : std_logic_vector(ADDRSIZE-1 downto 0);
+signal temp : std_logic;
+signal CarryOut     : std_logic_vector(ADDRSIZE-1 downto 0); -- carry for adder/subtracter
 
 begin
+
+    offset_buffer <= Q_OFFS_ZERO_PAD & QOffset;
 
     -- Offset Mux In
     OffsetMuxIn:  for i in ADDRSIZE-1 downto 0 generate
@@ -69,10 +107,10 @@ begin
         port map(
             S0          => OffsetSel(0),
             S1          => OffsetSel(1),
-            SIn0        => ZERO_OFFSET,
-            SIn1        => INC_OFFSET,
-            SIn2        => DEC_OFFSET,
-            SIn3        => Q_OFFS_ZERO_PAD & QOffset,
+            SIn0        => ZERO_OFFSET(i),
+            SIn1        => INC_OFFSET(i),
+            SIn2        => DEC_OFFSET(i),
+            SIn3        => offset_buffer(i),
             SOut        => OffsetMuxOut(i)
       );
       end generate OffsetMuxIn;
@@ -80,15 +118,35 @@ begin
     -- ADDRSIZE bit adder for addressing modes
     -- ASKFAB
     -- does making Cin = 0 simplify automatically or nah?
-    Addradder: Adder
-        generic map (bitsize => ADDRSIZE)
-        port map(
-            A           => DataAddr,
-            B           => OffsetMuxOut,
-            Cin         => '0',
-            Cout        => '-',         -- might error ASKFAB
-            Sum         => AddrAdderOut
-      );
+    --Addradder: Adder
+    --    generic map (bitsize => ADDRSIZE)
+    --    port map(
+    --        A           => DataAddr,
+    --        B           => OffsetMuxOut,
+    --        Cin         => '0',
+    --        Cout        => temp,         -- might error ASKFAB
+    --        Sum         => AddrAdderOut
+    --  );
+
+    adder0: fullAdder --TODO check
+    port map(
+        A           => DataAddr(0),
+        B           => OffsetMuxOut(0),
+        Cin         => '0',
+        Cout        => Carryout(0),
+        Sum         => AddrAdderOut(0)
+    );
+    -- other bits
+    GenAdder:  for i in 1 to ADDRSIZE - 1 generate
+    adderi: fullAdder
+    port map(
+        A           => DataAddr(i),
+        B           => OffsetMuxOut(i),
+        Cin         => CarryOut(i-1),
+        Cout        => Carryout(i),
+        Sum         => AddrAdderOut(i)
+    );
+    end generate GenAdder;
 
     -- PrePost Indirect Addressing Mux
     -- ASKFAB -- why is this 2:1 mux necessary, why not only add
