@@ -643,6 +643,8 @@ begin
                     cycle_num <= TWO_CYCLES;
                     -- loading values into register space from DataDB
                     LoadIn <= LD_DB;
+
+                    IORegWSel <= "000000";
                     -- Popping pre-increments
                     DataOffsetSel <= INC_SEL;
                     PreSel <= PRE_ADDR;
@@ -653,7 +655,9 @@ begin
                     -- during first cycle
                     if cycle = ZERO_CYCLES then
                         IndWEn <= WRITE_EN;
+                        PreSel <= POST_ADDR;
                     else
+                        PreSel <= POST_ADDR;
                         -- DataRd = CLK for the second cycle in Ld operations
                         DataRd <= CLK;
                         RegWEn <= WRITE_EN;
@@ -665,6 +669,7 @@ begin
                     -- takes 2 cycles to complete operation
                     cycle_num <= TWO_CYCLES;
                     -- loading values from RegA into DataDB so no change from default
+                    IORegWSel <= "000000";
 
                     -- Pushing post decrements
                     DataOffsetSel <= DEC_SEL;
@@ -676,7 +681,9 @@ begin
                     -- during first cycle
                     if cycle = ZERO_CYCLES then
                         -- do nothing
+                        PreSel <= POST_ADDR;
                     else
+                        PreSel <= POST_ADDR;
                         IndWEn <= WRITE_EN;
                         -- DataWr = CLK for the second cycle in Ld operations
                         DataWr <= CLK;

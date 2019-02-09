@@ -70,8 +70,8 @@ begin
     write_addr_reg : process (CLK, Reset)
     begin
         if Reset = '1' then
-            IOregisters(conv_integer(SP_ADDR_H)) <= (others => '0');
-            IOregisters(conv_integer(SP_ADDR_L)) <= (others => '0');
+            IOregisters(conv_integer(SP_ADDR_H)) <= (others => '1');
+            IOregisters(conv_integer(SP_ADDR_L)) <= (others => '1');
         elsif (rising_edge(CLK)) then
             -- writes to register only if write enabled
             -- holds value otherwise
@@ -107,8 +107,8 @@ begin
         if (rising_edge(CLK)) then
         -- stack pointer also always gets outputted to addr line MUX and control unit
         --  selects which address line to be used
-        SPRegOut((ADDRSIZE/2)-1 downto 0)      <= IOregisters(conv_integer(SP_ADDR_L));
-        SPRegOut(ADDRSIZE-1 downto ADDRSIZE/2) <= IOregisters(conv_integer(SP_ADDR_H));
+        SPRegOut((ADDRSIZE/2)-1 downto 0)      <= IOregisters(conv_integer(SP_ADDR_H));
+        SPRegOut(ADDRSIZE-1 downto ADDRSIZE/2) <= IOregisters(conv_integer(SP_ADDR_L));
         end if;
     end process read_addr_reg;
 
