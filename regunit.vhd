@@ -48,6 +48,7 @@ use work.constants.all;
 entity RegUnit is
     port(
         Clk         : in  std_logic;                          -- system clock
+        Reset       : in  std_logic;
         RegIn       : in  std_logic_vector(REGSIZE-1 downto 0);       -- input register bus
 
         -- from CU
@@ -87,7 +88,6 @@ signal ZAddr : std_logic_vector(IOADDRSIZE-1 downto 0);
 component RegArray is
     port(
     Clk      :  in  std_logic;                          -- system clock
-    Reset    :  in  std_logic;
     RegIn    :  in  std_logic_vector(REGSIZE-1 downto 0);       -- input register bus
 
     -- from CU
