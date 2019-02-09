@@ -456,6 +456,39 @@ begin
                     end if;
             end if;
 
+            if  std_match(IR, OpLDD) then
+                -- 10q0qq0ddddd0qqq
+                    -- takes 2 cycles to complete operation
+                    cycle_num <= TWO_CYCLES;
+                    -- loading values into register space from DataDB
+                    LoadIn <= LD_DB;
+                    -- offset values for 0, +1, -1 stored in low two bits of IR
+                    -- add  0 -> "00" = ZERO_SEL
+                    -- add +1 -> "01" = INC_SEL
+                    -- add -1 -> "10" = DEC_SEL
+                    DataOffsetSel <= IR(1 downto 0);
+                    -- pre flag setting stored in IR(1)
+                    -- pre-op -> IR(1) = '1' = PRE_ADDR
+                    -- pre-op -> IR(0) = '0' = POST_ADDR
+                    PreSel <= IR(1);
+                    -- indirect addressing stored in IR(3..2)
+                    -- X -> IR(3..2) = "11" = X_SEL
+                    -- Y -> IR(3..2) = "10" = Y_SEL
+                    -- Z -> IR(3..2) = "00" = Z_SEL
+                    DataAddrSel <= IR(3 downto 2);
+                    -- Operand 1 is the register being written to, loc in IR(8..4)
+                    RegWSel <= IR(8 downto 4);
+                    -- during first cycle
+                    if load = '0' then
+                        -- do nothing
+                    else
+                        -- DataRd = CLK for the second cycle in Ld operations
+                        DataRd <= CLK;
+                        RegWEn <= WRITE_EN;
+                        -- RegIn into register needs to be DataDB here
+                    end if;
+            end if;
+
             if  std_match(IR, OpLDI) then
                 -- 1110kkkkddddkkkk
                     -- takes 1 cycle to complete operation
