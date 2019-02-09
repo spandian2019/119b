@@ -76,6 +76,8 @@ entity CU is
         DataOffsetSel   : out OFFSET_SEL;-- data address offset source select
         PreSel          : out PREPOST_ADDR; -- data pre/post address select
         QOffset         : out std_logic_vector(Q_OFFSET_SIZE-1 downto 0); -- address offset for data memory unit
+        DataDBWEn       : out std_logic;
+        DataDBMux       : out std_logic;
 
         ---- Stack
         --StackEn     : out std_logic; -- stack enable signal
@@ -107,6 +109,7 @@ begin
             RegWEn      <= WRITE_DIS;
             IORegWEn    <= WRITE_DIS;
             IndWEn      <= WRITE_DIS;
+            DataDBWEn   <= WRITE_DIS;
             ImmedEn     <= IMM_DIS;
             bitmask     <= MASK_NONE;
             CPC         <= CPC_RST;
@@ -116,6 +119,10 @@ begin
             ALUcomneg   <= COMNEG_NONE;
             -- default writing outputs from Reg A back into Reg space
             LoadIn <= LD_REGA;
+            -- default to outputting from register space, not IO
+            IOOutSel <= REG_A_OUT;
+            -- default to loading from indirect addressing
+            DataDBMux <= IND_ADDR;
 
       --      -- considering single byte adder/subber ops:
       --      -- ADC, ADD, SBC, SUB, CPC, CP
@@ -457,54 +464,53 @@ begin
                         -- DataRd = CLK for the second cycle in Ld operations
                         DataRd <= CLK;
                         RegWEn <= WRITE_EN;
-                        -- RegIn into register needs to be DataDB here
                     end if;
             end if;
 
-            if  std_match(IR, OpSTX) or
-                std_match(IR, OpSTXI) or
-                std_match(IR, OpSTXD) or
-                std_match(IR, OpSTYI) or
-                std_match(IR, OpSTYD) or
-                std_match(IR, OpSTZI) or
-                std_match(IR, OpSTZD) then
-                -- 1001001dddddoooo
-                    -- takes 2 cycles to complete operation
-                    cycle_num <= TWO_CYCLES;
-                    -- loading values into from DataDB
-                    LoadIn <= LD_DB;
-                    -- offset values for 0, +1, -1 stored in low two bits of IR
-                    -- add  0 -> "00" = ZERO_SEL
-                    -- add +1 -> "01" = INC_SEL
-                    -- add -1 -> "10" = DEC_SEL
-                    DataOffsetSel <= IR(1 downto 0);
-                    -- pre flag setting stored in IR(1)
-                    -- pre-op -> IR(1) = '1' = PRE_ADDR
-                    -- pre-op -> IR(0) = '0' = POST_ADDR
-                    PreSel <= IR(1);
-                    -- indirect addressing stored in IR(3..2)
-                    -- X -> IR(3..2) = "11" = X_SEL
-                    -- Y -> IR(3..2) = "10" = Y_SEL
-                    -- Z -> IR(3..2) = "00" = Z_SEL
-                    IndAddrSel <= IR(3 downto 2);
-                    -- Operand 1 is the register being written to, loc in IR(8..4)
-                    RegWSel <= IR(8 downto 4);
-                    -- during first cycle
-                    if load = '0' then
-                        if IR(1) = PRE_ADDR then
-                            IndWEn <= WRITE_EN;
-                        end if;
-                        -- do nothing
-                    else
-                        if IR(1) = POST_ADDR then
-                            IndWEn <= WRITE_EN;
-                        end if;
-                        -- DataRd = CLK for the second cycle in Ld operations
-                        DataRd <= CLK;
-                        RegWEn <= WRITE_EN;
-                        -- RegIn into register needs to be DataDB here
-                    end if;
-            end if;
+            --if  std_match(IR, OpSTX) or
+            --    std_match(IR, OpSTXI) or
+            --    std_match(IR, OpSTXD) or
+            --    std_match(IR, OpSTYI) or
+            --    std_match(IR, OpSTYD) or
+            --    std_match(IR, OpSTZI) or
+            --    std_match(IR, OpSTZD) then
+            --    -- 1001001dddddoooo
+            --        -- takes 2 cycles to complete operation
+            --        cycle_num <= TWO_CYCLES;
+            --        -- loading values from RegA into DataDB so no change from default
+            --        DataDBMux <= IND_ADDR;
+
+            --        -- offset values for 0, +1, -1 stored in low two bits of IR
+            --        -- add  0 -> "00" = ZERO_SEL
+            --        -- add +1 -> "01" = INC_SEL
+            --        -- add -1 -> "10" = DEC_SEL
+            --        DataOffsetSel <= IR(1 downto 0);
+            --        -- pre flag setting stored in IR(1)
+            --        -- pre-op -> IR(1) = '1' = PRE_ADDR
+            --        -- pre-op -> IR(0) = '0' = POST_ADDR
+            --        PreSel <= IR(1);
+            --        -- indirect addressing stored in IR(3..2)
+            --        -- X -> IR(3..2) = "11" = X_SEL
+            --        -- Y -> IR(3..2) = "10" = Y_SEL
+            --        -- Z -> IR(3..2) = "00" = Z_SEL
+            --        IndAddrSel <= IR(3 downto 2);
+            --        -- Operand 1 is the register being read from, loc in IR(8..4)
+            --        RegSelA <= IR(8 downto 4);
+            --        -- during first cycle
+            --        if load = '0' then
+            --            if IR(1) = PRE_ADDR then
+            --                IndWEn <= WRITE_EN;
+            --            end if;
+            --            -- do nothing
+            --        else
+            --            if IR(1) = POST_ADDR then
+            --                IndWEn <= WRITE_EN;
+            --            end if;
+            --            -- DataWr = CLK for the second cycle in Ld operations
+            --            DataWr <= CLK;
+            --            DataDBWEn <= WRITE_EN;
+            --        end if;
+            --end if;
 
             --if  std_match(IR, OpLDD) then
             --    -- 10q0qq0ddddd0qqq

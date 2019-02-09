@@ -43,16 +43,22 @@ use work.ALUconstants.all;
 entity DataMIU is
     port(
         DataAddr    : in std_logic_vector(ADDRSIZE-1 downto 0); -- data address source from registers
+        RegIn       : in std_logic_vector(REGSIZE-1 downto 0);
 
         QOffset     : in std_logic_vector(Q_OFFSET_SIZE-1 downto 0);  -- unsigned address offset source from CU
         OffsetSel   : in OFFSET_SEL;-- address offset source select from CU
 
         PreSel      : in PREPOST_ADDR; -- pre/post address select from CU
+        DataDBWEn   : in std_logic;
+        DataDBMux   : in std_logic;
 
         --DataRd      : in std_logic; -- indicates data memory is being read
         --DataWr      : in std_logic; -- indicates data memory is being written
 
+        ProgDB      : in std_logic_vector(ADDRSIZE-1 downto 0);     -- program memory data bus
+
         DataReg     : out std_logic_vector(ADDRSIZE-1 downto 0); -- data address register source
+        DataDB      : inout std_logic_vector(REGSIZE-1 downto 0);
         DataAB      : out std_logic_vector(ADDRSIZE-1 downto 0) -- program address bus
      );
 end DataMIU;
@@ -94,7 +100,7 @@ component fullAdder is
 end component;
 
 signal offset_buffer : std_logic_vector(ADDRSIZE-1 downto 0);
-signal temp : std_logic;
+signal IndAddrMuxOut : std_logic_vector(ADDRSIZE-1 downto 0);
 signal CarryOut     : std_logic_vector(ADDRSIZE-1 downto 0); -- carry for adder/subtracter
 
 begin
@@ -114,19 +120,6 @@ begin
             SOut        => OffsetMuxOut(i)
       );
       end generate OffsetMuxIn;
-
-    -- ADDRSIZE bit adder for addressing modes
-    -- ASKFAB
-    -- does making Cin = 0 simplify automatically or nah?
-    --Addradder: Adder
-    --    generic map (bitsize => ADDRSIZE)
-    --    port map(
-    --        A           => DataAddr,
-    --        B           => OffsetMuxOut,
-    --        Cin         => '0',
-    --        Cout        => temp,         -- might error ASKFAB
-    --        Sum         => AddrAdderOut
-    --  );
 
     adder0: fullAdder --TODO check
     port map(
@@ -156,11 +149,15 @@ begin
             S0          => PreSel,
             SIn0        => DataAddr(i),
             SIn1        => AddrAdderOut(i),
-            SOut        => DataAB(i)
+            SOut        => IndAddrMuxOut(i)
       );
       end generate PrePostMux;
 
-    DataReg <= AddrAdderOut;
+    DataAB <= IndAddrMuxOut when DataDBMux = IND_ADDR else
+              ProgDB;
+
+    DataDB <= RegIn  when DataDBWEn = WRITE_EN else
+              "ZZZZZZZZ";
 
 end DataMIU_arc;
 

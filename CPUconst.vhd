@@ -117,6 +117,10 @@ package constants is
     constant PRE_ADDR   : PREPOST_ADDR := '1';
     constant POST_ADDR  : PREPOST_ADDR := '0';
 
+    --subtype DBMUX is std_logic;
+    constant MEM_ADDR : std_logic := '1';
+    constant IND_ADDR : std_logic := '0';
+
     subtype  OFFSET_SEL is std_logic_vector(1 downto 0);
     -- Address Adder - Offset Mux In Control Signals
     constant ZERO_SEL       : OFFSET_SEL := "00"; -- Selects  0 to add
