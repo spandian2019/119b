@@ -91,26 +91,26 @@ begin
     end process write_reg;
 
     -- writing to X, Y, Z Registers occurs synchronously
-    write_addr_reg : process (CLK)
-    begin
-        if (rising_edge(CLK)) then
-            -- writes to register only if write enabled and indirect address is even
-            --  possible values for indirect address are X, Y, Z, and SP base addresses.
-            --  Only SP base address is odd.
-            -- holds value otherwise
-            if IndWEn = WRITE_EN and IndAddrIn(0) = '0' then
-                registers(conv_integer(IndAddrIn))
-                	<= IndDataIn((ADDRSIZE/2)-1 downto 0);
-                registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
-                	<= IndDataIn(ADDRSIZE-1 downto ADDRSIZE/2);
-            else
-                registers(conv_integer(IndAddrIn))
-                	<= registers(conv_integer(IndAddrIn));
-                registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
-                	<= registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'));
-            end if;
-        end if;
-    end process write_addr_reg;
+--    write_addr_reg : process (CLK)
+--    begin
+--        if (rising_edge(CLK)) then
+--            -- writes to register only if write enabled and indirect address is even
+--            --  possible values for indirect address are X, Y, Z, and SP base addresses.
+--            --  Only SP base address is odd.
+--            -- holds value otherwise
+--            if IndWEn = WRITE_EN and IndAddrIn(0) = '0' then
+--                registers(conv_integer(IndAddrIn))
+--                	<= IndDataIn((ADDRSIZE/2)-1 downto 0);
+--                registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
+--                	<= IndDataIn(ADDRSIZE-1 downto ADDRSIZE/2);
+--            else
+--                registers(conv_integer(IndAddrIn))
+--                	<= registers(conv_integer(IndAddrIn));
+--                registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
+--                	<= registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'));
+--            end if;
+--        end if;
+--    end process write_addr_reg;
 
 
     -- register outputs load value in address line
