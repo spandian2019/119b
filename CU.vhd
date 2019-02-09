@@ -63,7 +63,7 @@ entity CU is
         bitmask     : out BIT_MASK; -- mask for writing to flags (SReg)
         CPC         : out std_logic;
 
-        LoadIn      : out std_logic_vector(1 downto 0); -- selects data line into reg
+        LoadIn      : out LOADIN_SEL; -- selects data line into reg
         SRegLd      : out   std_logic;                      -- select line to mux status reg source
 
 

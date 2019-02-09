@@ -12,6 +12,7 @@
 --      3 May 02  Glen George       Fixed Reset signal type.
 --     23 Jan 06  Glen George       Updated comments.
 --     21 Jan 08  Glen George       Updated comments.
+--     31 Jan 19  Sundar Pandian    Added support for CPU testing
 --
 ----------------------------------------------------------------------------
 
@@ -42,6 +43,7 @@ use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 
 use work.opcodes.all;
+use work.constants.all;
 
 entity  MEM_TEST  is
 
@@ -57,4 +59,74 @@ entity  MEM_TEST  is
     );
 
 end  MEM_TEST;
+
+architecture behavioral of mem_test is
+
+signal SReg        :  std_logic_vector(REGSIZE-1 downto 0);       -- status flags
+signal load        :  std_logic;                              -- load output to tell IR register
+                                                                --  when to fetch new instruction
+signal Immed       :  std_logic_vector(REGSIZE-1 downto 0);  -- immediate value K
+signal ImmedEn     :  std_logic;
+signal RegWEn      :  std_logic;                    -- register write enable
+signal RegWSel     :  std_logic_vector(RADDRSIZE-1 downto 0); -- register write select
+signal RegSelA     :  std_logic_vector(RADDRSIZE-1 downto 0); -- register A select
+signal RegSelB     :  std_logic_vector(RADDRSIZE-1 downto 0); -- register B select
+signal IORegWEn    :  std_logic;                      -- IN command enable
+signal IORegWSel   :  std_logic_vector(IOADDRSIZE-1 downto 0);   -- IO register address bus
+signal IndWEn      :  std_logic;
+signal IndAddrSel  :  ADDR_SEL;
+signal IOOutSel    :  std_logic;
+signal IORegOutEn  :    std_logic;                      -- OUT command enable
+signal ALUaddsub   :  ALU_ADDSUB;
+signal ALUsr       :  ALU_SR;
+signal ALUfop      :  ALU_FOPS; -- operation control signals
+signal ALUcomneg   :  ALU_COMNEG;
+signal ALUSel      :  ALU_SELECTS; -- operation select
+signal bitmask     :  BIT_MASK; -- mask for writing to flags (SReg)
+signal CPC         :  std_logic;
+signal LoadIn      :  LOADIN_SEL; -- selects data line into reg
+signal SRegLd      :    std_logic;                      -- select line to mux status reg source
+signal DataAddrSel     :  ADDR_SEL;  -- data address source select
+signal DataOffsetSel   :  OFFSET_SEL;-- data address offset source select
+signal PreSel          :  PREPOST_ADDR; -- data pre/post address select
+signal QOffset         :  std_logic_vector(Q_OFFSET_SIZE-1 downto 0); -- address offset for data memory unit
+
+
+signal RegIn        : std_logic_vector(REGSIZE-1 downto 0);
+
+signal IndDataIn    : std_logic_vector(ADDRSIZE-1 downto 0);
+signal RegAOut      : std_logic_vector(REGSIZE-1 downto 0);
+signal RegBOut      : std_logic_vector(REGSIZE-1 downto 0);
+signal AddrMuxOut   : std_logic_vector(ADDRSIZE-1 downto 0);
+
+begin
+
+    CtrlU   : entity work.CU port map(ProgDB, IR, SReg, load, Immed, ImmedEn, RegWEn, RegWSel,
+                                    RegSelA, RegSelB, IORegWEn, IORegWSel, IndWEn, IndAddrSel,
+                                    IOOutSel, DataRd, DataWr, IORegOutEn, ALUaddsub, ALUsr, ALUfop,
+                                    ALUcomneg, ALUSel, bitmask, CPC, LoadIn, SRegLd, DataAddrSel,
+                                    DataOffsetSel, PreSel, QOffset, Reset, clock);
+
+    if LoadIn = LD_IMM then
+        RegIn <= Immed;
+    end if;
+    if LoadIn = LD_ALU then
+        --RegIn <= ALURegOut;
+        RegIn <= (others => 'X');
+    end if;
+    if LoadIn = LD_DB then
+        RegIn <= DataDB;
+    end if;
+    if LoadIn = LD_REGA then
+        RegIn <= RegAOut;
+    end if;
+
+    RegU    : entity work.RegUnit port map(clock, RegIn, RegWEn, RegWSel, RegSelA, RegSelB, IORegWEn
+                                    IORegWSel, IndDataIn, IndWEn, IndAddrSel, IOOutSel,
+                                    RegAOut, RegBOut, AddrMuxOut);
+
+    DataMemU : entity work.DataMIU port map(AddrMuxOut, QOffset, DataOffsetSel, PreSel, IndDataIn,
+                                    DataAB);
+
+end architecture ; -- behavioral
 
