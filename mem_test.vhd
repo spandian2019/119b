@@ -116,7 +116,7 @@ begin
 
     -- hi-z unless writing to inout DataDB
     --DataDB <= (others => 'Z');
-    RegU    : entity work.RegUnit port map(clock, RegIn, RegWEn, RegWSel, RegSelA, RegSelB, IORegWEn,
+    RegU    : entity work.RegUnit port map(clock, Reset, RegIn, RegWEn, RegWSel, RegSelA, RegSelB, IORegWEn,
                                     IORegWSel, IndDataIn, IndWEn, IndAddrSel, IOOutSel,
                                     RegAOut, RegBOut, AddrMuxOut);
 

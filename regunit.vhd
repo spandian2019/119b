@@ -87,6 +87,7 @@ signal ZAddr : std_logic_vector(IOADDRSIZE-1 downto 0);
 component RegArray is
     port(
     Clk      :  in  std_logic;                          -- system clock
+    Reset    :  in  std_logic;
     RegIn    :  in  std_logic_vector(REGSIZE-1 downto 0);       -- input register bus
 
     -- from CU
@@ -111,6 +112,7 @@ end component;
 component IORegArray is
     port(
         Clk      :  in  std_logic;                          -- system clock
+        Reset    :  in  std_logic; 
         RegIn    :  in  std_logic_vector(REGSIZE-1 downto 0);       -- input register bus
 
         -- from CU
@@ -175,6 +177,7 @@ begin
     port map(
         Clk         => Clk,
         RegIn       => RegIn,
+        Reset       => Reset,
 
         -- from CU
         IORegWEn    => IORegWEn,

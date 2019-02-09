@@ -41,6 +41,7 @@ use work.constants.all;
 entity IORegArray is
     port(
         Clk      :  in  std_logic;                          -- system clock
+        Reset    :  in  std_logic;
         RegIn    :  in  std_logic_vector(REGSIZE-1 downto 0);       -- input register bus
 
         -- from CU
@@ -66,9 +67,12 @@ begin
 
 
     -- writing to SP Register occurs synchronously
-    write_addr_reg : process (CLK)
+    write_addr_reg : process (CLK, Reset)
     begin
-        if (rising_edge(CLK)) then
+        if Reset = '1'' then
+            IOregisters(conv_integer(SP_ADDR_H)) <= (others => '0');
+            IOregisters(conv_integer(SP_ADDR_L)) <= (others => '0');
+        elsif (rising_edge(CLK)) then
             -- writes to register only if write enabled
             -- holds value otherwise
             if IORegWEn = WRITE_EN then
