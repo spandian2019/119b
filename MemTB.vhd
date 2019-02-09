@@ -1,11 +1,11 @@
 ----------------------------------------------------------------------------
 --
---  Test Bench for ALU
+--  Test Bench for data memory interface unit 
 --
---  This is a test bench for the ALU entity. The test bench
---  tests the entity by exercising it and checking the ALU result and SReg
+--  This is a test bench for the MEM_TEST entity. The test bench
+--  tests the entity by exercising it and checking the data ab and db
 --  through the use of arrays of test values. It tests the major operations
---  for the ALU. The test bench entity is called ALUTB.
+--  for the DMIU. The test bench entity is called MemTB.
 --
 --
 --  Revision History:
@@ -24,10 +24,8 @@ use work.constants.all;
 entity MemTB is
     -- constants for testing
     constant CLK_PERIOD : time := 20 ns;
-    constant TEST_SIZE : natural := 47;
+    constant TEST_SIZE : natural := 60;
 
-    --constant EDGE_TEST_SIZE: natural := 5;
-	 --constant COMMAND_TEST_SIZE: natural := 7;
 end MemTB;
 
 architecture TB_ARCHITECTURE of MemTB is
@@ -50,15 +48,14 @@ architecture TB_ARCHITECTURE of MemTB is
     -- Signal used to stop clock signal generators
     signal  END_SIM  :  BOOLEAN := FALSE;
 
-    -- Stimulus signals - signals mapped to the input and inout ports of tested entity
-
+    -- Stimulus signals - signals mapped to the input and output ports of tested entity
     signal IR : opcode_word; -- instruction register input
     signal ProgDB  :  std_logic_vector(15 downto 0);    -- second word of instruction
     signal Reset   :  std_logic;                        -- system reset signal (active low)
     signal DataAB  :  std_logic_vector(15 downto 0);    -- data address bus
     signal DataDB  :  std_logic_vector(7 downto 0);     -- data data bus
     signal DataRd  :  std_logic;                        -- data read (active low)
-    signal DataWr  :  std_logic;                         -- data write (active low)
+    signal DataWr  :  std_logic;                        -- data write (active low)
 
     signal Clk     : std_logic; -- system clock
 
@@ -83,7 +80,7 @@ architecture TB_ARCHITECTURE of MemTB is
     signal WriteToDataDB : std_logic; 
     
     begin
-			-- ALU test component
+	   -- Memory test component
         UUT: MEM_TEST
         port map(
             IR      => IR,
@@ -102,56 +99,72 @@ architecture TB_ARCHITECTURE of MemTB is
             variable j : integer;
         begin
             -- assign test vectors
---            -- test instructions
---            "LDI R27, $01", "LDI R26, $23", "LD R6, X+", "LD R1, X", "LD R2 -X", -- X = $0123 -- 26, 27 => +16
+--            test instructions:             
+--            "LDI R27, $01", "LDI R26, $23", "LD R6, X+", "LD R1, X", "LD R2 -X", -- test ldx +-
 --            "STS $FFFF, R6", "STS $2222, R1", "STS $5678, R2" -- check loaded regs correctly
---            "LDI R29, $55", "LDI R28, $55", "LD R6, Y+", "LDD R1, Y+5", "LD R2 -Y", -- Y = $5555
---            "STS $0000, R6", "STS $0001, R1", "STS $0002, R2"
---            "LDI R31, $EF", "LDI R30, $A0", "LD R6, Z+", "LDD R1, Z+9", "LD R2 -Z", -- Z = EFA0
---            "ST X, R6", "ST X, R1", "ST X, R2",
---            "LDI R4, $88",
---            "STS $ABCD, R4", "LDS R5, $ABCD", -- sts -> (m) = R4
---            "LDI R2, $EE", "MOV R3, R2" -- R3 = R2 = $EE
---            "ST X+, R3", "ST X, R2", "ST -X, R3",
---            "LDI R2, $00", "ST Y+, R2", "STD Y+10, R2", "ST -Y, R2",
---            "LDI R2, $56", "ST Z+, R2", "STD Z+3, R2", "ST -Z, R2",
---            "LDI R1, $FF", "LDI R3, $11"
+--            "LDI R29, $55", "LDI R28, $55", "LD R6, Y+", "LDD R1, Y+5", "LD R2 -Y", -- test ldy+-
+--            "STS $0000, R6", "STS $0001, R1", "STS $0002, R2" -- check loaded regs correctly
+--            "LDI R31, $EF", "LDI R30, $A0", "LD R6, Z+", "LDD R1, Z+9", "LD R2 -Z", -- test ldz+-
+--            "ST X, R6", "ST X, R1", "ST X, R2", -- check loaded regs correctly
+--            "LDD Rmax, Y+0", "LDD R0, Y+$3F" --  test ldd, std extremes
+--            "STD Z+0, Rmax", "STD Z+$3F, R0"
+--            "LDD Rmax, Z+0", "LDD R0, Z+$3F"
+--            "STD Y+0, Rmax", "STD Y+$3F, R0"
+--            "LDI R4, $88", -- test sts, lds
+--            "STS $ABCD, R4", "LDS R5, $ABCD", "LDS R0, $FFFF", --sts -> (m) = R4
+--            "MOV R8, R5", "LDI R2, $EE", "MOV R3, R2"-- test mov
+--            "LDI R27, $FF", "LDI R26, $FF", -- test stx+- extremes (X=$FFFF)
+--            "ST X+, R8", "ST X, R5", "ST -X, R2", "ST -X, R3" -- test stx+-, check mov
+--            "LDI R2, $00", "ST Y+, R2", "STD Y+10, R2", "ST -Y, R2", -- test sty+-
+--            "LDI R2, $56", "ST Z+, R2", "STD Z+3, R2", "ST -Z, R2", -- test stz+-
+--            "LDI R1, $FF", "LDI R3, $11" -- test push/pop
 --            "PUSH R1", "PUSH R2", "PUSH R3",
 --            "POP R3", "POP R2", "POP R1"
 
             IRTest <= (
-            "1110000010110001","1110001010100011","1001000001101101","1001000000011100","1001000000101110",
-            "1001001001100000","1001001000010000","1001001000100000",
-            "1110010111010101","1110010111000101","1001000001101001","1000000000011000","1001000000101010",
-            "1001001001100000","1001001000010000","1001001000100000",
-            "1110111011111111","1110101011100000","1001000001100001","1000000000010000","1001000000100010",
-            "1001001001101100","1001001000011100","1001001000101100",
-            "1110100001001000",
-            "1001001001000000","1001000001010000",
-            "1110111000101110","0010110000110010",
-            "1001001000101101","1001001000101100","1001001000101110",
-            "1110000000100000","1001001000101001","1000011000101010","1001001000101010",
-            "1110010100101010","1001001000100001","1000001000100011","1001001000100010",
-            "1110111100011111","1110000100100001",
-            "1001001000011111","1001001000101111","1001001000111111",
-            "1001000000111111","1001000000101111","1001000000011111");
+            "1110000010110001","1110001010100011","1001000001101101","1001000000011100","1001000000101110",--ldi,ldx
+            "1001001001100000","1001001000010000","1001001000100000",--sts
+            "1110010111010101","1110010111000101","1001000001101001","1000000000011000","1001000000101010",--ldi,ldy
+            "1001001001100000","1001001000010000","1001001000100000",--sts
+            "1110111011111111","1110101011100000","1001000001100001","1000000000010000","1001000000100010",--ldi,ldz
+            "1001001001101100","1001001000011100","1001001000101100",--stx
+            "1000000111111000","1010110000001111",--lddy
+            "1000001111110000","1010111000000111",--stdz
+            "1000000111110000","1010110000000111",--lddz
+            "1000001111111000","1010111000001111",--stdy
+            "1110100001001000",--ldi
+            "1001001001000000","1001000001010000","1001000000000000",--sts,lds
+            "0010110010000101","1110111000101110","0010110000110010",--ldi,mov
+            "1110111110111111","1110111110101111",--ldi
+            "1001001010001101","1001001001011100","1001001000101110","1001001000111110",--stx
+            "1110000000100000","1001001000101001","1000011000101010","1001001000101010",--ldi,sty
+            "1110010100101010","1001001000100001","1000001000100011","1001001000100010",--ldi,stz
+            "1110111100011111","1110000100100001",--ldi
+            "1001001000011111","1001001000101111","1001001000111111",--push
+            "1001000000111111","1001000000101111","1001000000011111");--pop
+
 
             ProgDBTest <= (
-            "----------------", "----------------", "----------------", "----------------", "----------------",
-            X"FFFF", X"2222", X"5678",
-            "----------------", "----------------", "----------------", "----------------", "----------------",
-            X"0000", X"0001", X"0002",
-            "----------------", "----------------", "----------------", "----------------", "----------------",
-            "----------------", "----------------", "----------------",
-            "----------------",
-            X"ABCD", X"ABCD",
-            "----------------", "----------------",
-            "----------------", "----------------", "----------------",
-            "----------------", "----------------", "----------------", "----------------",
-            "----------------", "----------------", "----------------", "----------------",
-            "----------------", "----------------",
-            "----------------", "----------------", "----------------",
-            "----------------", "----------------", "----------------");
+            "----------------", "----------------", "----------------", "----------------", "----------------", -- ldi, ldx
+            X"FFFF", X"2222", X"5678", -- sts
+            "----------------", "----------------", "----------------", "----------------", "----------------", -- ldi, ldy
+            X"0000", X"0001", X"0002", -- sts
+            "----------------", "----------------", "----------------", "----------------", "----------------", -- ldi, ldz
+            "----------------", "----------------", "----------------", -- stx
+            "----------------", "----------------", -- lddy
+            "----------------", "----------------", -- stdz
+            "----------------", "----------------", -- lddz
+            "----------------", "----------------", -- stdy
+            "----------------", -- ldi
+            X"ABCD", X"ABCD", X"FFFF",-- sts, lds
+            "----------------", "----------------", "----------------",  -- ldi, mov
+            "----------------", "----------------", -- ldi
+            "----------------", "----------------", "----------------","----------------", -- stx
+            "----------------", "----------------", "----------------", "----------------", -- ldi, sty
+            "----------------", "----------------", "----------------", "----------------", -- ldi, stz
+            "----------------", "----------------", -- ldi
+            "----------------", "----------------", "----------------", -- push
+            "----------------", "----------------", "----------------"); -- pop
 
             ProgDBIn <= (
             '0', '0', '0', '0', '0',
@@ -160,66 +173,86 @@ architecture TB_ARCHITECTURE of MemTB is
             '1', '1', '1',
             '0', '0', '0', '0', '0',
             '0', '0', '0',
+            '0', '0',
+            '0', '0',
+            '0', '0',
+            '0', '0',
             '0',
-            '1', '1',
+            '1', '1', '1',
+            '0', '0', '0',
+            '0', '0',
+            '0', '0', '0', '0',
+            '0', '0', '0', '0',
+            '0', '0', '0', '0',
             '0', '0',
             '0', '0', '0',
-            '0', '0', '0', '0',
-            '0', '0', '0', '0',
-            '0', '0', 
-            '0', '0', '0',
             '0', '0', '0');
-
+            
             DataABTest <= (
-            "----------------", "----------------", X"0123", X"0124", X"0123",
-            X"FFFF", X"2222", X"5678",
-            "----------------","----------------", X"5555", X"555B", X"5555",
-            X"0000", X"0001", X"0002",
-            "----------------", "----------------", X"EFA0", X"EFAA", X"EFA0",
-            X"0123", X"0123", X"0123",
-            "----------------",
-            X"ABCD", X"ABCD",
-            "----------------", "----------------",
-            X"0123", X"0124", X"0123",
-            "----------------", X"5555", X"5560", X"5555",
-            "----------------", X"EFA0", X"EFA4", X"EFA0",
-            "----------------", "----------------",
-             X"FFFF", X"0000",X"0001", -- TODO stack addr?
-             X"0001", X"0000", X"FFFF");
+            "----------------", "----------------", X"0123", X"0124", X"0123",-- ldi, ldx
+            X"FFFF", X"2222", X"5678", -- sts
+            "----------------","----------------", X"5555", X"555B", X"5555", -- ldi, ldy
+            X"0000", X"0001", X"0002", -- sts
+            "----------------", "----------------", X"EFA0", X"EFAA", X"EFA0", -- ldi, ldz
+            X"0123", X"0123", X"0123", -- stx
+            X"5555", X"5594", -- lddy
+            X"EFA0", X"EFDF", -- stdz
+            X"EFA0", X"EFDF",-- lddz
+            X"5555", X"5594",-- stdy
+            "----------------", -- ldi
+            X"ABCD", X"ABCD", X"FFFF",--sts, lds
+            "----------------", "----------------", "----------------", -- ldi, mov
+            "----------------", "----------------", -- ldi
+            X"FFFF", X"0000", X"FFFF", X"FFFE", -- stx
+            "----------------", X"5555", X"5560", X"5555", -- ldi, sty
+            "----------------", X"EFA0", X"EFA4", X"EFA0", -- ldi, stz
+            "----------------", "----------------", -- ldi
+             X"FFFF", X"0000",X"0001",  -- push
+             X"0001", X"0000", X"FFFF"); -- pop
 
             DataDBWrTest <= (
-            "--------", "--------", "--------", "--------", "--------",
-            X"01", X"02", X"01",
-            "--------", "--------", "--------", "--------", "--------",
-            X"04", X"05", X"04",
-            "--------", "--------", "--------", "--------", "--------",
-            X"07", X"08", X"07",
-            "--------",
-            X"88", "--------",
-            "--------", "--------",
-            X"EE", X"EE", X"EE",
-            "--------", X"00", X"00", X"00",
-            "--------", X"56", X"56", X"56",
-            "--------", "--------",
-            X"FF", X"56", X"11",
-            "--------", "--------", "--------");
+            "--------", "--------", "--------", "--------", "--------", -- ldi, ldx
+            X"01", X"02", X"01", -- sts
+            "--------", "--------", "--------", "--------", "--------", -- ldi, ldy
+            X"04", X"05", X"04", -- sts
+            "--------", "--------", "--------", "--------", "--------", -- ldi, ldz
+            X"07", X"08", X"07", -- stx
+            "--------", "--------", -- lddy
+            X"04", X"33", -- stdz
+            "--------", "--------",-- lddz
+            X"07", X"AA",-- stdy
+            "--------", -- ldi
+            X"88", "--------", "--------", --sts, lds
+            "--------", "--------", "--------", -- ldi, mov
+            "--------", "--------", -- ldi
+            X"88", X"88", X"EE", X"EE", -- stx
+            "--------", X"00", X"00", X"00", -- ldi, sty
+            "--------", X"56", X"56", X"56", -- ldi, stz
+            "--------", "--------", -- ldi
+            X"FF", X"56", X"11",  -- push
+            "--------", "--------", "--------"); -- pop
 
             DataDBRdTest <= (
-             "--------", "--------", X"01", X"02", X"01",
-            "--------", "--------", "--------",
-            "--------", "--------", X"04", X"05", X"04",
-            "--------", "--------", "--------",
-            "--------", "--------", X"07", X"08", X"07",
-            "--------", "--------", "--------",
-            "--------",
-            "--------", X"88",
-            "--------", "--------",
-            "--------", "--------", "--------",
-            "--------", "--------", "--------", "--------",
-            "--------", "--------", "--------", "--------",
-            "--------", "--------",
-            "--------", "--------", "--------",
-            X"11", X"56", X"FF");
+            "--------", "--------", X"01", X"02", X"01",-- ldi, ldx
+            "--------", "--------", "--------", -- sts
+            "--------", "--------", X"04", X"05", X"04", -- ldi, ldy
+            "--------", "--------", "--------", -- sts
+            "--------", "--------", X"07", X"08", X"07", -- ldi, ldz
+            "--------", "--------", "--------", -- stx
+            X"04", X"33", -- lddy
+            "--------", "--------", -- stdz
+            X"07", X"AA",-- lddz
+            "--------", "--------",-- stdy
+            "--------", -- ldi
+            "--------", X"88", X"01", --sts, lds
+            "--------", "--------", "--------", -- ldi, mov
+            "--------", "--------",-- ldi
+            "--------", "--------", "--------", "--------", -- stx
+            "--------", "--------", "--------", "--------", -- ldi, sty
+            "--------", "--------", "--------", "--------", -- ldi, stz
+            "--------", "--------", -- ldi
+            "--------", "--------", "--------",  -- push
+            X"11", X"56", X"FF"); -- pop
 
             DataRdCheck <= (
             '0', '0', '1' , '1', '1',
@@ -228,10 +261,15 @@ architecture TB_ARCHITECTURE of MemTB is
             '0', '0', '0',
             '0', '0', '1' , '1', '1',
             '0', '0', '0',
-            '0',
-            '0', '1',
+            '1', '1',
             '0', '0',
+            '1', '1',
+            '0', '0',
+            '0',
+            '0', '1', '1',
             '0', '0', '0',
+            '0', '0',
+            '0', '0', '0', '0',
             '0', '0', '0', '0',
             '0', '0', '0', '0',
             '0', '0',
@@ -245,10 +283,15 @@ architecture TB_ARCHITECTURE of MemTB is
             '1', '1', '1',
             '0', '0', '1' , '1', '1',
             '1', '1', '1',
-            '0',
             '1', '1',
-            '0', '0',
+            '1', '1',
+            '1', '1',
+            '1', '1',
+            '0',
             '1', '1', '1',
+            '0', '0', '0',
+            '0', '0',
+            '1', '1', '1', '1',
             '0', '1', '1', '1',
             '0', '1', '1', '1',
             '0', '0',
@@ -260,8 +303,10 @@ architecture TB_ARCHITECTURE of MemTB is
 			IR      <= (others => '0');
             ProgDB  <= (others => 'Z');
         	wait for CLK_PERIOD*5; -- wait for a bit
+        	
             Reset <= '0'; -- de-assert reset
-            wait for CLK_PERIOD*0.7;
+            wait for CLK_PERIOD*0.7; -- offset for clock edge
+            
 			-- loop through test vector
 			for i in TEST_SIZE downto 0 loop
 				IR <= IRTest(i);
@@ -282,16 +327,17 @@ architecture TB_ARCHITECTURE of MemTB is
 						report  "DataAB failure at test number " & integer'image(j)
 						severity  ERROR;
 
-                    -- wait for data rd/wr to check?
+                    -- wait to check data db/ab
                     wait for CLK_PERIOD/2;
                     if DataRdCheck(i) = '1' then
                         WriteToDataDB <= '1'; 
-                        DataData <= DataDBRdTest(i); -- input data db
+                        DataData <= DataDBRdTest(i); -- input to data db
                         -- make sure rd/wr signals correct
+                        -- check read asserted 
                         assert (DataRd = '0')
     						report  "DataRd DataDBRd failure at test number " & integer'image(j)
     						severity  ERROR;
-                        --
+                        -- check write not asserted
                         assert (DataWr = '1')
     						report  "DataWr DataDBRd at test number " & integer'image(j)
     						severity  ERROR;
@@ -301,18 +347,17 @@ architecture TB_ARCHITECTURE of MemTB is
     						report  "DataDB failure at test number " & integer'image(j)
     						severity  ERROR;
                         -- make sure rd/wr signals correct
+                        -- check read not asserted 
                         assert (DataRd = '1')
     						report  "DataRd DataDBWr failure at test number " & integer'image(j)
     						severity  ERROR;
-                        --
+                        -- check write asserted 
                         assert (DataWr = '0')
     						report  "DataWr DataDBWr at test number " & integer'image(j)
     						severity  ERROR;
                     end if;
                     wait for CLK_PERIOD/2; -- wait for rest of clock
                 end if;
-
-
 			end loop;
 
             END_SIM <= TRUE;        -- end of stimulus events
@@ -325,7 +370,7 @@ architecture TB_ARCHITECTURE of MemTB is
         -- process for generating system clock
         CLOCK_CLK : process
         begin
-            -- this process generates a 20 ns 50% duty cycle clock
+            -- this process generates a CLK_PERIOD ns 50% duty cycle clock
             -- stop the clock when the end of the simulation is reached
             if END_SIM = FALSE then
                 CLK <= '0';
