@@ -19,10 +19,11 @@ use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 
 use work.opcodes.all;
+use work.constants.all;
 
 entity MemTB is
     -- constants for testing
-    constant CLK_PERIOD : time := 50 ns;
+    constant CLK_PERIOD : time := 20 ns;
     constant TEST_SIZE : natural := 47;
 
     --constant EDGE_TEST_SIZE: natural := 5;
@@ -54,7 +55,6 @@ architecture TB_ARCHITECTURE of MemTB is
     signal IR : opcode_word; -- instruction register input
     signal ProgDB  :  std_logic_vector(15 downto 0);    -- second word of instruction
     signal Reset   :  std_logic;                        -- system reset signal (active low)
-    signal clock   :  std_logic;                        -- system clock
     signal DataAB  :  std_logic_vector(15 downto 0);    -- data address bus
     signal DataDB  :  std_logic_vector(7 downto 0);     -- data data bus
     signal DataRd  :  std_logic;                        -- data read (active low)
@@ -77,6 +77,11 @@ architecture TB_ARCHITECTURE of MemTB is
     signal DataCheck : CheckVector; -- '1' to check data ab
     signal DataRdCheck: CheckVector; -- '1' to input data db
     signal ProgDBIn : CheckVector;-- '1' to input prog db
+    
+    -- for handling in/out dataDB
+    signal DataData : std_logic_vector(REGSIZE-1 downto 0); 
+    signal WriteToDataDB : std_logic; 
+    
     begin
 			-- ALU test component
         UUT: MEM_TEST
@@ -262,7 +267,7 @@ architecture TB_ARCHITECTURE of MemTB is
 			for i in TEST_SIZE downto 0 loop
 				IR <= IRTest(i);
                 ProgDB <= (others => 'Z');
-
+                WriteToDataDB <= '0'; 
                 wait for CLK_PERIOD;
                 -- output progDB, if necessary
                 if ProgDBIn(i) = '1' then
@@ -281,7 +286,8 @@ architecture TB_ARCHITECTURE of MemTB is
                     -- wait for data rd/wr to check?
                     wait for CLK_PERIOD/2;
                     if DataRdCheck(i) = '1' then
-                        DataDB <= DataDBRdTest(i); -- input data db
+                        WriteToDataDB <= '1'; 
+                        DataData <= DataDBRdTest(i); -- input data db
                         -- make sure rd/wr signals correct
                         assert (DataRd = '0')
     						report  "DataRd DataDBRd failure at test number " & integer'image(j)
@@ -314,6 +320,9 @@ architecture TB_ARCHITECTURE of MemTB is
             wait;                   -- wait for simulation to end
         end process;
 
+        -- hi-z unless writing to inout dataDB 
+        dataDB <= DataData when WriteToDataDB = '1' else (others => 'Z'); 
+        
         -- process for generating system clock
         CLOCK_CLK : process
         begin
