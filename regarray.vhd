@@ -46,18 +46,18 @@ use work.constants.all;
 
 entity RegArray is
     port(
-        Clk      :  in  std_logic;                          -- system clock
+        Clk      :  in  std_logic;                                  -- system clock
         RegIn    :  in  std_logic_vector(REGSIZE-1 downto 0);       -- input register bus
 
         -- from CU
-        RegWEn      : in std_logic;                     -- register write enable
-        RegWSel     : in std_logic_vector(RADDRSIZE-1 downto 0);  -- register write select
-        RegSelA     : in std_logic_vector(RADDRSIZE-1 downto 0);  -- register A select
-        RegSelB     : in std_logic_vector(RADDRSIZE-1 downto 0);  -- register B select
+        RegWEn      : in std_logic;                                 -- register write enable, from CU
+        RegWSel     : in std_logic_vector(RADDRSIZE-1 downto 0);    -- register write select, from CU
+        RegSelA     : in std_logic_vector(RADDRSIZE-1 downto 0);    -- register A select, from CU
+        RegSelB     : in std_logic_vector(RADDRSIZE-1 downto 0);    -- register B select, from CU
 
-        IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0); --
-        IndAddrIn 	: in std_logic_vector(RADDRSIZE-1 downto 0); --
-        IndWEn 		: in std_logic;
+        IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0);     -- Indirect Addr data in, from DataMIU
+        IndAddrIn   : in std_logic_vector(IOADDRSIZE-1 downto 0);   -- Indirect Addr value in, from DataMIU
+        IndWEn      : in std_logic;                                 -- Indirect Addr write enable, from CU
 
         RegAOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- register bus A out
         RegBOut     : out std_logic_vector(REGSIZE-1 downto 0);    	-- register bus B out
@@ -66,7 +66,6 @@ entity RegArray is
         RegYOut 	: out std_logic_vector(ADDRSIZE-1 downto 0);	-- register bus Y out
         RegZOut 	: out std_logic_vector(ADDRSIZE-1 downto 0) 	-- register bus Z out
     );
-
 end RegArray;
 
 architecture regspace of RegArray is
@@ -101,14 +100,10 @@ begin
                 registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
                     <= IndDataIn(ADDRSIZE-1 downto ADDRSIZE/2);
             else
-                --if RegWSel /= IndAddrIn then
-                    registers(conv_integer(IndAddrIn))
-                        <= registers(conv_integer(IndAddrIn));
-                --end if;
-                --if RegWSel /= IndAddrIn(RADDRSIZE-1 downto 1) & '1' then
-                    registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
-                        <= registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'));
-                --end if;
+                registers(conv_integer(IndAddrIn))
+                    <= registers(conv_integer(IndAddrIn));
+                registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
+                    <= registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'));
             end if;
         end if;
     end process write_addr_reg;
@@ -120,7 +115,6 @@ begin
     read_addr_reg : process (CLK)
     begin
         if (rising_edge(CLK)) then
-
         -- X,Y,Z pointers also always gets outputted to addr line MUX and control unit
         --  selects which address line to be used
         RegXOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(X_ADDR_L));

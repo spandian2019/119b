@@ -42,24 +42,21 @@ use work.ALUconstants.all;
 
 entity DataMIU is
     port(
-        DataAddr    : in std_logic_vector(ADDRSIZE-1 downto 0); -- data address source from registers
-        RegIn       : in std_logic_vector(REGSIZE-1 downto 0);
+        DataAddr    : in std_logic_vector(ADDRSIZE-1 downto 0);         -- data indirect address source from registers
+        RegIn       : in std_logic_vector(REGSIZE-1 downto 0);          -- outputted to DataDB when write enabled
 
-        QOffset     : in std_logic_vector(Q_OFFSET_SIZE-1 downto 0);  -- unsigned address offset source from CU
-        OffsetSel   : in OFFSET_SEL;-- address offset source select from CU
+        QOffset     : in std_logic_vector(Q_OFFSET_SIZE-1 downto 0);    -- unsigned address offset source from CU
+        OffsetSel   : in OFFSET_SEL;                                    -- address offset source select from CU
 
-        PreSel      : in PREPOST_ADDR; -- pre/post address select from CU
-        DataDBWEn   : in std_logic;
-        DataABMux   : in std_logic;
+        PreSel      : in PREPOST_ADDR;                                  -- pre/post address select from CU
+        DataDBWEn   : in std_logic;                                     -- DataDB write enable from CU
+        DataABMux   : in std_logic;                                     -- DataAB mux control signal
 
-        --DataRd      : in std_logic; -- indicates data memory is being read
-        --DataWr      : in std_logic; -- indicates data memory is being written
+        ProgDB      : in std_logic_vector(ADDRSIZE-1 downto 0);         -- program memory data bus
 
-        ProgDB      : in std_logic_vector(ADDRSIZE-1 downto 0);     -- program memory data bus
-
-        DataReg     : out std_logic_vector(ADDRSIZE-1 downto 0); -- data address register source
-        DataDB      : inout std_logic_vector(REGSIZE-1 downto 0);
-        DataAB      : out std_logic_vector(ADDRSIZE-1 downto 0) -- program address bus
+        DataReg     : out std_logic_vector(ADDRSIZE-1 downto 0);        -- data address register source
+        DataDB      : inout std_logic_vector(REGSIZE-1 downto 0);       -- data data bus
+        DataAB      : out std_logic_vector(ADDRSIZE-1 downto 0)         -- data address bus
      );
 end DataMIU;
 
@@ -99,14 +96,14 @@ component fullAdder is
       );
 end component;
 
-signal offset_buffer : std_logic_vector(ADDRSIZE-1 downto 0);
-signal IndAddrMuxOut : std_logic_vector(ADDRSIZE-1 downto 0);
-signal CarryOut     : std_logic_vector(ADDRSIZE-1 downto 0); -- carry for adder/subtracter
-signal ProgDBLatch  : std_logic_vector(ADDRSIZE-1 downto 0);
+signal offset_buffer : std_logic_vector(ADDRSIZE-1 downto 0);   -- fully zero padded offset vector
+signal IndAddrMuxOut : std_logic_vector(ADDRSIZE-1 downto 0);   -- Indirect Address to output to DataAB
+signal CarryOut     : std_logic_vector(ADDRSIZE-1 downto 0);    -- carry for adder/subtracter
+signal ProgDBLatch  : std_logic_vector(ADDRSIZE-1 downto 0);    -- latched ProgDB to output to DataAB for direct memory
 
 begin
 
-    offset_buffer <= Q_OFFS_ZERO_PAD & QOffset;
+    offset_buffer <= Q_OFFS_ZERO_PAD & QOffset;         -- zero pad MSB of the QOffset input
 
     -- Offset Mux In
     OffsetMuxIn:  for i in ADDRSIZE-1 downto 0 generate
@@ -122,39 +119,41 @@ begin
       );
       end generate OffsetMuxIn;
 
-    adder0: fullAdder --TODO check
+    -- ADDRSIZE bit adder for indirect address manipulations
+    adder0: fullAdder
     port map(
-        A           => DataAddr(0),
-        B           => OffsetMuxOut(0),
-        Cin         => '0',
-        Cout        => Carryout(0),
-        Sum         => AddrAdderOut(0)
+        A           => DataAddr(0),         -- indirect address to manipulate 
+        B           => OffsetMuxOut(0),     -- only ever adding in offset values
+        Cin         => '0',                 -- since only adding in offset, carry always '0'
+        Cout        => Carryout(0),         -- set next carry
+        Sum         => AddrAdderOut(0)      -- save to address adder buffer
     );
     -- other bits
     GenAdder:  for i in 1 to ADDRSIZE - 1 generate
     adderi: fullAdder
     port map(
-        A           => DataAddr(i),
-        B           => OffsetMuxOut(i),
-        Cin         => CarryOut(i-1),
-        Cout        => Carryout(i),
-        Sum         => AddrAdderOut(i)
+        A           => DataAddr(i),         -- indirect address to manipulate
+        B           => OffsetMuxOut(i),     -- only ever adding in offset values
+        Cin         => CarryOut(i-1),       -- carry in from last bit add
+        Cout        => Carryout(i),         -- set next carry
+        Sum         => AddrAdderOut(i)      -- save to address adder buffer
     );
     end generate GenAdder;
 
     -- PrePost Indirect Addressing Mux
-    -- ASKFAB -- why is this 2:1 mux necessary, why not only add
+    -- used to output proper indirect address value to DataAB (pre or post operation)
+    --  while still outputting the proper manipulated address to write to register space
     PrePostMux:  for i in ADDRSIZE-1 downto 0 generate
       OffsetMuxIni: Mux2to1
         port map(
-            S0          => PreSel,
+            S0          => PreSel,          -- pre select control line
             SIn0        => DataAddr(i),
             SIn1        => AddrAdderOut(i),
             SOut        => IndAddrMuxOut(i)
       );
       end generate PrePostMux;
 
-    DataReg <= AddrAdderOut;
+    DataReg <= AddrAdderOut;                -- output manipulated address to write to register space
 
     -- latch ProgDB when DataABMux signals to output ProgDB to DataAB
     latch_ProgDB : process (DataABMux)
@@ -164,10 +163,11 @@ begin
         end if;
     end process latch_ProgDB;
 
-
+    -- DataAB either outputs indirect address value or direct memory address value
     DataAB <= IndAddrMuxOut when DataABMux = IND_ADDR else
               ProgDBLatch;
 
+    -- DataDB outputs RegIn when enabled, or high impedance so it can still be read
     DataDB <= RegIn  when DataDBWEn = WRITE_EN else
               "ZZZZZZZZ";
 

@@ -47,32 +47,33 @@ use work.constants.all;
 
 entity RegUnit is
     port(
-        Clk         : in  std_logic;                          -- system clock
-        Reset       : in  std_logic;
-        RegIn       : in  std_logic_vector(REGSIZE-1 downto 0);       -- input register bus
+        Clk         :  in  std_logic;                               -- system clock
+        Reset       :  in  std_logic;                               -- system reset, used to init SP to all 1s
+        RegIn       :  in  std_logic_vector(REGSIZE-1 downto 0);    -- input register
 
         -- from CU
-        RegWEn      : in std_logic;                     -- register write enable
-        RegWSel     : in std_logic_vector(RADDRSIZE-1 downto 0);  -- register write select
-        RegSelA     : in std_logic_vector(RADDRSIZE-1 downto 0);  -- register A select
-        RegSelB     : in std_logic_vector(RADDRSIZE-1 downto 0);  -- register B select
-        IORegWEn    : in std_logic;                     -- register write enable
+        RegWEn      : in std_logic;                                 -- register write enable
+        RegWSel     : in std_logic_vector(RADDRSIZE-1 downto 0);    -- register write select
+        RegSelA     : in std_logic_vector(RADDRSIZE-1 downto 0);    -- register A select
+        RegSelB     : in std_logic_vector(RADDRSIZE-1 downto 0);    -- register B select
+        IORegWEn    : in std_logic;                                 -- IO register write enable
         IORegWSel   : in std_logic_vector(IOADDRSIZE-1 downto 0);   -- IO register address bus
 
-        IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0); --
-        IndWEn      : in std_logic;
-        IndAddrSel  : in ADDR_SEL;
-        IOOutSel    : in std_logic;
+        IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0);     -- Indirect Address Data In, from DataMIU
+        IndWEn      : in std_logic;                                 -- Indirect Address write enable, from CU
+        IndAddrSel  : in ADDR_SEL;                                  -- Ind addr select, from CU
+        IOOutSel    : in std_logic;                                 -- MUX select line for outputting RegA or IO
 
-        RegAOut     : out std_logic_vector(REGSIZE-1 downto 0);       -- register bus A out
-        RegBOut     : out std_logic_vector(REGSIZE-1 downto 0);       -- register bus B out
-        AddrMuxOut  : out std_logic_vector(ADDRSIZE-1 downto 0)
+        RegAOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- register bus A out
+        RegBOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- register bus B out
+        AddrMuxOut  : out std_logic_vector(ADDRSIZE-1 downto 0)     -- Indirect Address line out, to DataMIU
     );
 
 end RegUnit;
 
 architecture RegUnit_arc of RegUnit is
 
+-- signals for port mapping
 signal XMuxOut  : std_logic_vector(ADDRSIZE-1 downto 0);
 signal YMuxOut  : std_logic_vector(ADDRSIZE-1 downto 0);
 signal ZMuxOut  : std_logic_vector(ADDRSIZE-1 downto 0);
@@ -87,44 +88,44 @@ signal ZAddr : std_logic_vector(IOADDRSIZE-1 downto 0);
 
 component RegArray is
     port(
-    Clk      :  in  std_logic;                          -- system clock
-    RegIn    :  in  std_logic_vector(REGSIZE-1 downto 0);       -- input register bus
+        Clk      :  in  std_logic;                                  -- system clock
+        RegIn    :  in  std_logic_vector(REGSIZE-1 downto 0);       -- input register bus
 
-    -- from CU
-    RegWEn      : in std_logic;                     -- register write enable
-    RegWSel     : in std_logic_vector(RADDRSIZE-1 downto 0);  -- register write select
-    RegSelA     : in std_logic_vector(RADDRSIZE-1 downto 0);  -- register A select
-    RegSelB     : in std_logic_vector(RADDRSIZE-1 downto 0);  -- register B select
+        -- from CU
+        RegWEn      : in std_logic;                                 -- register write enable, from CU
+        RegWSel     : in std_logic_vector(RADDRSIZE-1 downto 0);    -- register write select, from CU
+        RegSelA     : in std_logic_vector(RADDRSIZE-1 downto 0);    -- register A select, from CU
+        RegSelB     : in std_logic_vector(RADDRSIZE-1 downto 0);    -- register B select, from CU
 
-    IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0); --
-    IndAddrIn   : in std_logic_vector(RADDRSIZE-1 downto 0); --
-    IndWEn      : in std_logic;
+        IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0);     -- Indirect Addr data in, from DataMIU
+        IndAddrIn   : in std_logic_vector(IOADDRSIZE-1 downto 0);   -- Indirect Addr value in, from DataMIU
+        IndWEn      : in std_logic;                                 -- Indirect Addr write enable, from CU
 
-    RegAOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- register bus A out
-    RegBOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- register bus B out
+        RegAOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- register bus A out
+        RegBOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- register bus B out
 
-    RegXOut     : out std_logic_vector(ADDRSIZE-1 downto 0);    -- register bus X out
-    RegYOut     : out std_logic_vector(ADDRSIZE-1 downto 0);    -- register bus Y out
-    RegZOut     : out std_logic_vector(ADDRSIZE-1 downto 0)     -- register bus Z out
+        RegXOut     : out std_logic_vector(ADDRSIZE-1 downto 0);    -- register bus X out
+        RegYOut     : out std_logic_vector(ADDRSIZE-1 downto 0);    -- register bus Y out
+        RegZOut     : out std_logic_vector(ADDRSIZE-1 downto 0)     -- register bus Z out
     );
 end component;
 
 component IORegArray is
     port(
-        Clk      :  in  std_logic;                          -- system clock
-        Reset    :  in  std_logic; 
-        RegIn    :  in  std_logic_vector(REGSIZE-1 downto 0);       -- input register bus
+        Clk      :  in  std_logic;                                  -- system clock
+        Reset    :  in  std_logic;                                  -- system reset, used to init SP to all 1s
+        RegIn    :  in  std_logic_vector(REGSIZE-1 downto 0);       -- input register
 
         -- from CU
-        IORegWEn    : in std_logic;                     -- register write enable
-        IORegWSel   : in std_logic_vector(IOADDRSIZE-1 downto 0);   -- IO register address bus
+        IORegWEn    : in std_logic;                                 -- IO register write enable, from CU
+        IORegWSel   : in std_logic_vector(IOADDRSIZE-1 downto 0);   -- IO register address select line, from CU
 
-        IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0); --
-        IndAddrIn   : in std_logic_vector(IOADDRSIZE-1 downto 0); --
-        IndWEn      : in std_logic;
+        IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0);     -- Indirect Addr data in, from DataMIU
+        IndAddrIn   : in std_logic_vector(IOADDRSIZE-1 downto 0);   -- Indirect Addr value in, from RegUnit
+        IndWEn      : in std_logic;                                 -- Indirect Addr write enable, from CU
 
-        IORegOut    :  out std_logic_vector(REGSIZE-1 downto 0);       -- register bus B out
-        SPRegOut    :  out std_logic_vector(ADDRSIZE-1 downto 0)
+        IORegOut    :  out std_logic_vector(REGSIZE-1 downto 0);    -- IO register bus out
+        SPRegOut    :  out std_logic_vector(ADDRSIZE-1 downto 0)    -- SP register bus out
     );
 end component;
 
@@ -162,7 +163,7 @@ begin
         RegSelB     => RegSelB,
 
         IndDataIn   => IndDataIn,
-        IndAddrIn   => IndAddrIn(RADDRSIZE-1 downto 0),
+        IndAddrIn   => IndAddrIn(RADDRSIZE-1 downto 0),     -- only map in low RADDRSIZE bits
         IndWEn      => IndWEn,
 
         RegAOut     => AMuxOut,
@@ -191,11 +192,12 @@ begin
         SPRegOut    => SPMuxOut
     );
 
-    ZAddr <= '0' & Z_ADDR_L;
-    YAddr <= '0' & Y_ADDR_L;
-    XAddr <= '0' & X_ADDR_L;
+    ZAddr <= '0' & Z_ADDR_L; -- buffer for zero padding Z address line into IO reg array
+    YAddr <= '0' & Y_ADDR_L; -- buffer for zero padding Y address line into IO reg array
+    XAddr <= '0' & X_ADDR_L; -- buffer for zero padding X address line into IO reg array
 
     -- Address Mux In
+    -- CU controls which indirect addressing value is written to
     InAddrMux:  for i in IOADDRSIZE-1 downto 0 generate
       InAddrMuxi: Mux4to1
         port map(
@@ -210,6 +212,7 @@ begin
       end generate InAddrMux;
 
     -- Address Mux Out
+    -- CU controls which indirect addressing value is outputted
     OutAddrMux:  for i in ADDRSIZE-1 downto 0 generate
       OutAddrMuxi: Mux4to1
         port map(
@@ -224,6 +227,7 @@ begin
       end generate OutAddrMux;
 
     -- Reg A Mux Out
+    -- CU controls if RegA from register space, or IO reg is outputted
     OutAMux:  for i in REGSIZE-1 downto 0 generate
       OutAMuxi: Mux2to1
         port map(

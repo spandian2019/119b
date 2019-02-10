@@ -40,22 +40,21 @@ use work.constants.all;
 
 entity IORegArray is
     port(
-        Clk      :  in  std_logic;                          -- system clock
-        Reset    :  in  std_logic;
-        RegIn    :  in  std_logic_vector(REGSIZE-1 downto 0);       -- input register bus
+        Clk      :  in  std_logic;                                  -- system clock
+        Reset    :  in  std_logic;                                  -- system reset, used to init SP to all 1s
+        RegIn    :  in  std_logic_vector(REGSIZE-1 downto 0);       -- input register
 
         -- from CU
-        IORegWEn    : in std_logic;                     -- register write enable
-        IORegWSel   : in std_logic_vector(IOADDRSIZE-1 downto 0);   -- IO register address bus
+        IORegWEn    : in std_logic;                                 -- IO register write enable, from CU
+        IORegWSel   : in std_logic_vector(IOADDRSIZE-1 downto 0);   -- IO register address select line, from CU
 
-        IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0); -- 
-        IndAddrIn 	: in std_logic_vector(IOADDRSIZE-1 downto 0); -- 
-        IndWEn 		: in std_logic;
+        IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0);     -- Indirect Addr data in, from DataMIU
+        IndAddrIn 	: in std_logic_vector(IOADDRSIZE-1 downto 0);   -- Indirect Addr value in, from RegUnit
+        IndWEn 		: in std_logic;                                 -- Indirect Addr write enable, from CU
 
-        IORegOut    :  out std_logic_vector(REGSIZE-1 downto 0);       -- register bus B out
-        SPRegOut    :  out std_logic_vector(ADDRSIZE-1 downto 0)
+        IORegOut    :  out std_logic_vector(REGSIZE-1 downto 0);    -- IO register bus out
+        SPRegOut    :  out std_logic_vector(ADDRSIZE-1 downto 0)    -- SP register bus out
     );
-
 end IORegArray;
 
 architecture regspace of IORegArray is
@@ -88,12 +87,8 @@ begin
                 IOregisters(conv_integer(SP_ADDR_H)) <= IndDataIn((ADDRSIZE/2)-1 downto 0);
                 IOregisters(conv_integer(SP_ADDR_L)) <= IndDataIn(ADDRSIZE-1 downto ADDRSIZE/2);
             else
-                --if IORegWSel /= SP_ADDR_H then
-                    IOregisters(conv_integer(SP_ADDR_H)) <= IOregisters(conv_integer(SP_ADDR_H));
-                --end if;
-                --if IORegWSel /= SP_ADDR_L then
-                    IOregisters(conv_integer(SP_ADDR_L)) <= IOregisters(conv_integer(SP_ADDR_L));
-                --end if;
+                IOregisters(conv_integer(SP_ADDR_H)) <= IOregisters(conv_integer(SP_ADDR_H));
+                IOregisters(conv_integer(SP_ADDR_L)) <= IOregisters(conv_integer(SP_ADDR_L));
             end if;
         end if;
     end process write_addr_reg;
