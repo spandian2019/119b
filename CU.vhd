@@ -639,8 +639,6 @@ begin
 
                     LoadIn <= LD_DB;                    -- loading values into register space from DataDB
                     
-                    IORegWSel <= "000000";
-
                     DataOffsetSel <= INC_SEL;           -- Popping pre-increments
                     PreSel <= PRE_ADDR;                 --  the Stack Pointer
 
@@ -665,8 +663,6 @@ begin
                     cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
                     
                     -- loading values from RegA into DataDB so no change from default
-
-                    IORegWSel <= "000000";
 
                     DataOffsetSel <= DEC_SEL;           -- Pushing post decrements
                     PreSel <= POST_ADDR;                --  the Stack Pointer
