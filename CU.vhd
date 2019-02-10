@@ -504,7 +504,7 @@ begin
             if  std_match(IR, OpLDS) then
                 -- 1001000ddddd0000
 
-                    cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
+                    cycle_num <= THREE_CYCLES;          -- takes 3 cycles to complete operation
 
                     LoadIn <= LD_DB;                    -- loading values into register space from DataDB
                     
