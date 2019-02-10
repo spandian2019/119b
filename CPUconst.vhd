@@ -152,7 +152,7 @@ package constants is
     constant WRITE_DIS      : std_logic := '0';
     constant REG_A_OUT      : std_logic := '0';
     constant IO_OUTPUT      : std_logic := '1';
-    constant SREG_ADDR      : std_logic_vector(IOADDRSIZE-1 downto 0) := "111111";  -- TODO explain how its 32 offset
+    constant SREG_ADDR      : std_logic_vector(IOADDRSIZE-1 downto 0) := "111111";  -- 32 offset
     constant SP_ADDR_L      : std_logic_vector(IOADDRSIZE-1 downto 0) := "111101";  -- base address for stack pointer
                                                                                     -- low byte located at addr 61 in IO
     constant SP_ADDR_H      : std_logic_vector(IOADDRSIZE-1 downto 0) := "111110";  -- address for stack pointer high byte
