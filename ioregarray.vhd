@@ -12,15 +12,18 @@
 --
 -- Ports:
 --  Inputs:
---        RegIn    - 8-bit input from the registers
---        StatusIn - 8-bit status flag input from ALU
---        Clk      - system clock
---        K        - 8-bit immediate value to use
---        SregInOut  - in/out control
---        IOEn    - io register enable
+--    Clk      - system clock
+--    Reset    - system reset, used to init SP to all 1s
+--    RegIn    - input register
+--    IORegWEn    - IO register write enable, from CU
+--    IORegWSel   - IO register address select line, from CU
+--    IndDataIn   - Indirect Addr data in, from DataMIU
+--    IndAddrIn 	- Indirect Addr value in, from RegUnit
+--    IndWEn 		- Indirect Addr write enable, from CU
 --
 --  Outputs:
---        RegOut  - 8-bit output register bus
+--    IORegOut    - IO register bus out
+--    SPRegOut    - SP register bus out
 --
 -- Revision History:
 -- 01/24/2019   Sophia Liu      Initial revision

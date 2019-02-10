@@ -21,11 +21,17 @@
 --        RegSelA  - 5 bit register A select
 --        RegSelB  - 5 bit register B select
 --        LoadIn   - 2 bit select line for pipelining A and B output
+--        IORegWEn    - IO register write enable
+--        IORegWSel   - IO register address bus
+--        IndDataIn   - Indirect Address Data In, from DataMIU
+--        IndWEn      - Indirect Address write enable, from CU
+--        IndAddrSel  - Ind addr select, from CU
+--        IOOutSel    - MUX select line for outputting RegA or IO
 --
 --  Outputs:
 --        RegAOut  - 8 bit register bus A output
 --        RegBOut  - 8 bit register bus B output
---
+--        AddrMuxOut  - Indirect Address line out, to DataMIU
 --
 -- Revision History:
 -- 01/24/2019   Sophia Liu      Initial revision

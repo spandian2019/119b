@@ -20,12 +20,16 @@
 --        RegWSel  - 5 bit register write select
 --        RegSelA  - 5 bit register A select
 --        RegSelB  - 5 bit register B select
---        LoadIn   - 2 bit select line for pipelining A and B output
+--        IndDataIn   - Indirect Addr data in, from DataMIU
+--        IndAddrIn   - Indirect Addr value in, from DataMIU
+--        IndWEn      - Indirect Addr write enable, from CU
 --
 --  Outputs:
 --        RegAOut  - 8 bit register bus A output
 --        RegBOut  - 8 bit register bus B output
---
+--        RegXOut 	- register bus X out
+--        RegYOut 	- register bus Y out
+--        RegZOut 	- register bus Z out
 --
 -- Revision History:
 -- 01/24/2019   Sophia Liu      Initial revision

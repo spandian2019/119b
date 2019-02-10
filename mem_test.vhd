@@ -13,6 +13,7 @@
 --     23 Jan 06  Glen George       Updated comments.
 --     21 Jan 08  Glen George       Updated comments.
 --     31 Jan 19  Sundar Pandian    Added support for CPU testing
+--     09 Feb 19  Sophia Liu        Updated architecture
 --
 ----------------------------------------------------------------------------
 
@@ -61,7 +62,7 @@ entity  MEM_TEST  is
 end  MEM_TEST;
 
 architecture behavioral of mem_test is
-
+-- internal signal definitions
 signal SReg        :  std_logic_vector(REGSIZE-1 downto 0);       -- status flags
 signal load        :  std_logic;                              -- load output to tell IR register
                                                                 --  when to fetch new instruction
@@ -93,7 +94,6 @@ signal QOffset         :  std_logic_vector(Q_OFFSET_SIZE-1 downto 0); -- address
 signal DataDBWEn       :  std_logic;
 signal DataABMux       :  std_logic;
 
-
 signal RegIn        : std_logic_vector(REGSIZE-1 downto 0);
 
 signal IndDataIn    : std_logic_vector(ADDRSIZE-1 downto 0);
@@ -101,27 +101,40 @@ signal RegAOut      : std_logic_vector(REGSIZE-1 downto 0);
 signal RegBOut      : std_logic_vector(REGSIZE-1 downto 0);
 signal AddrMuxOut   : std_logic_vector(ADDRSIZE-1 downto 0);
 
+signal DataAddr : std_logic_vector( 15 downto 0);
+signal RegIoFlag : std_logic;
+signal RegIoSelFlag : std_logic;
+signal DataCtrlU : std_logic_vector(5 downto 0);
+
 begin
 
     CtrlU   : entity work.CU port map(ProgDB, IR, SReg, load, Immed, ImmedEn, RegWEn, RegWSel,
                                     RegSelA, RegSelB, IORegWEn, IORegWSel, IndWEn, IndAddrSel,
                                     IOOutSel, DataRd, DataWr, IORegOutEn, ALUaddsub, ALUsr, ALUfop,
                                     ALUcomneg, ALUSel, bitmask, CPC, LoadIn, SRegLd,
-                                    DataOffsetSel, PreSel, QOffset, DataDBWEn, DataABMux, clock);
+                                    DataOffsetSel, PreSel, QOffset, DataDBWEn, DataABMux, clock,
+                                    RegIoFlag, RegIoSelFlag, DataCtrlU);
 
-    RegIn <= Immed      when LoadIn = LD_IMM else
+    RegIn <= Immed      when LoadIn = LD_IMM else   -- mux to select input to registers
              DataDB     when LoadIn = LD_DB else
              RegAOut    when LoadIn = LD_REGA else
              (others => 'X');
 
-    -- hi-z unless writing to inout DataDB
-    --DataDB <= (others => 'Z');
     RegU    : entity work.RegUnit port map(clock, Reset, RegIn, RegWEn, RegWSel, RegSelA, RegSelB, IORegWEn,
                                     IORegWSel, IndDataIn, IndWEn, IndAddrSel, IOOutSel,
                                     RegAOut, RegBOut, AddrMuxOut);
 
     DataMemU : entity work.DataMIU port map(AddrMuxOut, RegIn, QOffset, DataOffsetSel, PreSel, DataDBWEn,
-                                    DataABMux, ProgDB, IndDataIn, DataDB, DataAB);
+                                    DataABMux, ProgDB, IndDataIn, DataDB, DataAddr);
+
+    DataAB <= DataAddr;
+    -- flags for remapping lowest addresses to registers
+    DataCtrlU <= DataAddr(6) & DataAddr(4 downto 0); -- address for register or io register select
+    -- use general regs or io regs instead of external memory for addresses 0 to 95 (total size of reg)
+    RegIoFlag <= '1' when std_match(DataAddr, "0000000000------") or  std_match(DataAddr, "00000000010-----") else
+                 '0';
+    -- detect whether to use register or io register
+    RegIoSelFlag <= REG_A_OUT when std_match(DataAddr, "00000000000-----") else -- use general regs if addr < reg size (32 bits)
+                    IO_OUTPUT;
 
 end architecture ; -- behavioral
-

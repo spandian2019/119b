@@ -9,8 +9,8 @@
 --
 --
 --  Revision History:
---  01/30/2019 Sophia Liu Initial revision
---  02/01/2019 Sophia Liu Updated comments
+--  02/07/2019 Sophia Liu Initial revision
+--  02/09/2019 Sophia Liu Updated comments
 --
 ----------------------------------------------------------------------------
 library ieee;
@@ -99,7 +99,7 @@ architecture TB_ARCHITECTURE of MemTB is
             variable j : integer;
         begin
             -- assign test vectors
---            test instructions: 
+--            test instructions:
 --            "LDI R27, $01", "LDI R26, $23", "LD R6, X+", "LD R1, X", "LD R2 -X", -- test ldx +-
 --            "STS $FFFF, R6", "STS $2222, R1", "STS $5678, R2" -- check loaded regs correctly
 --            "LDI R29, $55", "LDI R28, $55", "LD R6, Y+", "LDD R1, Y+0", "LD R2 -Y", -- test ldy+-
@@ -110,7 +110,7 @@ architecture TB_ARCHITECTURE of MemTB is
 --            "STD Z+0, R1", "STD Z+$3F, R0"
 --            "LDD R1, Z+0", "LDD R0, Z+$3F"
 --            "STD Y+0, R1", "STD Y+$3F, R0"
---            "LDI R20, $88", -- test sts, lds 
+--            "LDI R20, $88", -- test sts, lds
 --            "STS $ABCD, R20", "LDS R21, $ABCD", "LDS R16, $FFFF", --sts -> (m) = R4
 --            "MOV R24, R21", "LDI R18, $EE", "MOV R19, R18"-- test mov
 --            "LDI R27, $FF", "LDI R26, $FF", -- test stx+- extremes (X=$FFFF)
@@ -152,7 +152,7 @@ architecture TB_ARCHITECTURE of MemTB is
             "----------------", "----------------", "----------------", "----------------", "----------------", -- ldi, ldx
             X"FFFF", X"2222", X"5678", -- sts
             "----------------", "----------------", "----------------", "----------------", "----------------", -- ldi, ldy
-            X"0000", X"0001", X"0002", -- sts
+            X"0000", X"0001", X"0055", -- sts
             "----------------", "----------------", "----------------", "----------------", "----------------", -- ldi, ldz
             "----------------", "----------------", "----------------", -- stx
             "----------------", "----------------", -- lddy
@@ -197,15 +197,15 @@ architecture TB_ARCHITECTURE of MemTB is
             DataABTest <= (
             "----------------", "----------------", X"0123", X"0124", X"0123",-- ldi, ldx
             X"FFFF", X"2222", X"5678", -- sts
-            "----------------","----------------", X"5555", X"5556", X"5555", -- ldi, ldy 
-            X"0000", X"0001", X"0002", -- sts
-            "----------------", "----------------", X"EFA0", X"EFA1", X"EFA0", -- ldi, ldz 
+            "----------------","----------------", X"5555", X"5556", X"5555", -- ldi, ldy
+            X"0000", X"0001", X"0055", -- sts
+            "----------------", "----------------", X"EFA0", X"EFA1", X"EFA0", -- ldi, ldz
             X"0123", X"0123", X"0123", -- stx
             X"5555", X"5594", -- lddy
-            X"EFA0", X"EFDF", -- stdz   
+            X"EFA0", X"EFDF", -- stdz
             X"EFA0", X"EFDF",-- lddz
             X"5555", X"5594",-- stdy
-            "----------------", -- ldi  
+            "----------------", -- ldi
             X"ABCD", X"ABCD", X"FFFF",--sts, lds
             "----------------", "----------------", "----------------", -- ldi, mov
             "----------------", "----------------", -- ldi
@@ -221,7 +221,7 @@ architecture TB_ARCHITECTURE of MemTB is
             "--------", "--------", "--------", "--------", "--------", -- ldi, ldx
             X"01", X"02", X"01", -- sts
             "--------", "--------", "--------", "--------", "--------", -- ldi, ldy
-            X"04", X"05", X"04", -- sts
+            "--------", "--------", "--------", --X"04", X"05", X"04", -- sts
             "--------", "--------", "--------", "--------", "--------", -- ldi, ldz
             X"07", X"08", X"07", -- stx
             "--------", "--------", -- lddy
@@ -232,7 +232,7 @@ architecture TB_ARCHITECTURE of MemTB is
             X"88", "--------", "--------", --sts, lds
             "--------", "--------", "--------", -- ldi, mov
             "--------", "--------", -- ldi
-            X"88", X"88", X"EE", X"EE", -- stx
+            X"88", "--------", X"EE", X"EE", -- stx
             "--------", X"00", X"00", X"00", -- ldi, sty
             "--------", X"56", X"56", X"56", -- ldi, stz
             "--------", X"56", "--------", X"56", "--------", X"9F", X"01",--ld/stxyz
@@ -354,7 +354,7 @@ architecture TB_ARCHITECTURE of MemTB is
     						severity  ERROR;
                     else
                         -- check data db output
-                        assert (DataDBWrTest(i) = DataDB)
+                        assert std_match(DataDBWrTest(i), DataDB)
     						report  "DataDB failure at test number " & integer'image(TEST_SIZE-i)
     						severity  ERROR;
                         -- make sure rd/wr signals correct
@@ -362,10 +362,16 @@ architecture TB_ARCHITECTURE of MemTB is
                         assert (DataRd = '1')
     						report  "DataRd DataDBWr failure at test number " & integer'image(TEST_SIZE-i)
     						severity  ERROR;
-                        -- check write asserted
+                        -- check write asserted (except for remapped addresses, tests 13-15 and 42)
+                        if (TEST_SIZE-i = 13 or TEST_SIZE-i = 14 or TEST_SIZE-i = 15 or TEST_SIZE-i = 42) then
+                        assert (DataWr = '1')
+    						report  "DataWr DataDBWr at test number " & integer'image(TEST_SIZE-i)
+    						severity  ERROR;
+    					else
                         assert (DataWr = '0')
     						report  "DataWr DataDBWr at test number " & integer'image(TEST_SIZE-i)
     						severity  ERROR;
+    					end if;
                     end if;
                     wait for CLK_PERIOD/2; -- wait for rest of clock
                 end if;

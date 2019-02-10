@@ -12,20 +12,21 @@
 --
 -- Ports:
 --  Input:
---        DataAddr - 16-bit data address source from CU
---        XAddr    - 16-bit address source from register X
---        YAddr    - 16-bit address source from register Y
---        ZAddr    - 16-bit address source from register Z
---        AddrSel  - 2-bit address source select, from CU
---        QOffset  - 6-bit unsigned address offset source from CU
---        OffsetSel - 2-bit address offset source select from CU
---        PreSel   - pre/post address select from CU
---        DataRd   - indicates data memory is being read
---        DataWr   - indicates data memory is being
+--        DataAddr    - data indirect address source from registers
+--        RegIn       - outputted to DataDB when write enabled
+--        QOffset     - unsigned address offset source from CU
+--        OffsetSel   - address offset source select from CU
+--        PreSel      - pre/post address select from CU
+--        DataDBWEn   - DataDB write enable from CU
+--        DataABMux   - DataAB mux control signal
+--        ProgDB      - program memory data bus
 --
 --  Outputs:
 --        DataReg - 16-bit data address register source
 --        DataAB  - 16-bit program address bus
+--
+--  In/Out:
+--        DataDB      - program data bus
 --
 -- Revision History:
 -- 01/24/2019   Sophia Liu      Initial revision
@@ -123,7 +124,7 @@ begin
     -- ADDRSIZE bit adder for indirect address manipulations
     adder0: fullAdder
     port map(
-        A           => DataAddr(0),         -- indirect address to manipulate 
+        A           => DataAddr(0),         -- indirect address to manipulate
         B           => OffsetMuxOut(0),     -- only ever adding in offset values
         Cin         => '0',                 -- since only adding in offset, carry always '0'
         Cout        => Carryout(0),         -- set next carry
@@ -173,10 +174,3 @@ begin
               "ZZZZZZZZ";
 
 end DataMIU_arc;
-
-
-
-
-
-
-
