@@ -56,7 +56,7 @@ entity RegArray is
         RegSelB     : in std_logic_vector(RADDRSIZE-1 downto 0);    -- register B select, from CU
 
         IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0);     -- Indirect Addr data in, from DataMIU
-        IndAddrIn   : in std_logic_vector(IOADDRSIZE-1 downto 0);   -- Indirect Addr value in, from DataMIU
+        IndAddrIn   : in std_logic_vector(RADDRSIZE-1 downto 0);    -- Indirect Addr value in, from DataMIU
         IndWEn      : in std_logic;                                 -- Indirect Addr write enable, from CU
 
         RegAOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- register bus A out
