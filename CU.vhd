@@ -55,7 +55,7 @@ entity CU is
         DataRd          : out std_logic;                        -- indicates data memory is being read, active lo
         DataWr          : out std_logic;                        -- indicates data memory is being written, active lo
 
-        IORegOutEn  : out   std_logic;                          -- OUT command enable TODO delete
+        IORegOutEn  : out   std_logic;                          -- OUT command enable
 
         -- to ALU and SReg
         ALUaddsub   : out ALU_ADDSUB;                           -- ALU adder/subber operation signals
@@ -94,8 +94,8 @@ end CU;
 --
 
 architecture RISC of CU is
-    signal cycle_num    :   OP_CYCLE := ZERO_CYCLES;                -- TODO delete
-    signal cycle        :   std_logic_vector(1 downto 0) := "00";   -- TODO delete
+    signal cycle_num    :   OP_CYCLE;
+    signal cycle        :   std_logic_vector(1 downto 0) := "00";
 begin
 
     -- asynchronously decodes IR inputs
