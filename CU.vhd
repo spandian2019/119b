@@ -439,6 +439,7 @@ begin
                 std_match(IR, OpLDZI) or
                 std_match(IR, OpLDZD) then
                 -- 1001000dddddoooo
+
                     cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
 
                     LoadIn <= LD_DB;                    -- loading values into register space from DataDB
@@ -460,15 +461,9 @@ begin
                     RegWSel <= IR(8 downto 4);          -- Operand 1 is the register being written to, loc in IR(8..4)
 
                     if cycle = ZERO_CYCLES then         -- during first cycle
-                        if IR(1) = PRE_ADDR then
-                            IndWEn <= WRITE_EN;
-                        end if;
-                    else
-                        if IR(1) = POST_ADDR then
-                            IndWEn <= WRITE_EN;
-                        --else
-                        --    DataOffsetSel <= ZERO_SEL;
-                        end if;
+                                                        -- do nothing
+                    else                                -- during second cycle
+                        IndWEn <= WRITE_EN;             
                         -- DataRd = CLK for the second cycle in Ld operations
                         DataRd <= CLK;
                         RegWEn <= WRITE_EN;
@@ -555,17 +550,17 @@ begin
                     RegSelA <= IR(8 downto 4);
                     -- during first cycle
                     if cycle = ZERO_CYCLES then
-                        if IR(1) = PRE_ADDR then
-                            IndWEn <= WRITE_EN;
-                        end if;
-                        PreSel <= POST_ADDR;
+                        --if IR(1) = PRE_ADDR then
+                        --    IndWEn <= WRITE_EN;
+                        --end if;
+                        --PreSel <= POST_ADDR;
                     else
-                        PreSel <= POST_ADDR;
-                        if IR(1) = POST_ADDR then
+                        --PreSel <= POST_ADDR;
+                        --if IR(1) = POST_ADDR then
                             IndWEn <= WRITE_EN;
-                        else
-                            DataOffsetSel <= ZERO_SEL;
-                        end if;
+                        --else
+                        --    DataOffsetSel <= ZERO_SEL;
+                        --end if;
                         -- DataWr = CLK for the second cycle in Ld operations
                         DataWr <= CLK;
                         DataDBWEn <= WRITE_EN;
