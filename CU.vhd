@@ -654,10 +654,8 @@ begin
                     RegWSel <= IR(8 downto 4);
                     -- during first cycle
                     if cycle = ZERO_CYCLES then
-                        IndWEn <= WRITE_EN;
-                        PreSel <= POST_ADDR;
                     else
-                        PreSel <= POST_ADDR;
+                        IndWEn <= WRITE_EN;
                         -- DataRd = CLK for the second cycle in Ld operations
                         DataRd <= CLK;
                         RegWEn <= WRITE_EN;
@@ -681,9 +679,7 @@ begin
                     -- during first cycle
                     if cycle = ZERO_CYCLES then
                         -- do nothing
-                        PreSel <= POST_ADDR;
                     else
-                        PreSel <= POST_ADDR;
                         IndWEn <= WRITE_EN;
                         -- DataWr = CLK for the second cycle in Ld operations
                         DataWr <= CLK;
