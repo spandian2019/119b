@@ -28,7 +28,8 @@
 --        DataAB  - 16-bit program address bus
 --
 -- Revision History:
--- 01/24/2019 Sophia Liu Initial revision
+-- 01/24/2019   Sophia Liu      Initial revision
+-- 02/01/2019   Sundar Pandian  populated
 --
 ----------------------------------------------------------------------------
 library ieee;

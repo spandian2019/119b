@@ -13,6 +13,7 @@
 --     21 Jan 06  Glen George       Updated comments.
 --     31 Jan 19  Sundar Pandian    Added support for CPU testing
 --     02/01/2019 Sundar Pandian    Debugged with testbench
+--     02/01/2019 Sundar Pandian    added indirect addressing modes
 --
 ----------------------------------------------------------------------------
 
