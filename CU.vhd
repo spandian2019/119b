@@ -461,60 +461,64 @@ begin
                     RegWSel <= IR(8 downto 4);          -- Operand 1 is the register being written to, loc in IR(8..4)
 
                     if cycle = ZERO_CYCLES then         -- during first cycle
-                                                        -- do nothing
+                        -- do nothing
                     else                                -- during second cycle
-                        IndWEn <= WRITE_EN;             
-                        -- DataRd = CLK for the second cycle in Ld operations
-                        DataRd <= CLK;
-                        RegWEn <= WRITE_EN;
+                        IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
+
+                        DataRd <= CLK;                  -- DataRd = CLK for the second cycle, so will go active low at end
+                        
+                        RegWEn <= WRITE_EN;             -- Write data from DataDB into register space
                     end if;
             end if;
 
             if  std_match(IR, OpLDDY) or std_match(IR, OpLDDZ) then
                 -- 10q0qq0dddddoqqq
-                    -- takes 2 cycles to complete operation
-                    cycle_num <= TWO_CYCLES;
-                    -- loading values into register space from DataDB
-                    LoadIn <= LD_DB;
-                    -- offset values is the q offset, encoded in the IR
-                    -- all q bits as seen above: IR(13)&IR(11..10)&IR(2..0)
+
+                    cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
+
+                    LoadIn <= LD_DB;                    -- loading values into register space from DataDB
+                    
+                                                        -- offset values is the q offset, encoded in the IR
+                                                        -- all q bits as seen above: IR(13)&IR(11..10)&IR(2..0)
                     QOffset <= IR(13) & IR(11 downto 10) & IR(2 downto 0);
-                    -- Data Offset is now the q offset value
-                    DataOffsetSel <= OFFS_SEL;
-                    -- pre flag set to output to address bus whenever add op done
-                    PreSel <= PRE_ADDR;
-                    -- indirect addressing stored in IR(3), while setting LSB = '0'
-                    -- Y -> IR(3..2) = "10" = Y_SEL
-                    -- Z -> IR(3..2) = "00" = Z_SEL
-                    IndAddrSel <= IR(3) & '0';
-                    -- Operand 1 is the register being written to, loc in IR(8..4)
-                    RegWSel <= IR(8 downto 4);
-                    -- during first cycle
-                    if cycle = ZERO_CYCLES then
+                    
+                    DataOffsetSel <= OFFS_SEL;          -- Data Offset is the q offset value
+                    
+                    PreSel <= PRE_ADDR;                 -- pre flag set to output to address bus whenever add op finished
+                    
+                    IndAddrSel <= IR(3) & '0';          -- indirect addressing stored in IR(3), while setting LSB = '0'
+                                                        -- Y -> IR(3) & '0' = "10" = Y_SEL
+                                                        -- Z -> IR(3) & '0' = "00" = Z_SEL
+                    
+                    RegWSel <= IR(8 downto 4);          -- Operand 1 is the register being written to, loc in IR(8..4)
+                    
+                    if cycle = ZERO_CYCLES then         -- during first cycle
                         -- do nothing
-                    else
-                        DataRd <= CLK;
-                        RegWEn <= WRITE_EN;
+                    else                                -- during second cycle
+                        DataRd <= CLK;                  -- DataRd = CLK for the second cycle, so will go active low at end
+                        
+                        RegWEn <= WRITE_EN;             -- Write data from DataDB into register space
                     end if;
             end if;
 
             if  std_match(IR, OpLDS) then
                 -- 1001000ddddd0000
-                    -- takes 2 cycles to complete operation
-                    cycle_num <= THREE_CYCLES;
-                    -- loading values into register space from DataDB
-                    LoadIn <= LD_DB;
 
-                    -- Operand 1 is the register being written to, loc in IR(8..4)
-                    RegWSel <= IR(8 downto 4);
-                    -- during first cycle
-                    if cycle = ZERO_CYCLES then
+                    cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
+
+                    LoadIn <= LD_DB;                    -- loading values into register space from DataDB
+                    
+                    
+                    RegWSel <= IR(8 downto 4);          -- Operand 1 is the register being written to, loc in IR(8..4)
+                    
+                    if cycle = ZERO_CYCLES then         -- during first cycle
                         -- do nothing
-                    elsif cycle = ONE_CYCLE then
-                        DataABMux <= MEM_ADDR;
-                    else
-                        DataABMux <= MEM_ADDR;
-                        DataRd <= CLK;
+                    elsif cycle = ONE_CYCLE then        -- during second cycle
+                        DataABMux <= MEM_ADDR;          -- signal to latch and output ProgDB memory on DataAB
+                    else                                -- during third cycle
+                        DataABMux <= MEM_ADDR;          -- still outputting ProgDB to DataAB
+                        
+                        DataRd <= CLK;                  -- DataRd = CLK for the third cycle, so will go active low at end
                         RegWEn <= WRITE_EN;
                         -- RegIn into register needs to be DataDB here
                     end if;
@@ -528,42 +532,35 @@ begin
                 std_match(IR, OpSTZI) or
                 std_match(IR, OpSTZD) then
                 -- 1001001dddddoooo
-                    -- takes 2 cycles to complete operation
-                    cycle_num <= TWO_CYCLES;
+                    
+                    cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
+                    
                     -- loading values from RegA into DataDB so no change from default
 
-                    -- offset values for 0, +1, -1 stored in low two bits of IR
-                    -- add  0 -> "00" = ZERO_SEL
-                    -- add +1 -> "01" = INC_SEL
-                    -- add -1 -> "10" = DEC_SEL
-                    DataOffsetSel <= IR(1 downto 0);
-                    -- pre flag setting stored in IR(1)
-                    -- pre-op -> IR(1) = '1' = PRE_ADDR
-                    -- pre-op -> IR(0) = '0' = POST_ADDR
-                    PreSel <= IR(1);
-                    -- indirect addressing stored in IR(3..2)
-                    -- X -> IR(3..2) = "11" = X_SEL
-                    -- Y -> IR(3..2) = "10" = Y_SEL
-                    -- Z -> IR(3..2) = "00" = Z_SEL
-                    IndAddrSel <= IR(3 downto 2);
-                    -- Operand 1 is the register being read from, loc in IR(8..4)
-                    RegSelA <= IR(8 downto 4);
-                    -- during first cycle
-                    if cycle = ZERO_CYCLES then
-                        --if IR(1) = PRE_ADDR then
-                        --    IndWEn <= WRITE_EN;
-                        --end if;
-                        --PreSel <= POST_ADDR;
-                    else
-                        --PreSel <= POST_ADDR;
-                        --if IR(1) = POST_ADDR then
-                            IndWEn <= WRITE_EN;
-                        --else
-                        --    DataOffsetSel <= ZERO_SEL;
-                        --end if;
-                        -- DataWr = CLK for the second cycle in Ld operations
-                        DataWr <= CLK;
-                        DataDBWEn <= WRITE_EN;
+                    DataOffsetSel <= IR(1 downto 0);    -- offset values for 0, +1, -1 stored in low two bits of IR, IR(1..0)
+                                                        -- add  0 -> "00" = ZERO_SEL
+                                                        -- add +1 -> "01" = INC_SEL
+                                                        -- add -1 -> "10" = DEC_SEL 
+
+                    PreSel <= IR(1);                    -- pre flag setting stored in IR(1)
+                                                        -- pre-op -> IR(1) = '1' = PRE_ADDR
+                                                        -- pre-op -> IR(0) = '0' = POST_ADDR
+
+                    IndAddrSel <= IR(3 downto 2);       -- indirect addressing stored in IR(3..2)
+                                                        -- X -> IR(3..2) = "11" = X_SEL
+                                                        -- Y -> IR(3..2) = "10" = Y_SEL
+                                                        -- Z -> IR(3..2) = "00" = Z_SEL
+
+                    RegSelA <= IR(8 downto 4);          -- Operand 1 is the register being read from, loc in IR(8..4)
+                    
+                    if cycle = ZERO_CYCLES then         -- during first cycle
+                        -- do nothing
+                    else                                -- during second cycle
+                        IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
+                        
+                        DataWr <= CLK;                  -- DataWr = CLK for the second cycle, so will go active low at end
+                        
+                        DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
                     end if;
             end if;
 
