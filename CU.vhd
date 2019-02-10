@@ -17,6 +17,9 @@
 -- 01/30/2019   Sundar Pandian  Initial architecture writeup
 -- 01/31/2019   Sundar Pandian  added bitmask support
 -- 02/01/2019   Sundar Pandian  debugged with testbench support
+-- 02/06/2019   Sundar Pandian  Rewrote to match Glen's preferred structure
+-- 02/07/2019   Sundar Pandian  Started adding support for AVR load/store instr
+-- 02/09/2019   Sundar Pandian  Added documentation for AVR load/store ops
 --
 ----------------------------------------------------------------------------
 library ieee;
@@ -30,61 +33,58 @@ use work.constants.all;
 entity CU is
     port(
         ProgDB  : in std_logic_vector(ADDRSIZE-1 downto 0);     -- program memory data bus
-        IR      : in std_logic_vector(IRSIZE-1 downto 0);     -- instruction register input
+        IR      : in std_logic_vector(IRSIZE-1 downto 0);       -- instruction register input
         SReg    : in std_logic_vector(REGSIZE-1 downto 0);      -- status flags
-        load    : buffer std_logic;                     -- load output to tell IR register
-                                                        --  when to fetch new instruction
+        load    : buffer std_logic;                             -- load output to tell IR register
+                                                                --  when to fetch new instruction
 
-        Immed       : out std_logic_vector(REGSIZE-1 downto 0);   -- immediate value K
-        ImmedEn     : out std_logic;
+        Immed       : out std_logic_vector(REGSIZE-1 downto 0); -- immediate value K
+        ImmedEn     : out std_logic;                            -- mux ctrl signal for immed into ALU A Reg
 
         -- to register unit
-        RegWEn      : out std_logic;                    -- register write enable
-        RegWSel     : out std_logic_vector(RADDRSIZE-1 downto 0); -- register write select
-        RegSelA     : out std_logic_vector(RADDRSIZE-1 downto 0); -- register A select
-        RegSelB     : out std_logic_vector(RADDRSIZE-1 downto 0); -- register B select
-        IORegWEn    : out std_logic;                      -- IN command enable
-        IORegWSel   : out std_logic_vector(IOADDRSIZE-1 downto 0);   -- IO register address bus
-        IndWEn      : out std_logic;
-        IndAddrSel  : out ADDR_SEL;
-        IOOutSel    : out std_logic;
+        RegWEn      : out std_logic;                                -- register write enable
+        RegWSel     : out std_logic_vector(RADDRSIZE-1 downto 0);   -- register write select
+        RegSelA     : out std_logic_vector(RADDRSIZE-1 downto 0);   -- register A select
+        RegSelB     : out std_logic_vector(RADDRSIZE-1 downto 0);   -- register B select
+        IORegWEn    : out std_logic;                                -- IO register write enable
+        IORegWSel   : out std_logic_vector(IOADDRSIZE-1 downto 0);  -- IO register write select
+        IndWEn      : out std_logic;                                -- Indirect Addr write enable
+        IndAddrSel  : out ADDR_SEL;                                 -- Indirect Addr write select
+        IOOutSel    : out std_logic;                                -- Mux ctrl signal for outputting IO reg to A Reg
 
-        DataRd          : out std_logic; -- indicates data memory is being read
-        DataWr          : out std_logic; -- indicates data memory is being written
+        DataRd          : out std_logic;                        -- indicates data memory is being read, active lo
+        DataWr          : out std_logic;                        -- indicates data memory is being written, active lo
 
-        IORegOutEn  : out   std_logic;                      -- OUT command enable
+        IORegOutEn  : out   std_logic;                          -- OUT command enable TODO delete
 
         -- to ALU and SReg
-        ALUaddsub   : out ALU_ADDSUB;
-        ALUsr       : out ALU_SR;
-        ALUfop      : out ALU_FOPS; -- operation control signals
-        ALUcomneg   : out ALU_COMNEG;
-        ALUSel      : out ALU_SELECTS; -- operation select
-        bitmask     : out BIT_MASK; -- mask for writing to flags (SReg)
-        CPC         : out std_logic;
+        ALUaddsub   : out ALU_ADDSUB;                           -- ALU adder/subber operation signals
+        ALUsr       : out ALU_SR;                               -- ALU shifter/rotator operation signals
+        ALUfop      : out ALU_FOPS;                             -- ALU F Block operation signals
+        ALUcomneg   : out ALU_COMNEG;                           -- ALU com/neg operation signals
+        ALUSel      : out ALU_SELECTS;                          -- ALU output select
+        bitmask     : out BIT_MASK;                             -- mask for writing to flags (SReg)
+        CPC         : out std_logic;                            -- bit for signalling to ALU when CPC is the op
 
-        LoadIn      : out LOADIN_SEL; -- selects data line into reg
-        SRegLd      : out   std_logic;  -- select line to mux status reg source
+        LoadIn      : out LOADIN_SEL;                           -- selects data line into reg
+        SRegLd      : out   std_logic;                          -- select line to mux status reg source
 
 
         ---- Program memory access
-        --ProgAddr: out std_logic_vector(15 downto 0); -- address source for program memory unit
-        --ProgLoad: out std_logic;                    -- load select for PC
-        --ProgAddrSel : in std_logic_vector(1 downto 0);  -- program address source select
+        --ProgAddr: out std_logic_vector(15 downto 0);            -- address source for program memory unit
+        --ProgLoad: out std_logic;                                -- load select for PC
+        --ProgAddrSel : in std_logic_vector(1 downto 0);          -- program address source select
 
         -- Data memory access
-        DataOffsetSel   : out OFFSET_SEL;-- data address offset source select
-        PreSel          : out PREPOST_ADDR; -- data pre/post address select
+        DataOffsetSel   : out OFFSET_SEL;                       -- data address offset source select
+        PreSel          : out PREPOST_ADDR;                     -- data pre/post address select
         QOffset         : out std_logic_vector(Q_OFFSET_SIZE-1 downto 0); -- address offset for data memory unit
-        DataDBWEn       : out std_logic;
-        DataABMux       : out std_logic;
+        DataDBWEn       : out std_logic;                        -- DataDB write enable
+        DataABMux       : out std_logic;                        -- DataAB mux control signal
 
-        ---- Stack
-        --StackEn     : out std_logic; -- stack enable signal
-        --StackPush   : out std_logic; -- stack push/pop control
-        --Reset       : out std_logic; -- active low reset signal
+        --Reset       : out std_logic; -- active low reset signal -- routed directly to IO registers
 
-        CLK         : in    std_logic                       -- system clock
+        CLK         : in    std_logic                           -- system clock
     );
 
 end CU;
@@ -94,8 +94,8 @@ end CU;
 --
 
 architecture RISC of CU is
-    signal cycle_num    :   OP_CYCLE := ZERO_CYCLES;
-    signal cycle        :   std_logic_vector(1 downto 0) := "00";
+    signal cycle_num    :   OP_CYCLE := ZERO_CYCLES;                -- TODO delete
+    signal cycle        :   std_logic_vector(1 downto 0) := "00";   -- TODO delete
 begin
 
     -- asynchronously decodes IR inputs
@@ -104,29 +104,32 @@ begin
             -- sets cycle number for op_codes
             -- defaults operations to 1 cycle
             cycle_num <= ONE_CYCLE;
-            -- control signals default values, reset all
-            -- this way each operation only enables actions
+            -- control signals default values, reset all write signal
+            -- this way each operation only enables writes if necessary
             RegWEn      <= WRITE_DIS;
             IORegWEn    <= WRITE_DIS;
             IndWEn      <= WRITE_DIS;
             DataDBWEn   <= WRITE_DIS;
+            -- disable immediate value muxing into ALU by default
             ImmedEn     <= IMM_DIS;
+            -- defaults to no bit setting in SReg
             bitmask     <= MASK_NONE;
+            -- defaults to not CPC operation
             CPC         <= CPC_RST;
-            -- set F Block to pass through B Register Value
+            -- set F Block to pass through B Register Value by default
             ALUfop      <= FOP_B;
-            -- set COMNEG block to pass through B Register Value
+            -- set COMNEG block to pass through A Register Value by default
             ALUcomneg   <= COMNEG_NONE;
             -- default writing outputs from Reg A back into Reg space
             LoadIn <= LD_REGA;
             -- default to outputting from register space, not IO
             IOOutSel <= REG_A_OUT;
-            -- default to loading from indirect addressing
+            -- default to loading from indirect addressing, not direct memory
             DataABMux <= IND_ADDR;
-            -- default DataRd and DataWr to inactive
+            -- default DataRd and DataWr to inactive, active low signals
             DataRd <= '1';
             DataWr <= '1';
-
+            -- default address offset value is 0
             DataOffsetSel <= ZERO_SEL;
 
       --      -- considering single byte adder/subber ops:
@@ -436,32 +439,30 @@ begin
                 std_match(IR, OpLDZI) or
                 std_match(IR, OpLDZD) then
                 -- 1001000dddddoooo
-                    -- takes 2 cycles to complete operation
-                    cycle_num <= TWO_CYCLES;
-                    -- loading values into register space from DataDB
-                    LoadIn <= LD_DB;
-                    -- offset values for 0, +1, -1 stored in low two bits of IR
-                    -- add  0 -> "00" = ZERO_SEL
-                    -- add +1 -> "01" = INC_SEL
-                    -- add -1 -> "10" = DEC_SEL
-                    DataOffsetSel <= IR(1 downto 0);
-                    -- pre flag setting stored in IR(1)
-                    -- pre-op -> IR(1) = '1' = PRE_ADDR
-                    -- pre-op -> IR(0) = '0' = POST_ADDR
-                    PreSel <= IR(1);
-                    -- indirect addressing stored in IR(3..2)
-                    -- X -> IR(3..2) = "11" = X_SEL
-                    -- Y -> IR(3..2) = "10" = Y_SEL
-                    -- Z -> IR(3..2) = "00" = Z_SEL
-                    IndAddrSel <= IR(3 downto 2);
-                    -- Operand 1 is the register being written to, loc in IR(8..4)
-                    RegWSel <= IR(8 downto 4);
-                    -- during first cycle
-                    if cycle = ZERO_CYCLES then
+                    cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
+
+                    LoadIn <= LD_DB;                    -- loading values into register space from DataDB
+                    
+                    DataOffsetSel <= IR(1 downto 0);    -- offset values for 0, +1, -1 stored in low two bits of IR, IR(1..0)
+                                                        -- add  0 -> "00" = ZERO_SEL
+                                                        -- add +1 -> "01" = INC_SEL
+                                                        -- add -1 -> "10" = DEC_SEL 
+                    
+                    PreSel <= IR(1);                    -- pre flag setting stored in IR(1)
+                                                        -- pre-op -> IR(1) = '1' = PRE_ADDR
+                                                        -- pre-op -> IR(0) = '0' = POST_ADDR
+                    
+                    IndAddrSel <= IR(3 downto 2);       -- indirect addressing stored in IR(3..2)
+                                                        -- X -> IR(3..2) = "11" = X_SEL
+                                                        -- Y -> IR(3..2) = "10" = Y_SEL
+                                                        -- Z -> IR(3..2) = "00" = Z_SEL
+                    
+                    RegWSel <= IR(8 downto 4);          -- Operand 1 is the register being written to, loc in IR(8..4)
+
+                    if cycle = ZERO_CYCLES then         -- during first cycle
                         if IR(1) = PRE_ADDR then
                             IndWEn <= WRITE_EN;
                         end if;
-                        -- do nothing
                     else
                         if IR(1) = POST_ADDR then
                             IndWEn <= WRITE_EN;
@@ -702,6 +703,7 @@ begin
     end process decoder;
 
     -- load enable signal telling when to fetch next instruction
+    -- cycle value is zero indexed so finaly value is one less than cycle_num
     load <= '1' when cycle = cycle_num-1 else
             '0';
 
