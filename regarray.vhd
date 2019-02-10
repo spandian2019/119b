@@ -86,6 +86,7 @@ begin
             if RegWEn = WRITE_EN then
                 registers(conv_integer(RegWSel)) <= RegIn;
             else
+                -- only hold value here if it will not be held by the second block
                 if RegWSel(RADDRSIZE-1 downto 1) /= IndAddrIn(RADDRSIZE-1 downto 1) then
                     registers(conv_integer(RegWSel)) <= registers(conv_integer(RegWSel));
                 end if;
@@ -112,6 +113,8 @@ begin
     RegAOut <=  registers(conv_integer(RegSelA));
     RegBOut <=  registers(conv_integer(RegSelB));
 
+    -- synchronously output indirect address lines to avoid errors with DataMIU
+    --  such as incrementing twice in one operation
     read_addr_reg : process (CLK)
     begin
         if (rising_edge(CLK)) then

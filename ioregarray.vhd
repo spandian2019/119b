@@ -77,6 +77,7 @@ begin
             if IORegWEn = WRITE_EN then
                 IOregisters(conv_integer(IORegWSel)) <= RegIn;
             else
+                -- only hold value here if it will not be held by the second block
                 if IORegWSel /= SP_ADDR_L or IORegWSel /= SP_ADDR_H then
                     IOregisters(conv_integer(IORegWSel)) <= IOregisters(conv_integer(IORegWSel));
                 end if;
@@ -97,6 +98,8 @@ begin
     --  by Control Unit to be used
     IORegOut <= IOregisters(conv_integer(IORegWSel));
 
+    -- synchronously output indirect address lines to avoid errors with DataMIU
+    --  such as incrementing twice in one operation
     read_addr_reg : process (CLK)
     begin
         if (rising_edge(CLK)) then
