@@ -458,16 +458,16 @@ begin
                     RegWSel <= IR(8 downto 4);
                     -- during first cycle
                     if cycle = ZERO_CYCLES then
-                        if IR(1) = PRE_ADDR then
-                            IndWEn <= WRITE_EN;
-                        end if;
+                        --if IR(1) = PRE_ADDR then
+                        --    IndWEn <= WRITE_EN;
+                        --end if;
                         -- do nothing
                     else
-                        if IR(1) = POST_ADDR then
+                        --if IR(1) = POST_ADDR then
                             IndWEn <= WRITE_EN;
                         --else
                         --    DataOffsetSel <= ZERO_SEL;
-                        end if;
+                        --end if;
                         -- DataRd = CLK for the second cycle in Ld operations
                         DataRd <= CLK;
                         RegWEn <= WRITE_EN;
@@ -554,17 +554,17 @@ begin
                     RegSelA <= IR(8 downto 4);
                     -- during first cycle
                     if cycle = ZERO_CYCLES then
-                        if IR(1) = PRE_ADDR then
-                            IndWEn <= WRITE_EN;
-                        end if;
-                        PreSel <= POST_ADDR;
+                        --if IR(1) = PRE_ADDR then
+                        --    IndWEn <= WRITE_EN;
+                        --end if;
+                        --PreSel <= POST_ADDR;
                     else
-                        PreSel <= POST_ADDR;
-                        if IR(1) = POST_ADDR then
+                        --PreSel <= POST_ADDR;
+                        --if IR(1) = POST_ADDR then
                             IndWEn <= WRITE_EN;
-                        else
-                            DataOffsetSel <= ZERO_SEL;
-                        end if;
+                        --else
+                        --    DataOffsetSel <= ZERO_SEL;
+                        --end if;
                         -- DataWr = CLK for the second cycle in Ld operations
                         DataWr <= CLK;
                         DataDBWEn <= WRITE_EN;
