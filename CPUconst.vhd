@@ -56,6 +56,7 @@ package constants is
     constant MULOUT         : ALU_SELECTS := "100";
     constant BOUT           : ALU_SELECTS := "101";
     constant BSET           : ALU_SELECTS := "110";
+    constant BCLR           : ALU_SELECTS := "111";
 
     -- F-block operands
     subtype  ALU_FOPS is std_logic_vector(3 downto 0);

@@ -53,7 +53,6 @@ entity ALU is
         ALUSel      : in    ALU_SELECTS;    -- operation select
 
         BitMask     : in    std_logic_vector(REGSIZE-1 downto 0);
-        BSetClr     : in    std_logic; -- value to set/clear status register bit
         CPC         : in    std_logic; -- control for cpc command, to set zero flag appropriately
 
         -- from Regs
@@ -251,50 +250,58 @@ begin
     -- Status Register logic
 
     -- interrupt bit
-     StatusOut(7) <= StatusIn(7) when BitMask(7) = '0' else
-                     BSetClr when ALUSel = BSET else
+    StatusOut(7) <= StatusIn(7) when BitMask(7) = '0' else
+                    '1' when ALUSel = BSET else
+                    '0' when ALUSel = BCLR else
                     '0';
 
     -- transfer bit
     StatusOut(6) <= StatusIn(6) when BitMask(6) = '0' else
-                    RegA(to_integer(unsigned(RegB))) when ALUSel = BOUT and to_integer(unsigned(RegB)) < 8 else
-                    BSetClr when ALUSel = BSET else
+                    RegA(to_integer(unsigned(RegB(2 downto 0)))) when ALUSel = BOUT else
+                    '1' when ALUSel = BSET else
+                    '0' when ALUSel = BCLR else
                     '0'; -- update if transfer bit is set or cleared
 
     -- half carry
     StatusOut(5) <= StatusIn(5) when BitMask(5) = '0' else
-                    BSetClr when ALUSel = BSET else
+                    '1' when ALUSel = BSET else
+                    '0' when ALUSel = BCLR else
                     CarryOut(HALFCARRYBIT) when ALUOp(SUBFLAG) = OP_ADD else
                     not CarryOut(HALFCARRYBIT);     -- carry flag opposite when subtracting
 
      -- corrected signed
     StatusOut(4) <= StatusIn(4) when BitMask(4) = '0' else
-                    BSetClr when ALUSel = BSET else
+                    '1' when ALUSel = BSET else
+                    '0' when ALUSel = BCLR else
                     NFlag xor VFlag;
 
     -- signed overflow
     VFlag <= StatusIn(3) when BitMask(3) = '0' else
-             BSetClr when ALUSel = BSET else
-            '1' when (ALUSEL = ADDSUBEN and CarryOut(REGSIZE-1) /= CarryOut(REGSIZE-2)) else -- 1 if signed overflow
-            '0' when (ALUSEL = ADDSUBEN or  ALUSEL = FBLOCKEN) else -- 0 if no overflow or logical op
-            NFlag xor CFlag;  --N xor C for shift operations
+             '1' when ALUSel = BSET else
+             '0' when ALUSel = BCLR else
+             '1' when (ALUSEL = ADDSUBEN and CarryOut(REGSIZE-1) /= CarryOut(REGSIZE-2)) else -- 1 if signed overflow
+             '0' when (ALUSEL = ADDSUBEN or  ALUSEL = FBLOCKEN) else -- 0 if no overflow or logical op
+             NFlag xor CFlag;  --N xor C for shift operations
     StatusOut(3) <= VFlag;
 
     -- negative
     NFlag <= StatusIn(2) when BitMask(2) = '0' else
-             BSetClr when ALUSel = BSET else
-            RegBuff(REGSIZE-1); -- set based on sign bit
+             '1' when ALUSel = BSET else
+             '0' when ALUSel = BCLR else
+             RegBuff(REGSIZE-1); -- set based on sign bit
     StatusOut(2) <= NFlag;
 
     -- zero flag
     StatusOut(1) <= StatusIn(1) when BitMask(1) = '0' else
-                    BSetClr when ALUSel = BSET else
+                    '1' when ALUSel = BSET else
+                    '0' when ALUSel = BCLR else
                     '0' when CPC = '1' and StatusIn(1) = '0' else -- and zero flag if performing cpc
                     '1' when RegBuff = ZERO8 else -- compare with 0
                     '0';
     -- carry
     CFlag <= StatusIn(0) when BitMask(0) = '0' else
-                    BSetClr when ALUSel = BSET else
+                    '1' when ALUSel = BSET else
+                    '0' when ALUSel = BCLR else
                     ASCout when ALUSel = ADDSUBEN and ALUOp(SUBFLAG) = OP_ADD else
                     not ASCout when ALUSel = ADDSUBEN else     -- carry flag opposite when subtracting
                     '1' when ALUSel = FBLOCKEN else -- set for logical operations
