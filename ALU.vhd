@@ -210,8 +210,9 @@ begin
       );
 
     -- transfer bit loading
+    -- RegB holds Immediate value TODO
     BIT_OP : for i in REGSIZE-1 downto 0 generate
-        Bitout(i)   <=  StatusIn(6) when i = to_integer(unsigned(RegB)) else
+        Bitout(i)   <=  StatusIn(6) when i = to_integer(unsigned(RegB(2 downto 0))) else
                         RegA(i);
     end generate;
 
@@ -238,7 +239,7 @@ begin
             SIn3        => SwapOut(i),
             SIn4        => MulOut(i),
             SIn5        => Bitout(i),
-            SIn6        => 'X',
+            SIn6        => 'X',             -- nothing outputted during SReg bit setting
             SIn7        => 'X',
             SOut        => RegBuff(i)
       );
@@ -254,7 +255,7 @@ begin
 
     -- transfer bit
     StatusOut(6) <= StatusIn(6) when BitMask(6) = '0' else
-                    RegA(to_integer(unsigned(RegB))) when ALUSel = PASSTHRUEN and to_integer(unsigned(RegB)) < 8 else
+                    RegA(to_integer(unsigned(RegB(2 downto 0)))) when ALUSel = BOUT else
                             '0'; -- update if transfer bit is set or cleared
 
     -- half carry
