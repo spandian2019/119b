@@ -105,10 +105,12 @@ begin
                 registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
                     <= IndDataIn(ADDRSIZE-1 downto ADDRSIZE/2);
             else
-                registers(conv_integer(IndAddrIn))
-                    <= registers(conv_integer(IndAddrIn));
-                registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
-                    <= registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'));
+                if IndAddrIn /= "XXXXX" then
+                    registers(conv_integer(IndAddrIn))
+                        <= registers(conv_integer(IndAddrIn));
+                    registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'))
+                        <= registers(conv_integer(IndAddrIn(RADDRSIZE-1 downto 1) & '1'));
+                end if;
             end if;
         end if;
     end process write_addr_reg;

@@ -206,14 +206,14 @@ begin
     begin
 
         -- initialize into the reset state
-        Reset   <=  '0';
+        Reset   <=  '1';
         IR      <=  IRTestVals(0);
         ProgDB  <=  ProgDBVals(0);
         DataDB  <=  "ZZZZZZZZ";
 
         -- wait for a while to remove the reset signal
         wait for 320 ns;
-        Reset  <=  '1';
+        Reset  <=  '0';
 
         -- wait for the rising clock edge
         -- this may need to be changed to get student FSM synced correctly
