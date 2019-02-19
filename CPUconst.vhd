@@ -108,8 +108,8 @@ package constants is
     --                    set to 1 for pass thru
     --                    set to 0 for setting low
     constant COMNEG_NONE : ALU_COMNEG := "01"; -- pass thru
-    constant ALU_COM     : ALU_COMNEG := "00"; -- set to all 0s
-    constant ALU_NEG     : ALU_COMNEG := "11"; -- set to all 1s
+    constant ALU_COM     : ALU_COMNEG := "11"; -- set to all 0s
+    constant ALU_NEG     : ALU_COMNEG := "00"; -- set to all 1s
 
     -----------------------
     -- DataMIU CONSTANTS --
@@ -292,7 +292,7 @@ end Mux8to1;
 architecture Mux8to1 of Mux8to1 is
     signal sel      : std_logic_vector(2 downto 0) := S2 & S1 & S0;
     begin
-    process(SIn0, SIn1, SIn2, SIn3, SIn4, SIn5, SIn6, SIn7, S0, S1, S2)
+    process(SIn0, SIn1, SIn2, SIn3, SIn4, SIn5, SIn6, SIn7, sel)
     begin  -- choose Sout based on S0 & S1 & S2
         if    sel = "000" then
             SOut <= SIn0;

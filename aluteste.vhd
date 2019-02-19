@@ -42,7 +42,7 @@ use ieee.numeric_std.all;
 
 use work.opcodes.all;
 
-use work.ALUConstants.all;
+use work.constants.all;
 
 entity  ALU_TEST  is
 
@@ -57,70 +57,82 @@ entity  ALU_TEST  is
 
 end  ALU_TEST;
 
-architecture ALUTB of ALU_TEST is 
-		-- mapped signals
-	  signal load : std_logic; 
-	  signal ALUOp   : std_logic_vector(3 downto 0); -- operation control signals 
-	  signal ALUOpF   : std_logic_vector(3 downto 0); -- operation control signals 
-      signal ALUSel  : std_logic_vector(2 downto 0); -- operation select 
-            
-	  signal BitMask: std_logic_vector(REGSIZE - 1 downto 0); -- mask for writing to status flags
-      signal ALUStatusOut    : std_logic_vector(REGSIZE-1 downto 0); -- status register output
-		  
-		-- to registers
-	  signal RegWEn      : std_logic; -- register write enable 
-	  signal RegWSel     : std_logic_vector(4 downto 0); -- register write select
-	  signal RegSelA     : std_logic_vector(4 downto 0); -- register A select
-	  signal RegSelB     : std_logic_vector(4 downto 0); -- register B select
-	  signal LoadIn : std_logic_vector(1 downto 0); -- selects data line into reg
-	  signal LoadReg: std_logic_vector(1 downto 0);
+architecture ALUTB of ALU_TEST is
+signal SReg        :  std_logic_vector(REGSIZE-1 downto 0);       -- status flags
+signal load        :  std_logic;                              -- load output to tell IR register
+                                                                --  when to fetch new instruction
+signal Immed       :  std_logic_vector(REGSIZE-1 downto 0);  -- immediate value K
+signal ImmedEn     :  std_logic;
+signal RegWEn      :  std_logic;                    -- register write enable
+signal RegWSel     :  std_logic_vector(RADDRSIZE-1 downto 0); -- register write select
+signal RegSelA     :  std_logic_vector(RADDRSIZE-1 downto 0); -- register A select
+signal RegSelB     :  std_logic_vector(RADDRSIZE-1 downto 0); -- register B select
+signal IORegWEn    :  std_logic;                      -- IN command enable
+signal IORegWSel   :  std_logic_vector(IOADDRSIZE-1 downto 0);   -- IO register address bus
+signal IndWEn      :  std_logic;
+signal IndAddrSel  :  ADDR_SEL;
+signal IOOutSel    :  std_logic;
+signal IORegOutEn  :  std_logic;                      -- OUT command enable
+signal ALUaddsub   :  ALU_ADDSUB;
+signal ALUsr       :  ALU_SR;
+signal ALUfop      :  ALU_FOPS; -- operation control signals
+signal ALUcomneg   :  ALU_COMNEG;
+signal ALUSel      :  ALU_SELECTS; -- operation select
+signal bitmask     :  BIT_MASK; -- mask for writing to flags (SReg)
+signal CPC         :  std_logic;
+signal LoadIn      :  LOADIN_SEL; -- selects data line into reg
+signal SRegLd      :  std_logic;                      -- select line to mux status reg source
+signal DataAddrSel     :  ADDR_SEL;  -- data address source select
+signal DataOffsetSel   :  OFFSET_SEL;-- data address offset source select
+signal PreSel          :  PREPOST_ADDR; -- data pre/post address select
+signal QOffset         :  std_logic_vector(Q_OFFSET_SIZE-1 downto 0); -- address offset for data memory unit
+signal DataDBWEn       :  std_logic;
+signal DataABMux       :  std_logic;
 
-	  -- I/O
-	  signal IORegInEn     :   std_logic;                    
-	  signal IORegOutEn    :   std_logic;
-	  signal K	: std_logic_vector(REGSIZE-1 downto 0); 
-	  signal SRegOut : std_logic_vector(REGSIZE-1 downto 0);
-	  signal SRegLd : std_logic;  
 
-	 begin 
-	 UUTALU: entity work.ALU
-		port map(
-		    ALUOp   => ALUOp,
-            ALUSel  => ALUSel,
-            RegA    => OperandA, 
-            RegB    => OperandB,
-            RegOut   => Result,
-            StatusOut    => ALUStatusOut
-		);
-		
-	 StatReg <= ALUStatusOut;
-	
-	
-	 UUTCU: entity work.CU
-    port map(
-        IR  => IR,
-        SReg    => ALUStatusOut,
-		  load => load,  
-		  
-        -- unused, to registers
-        RegWEn      => RegWEn, 
-        RegWSel     => RegWSel,
-        RegSelA     => RegSelA,
-        RegSelB     => RegSelB,
-        LoadIn      => LoadIn, 
-        LoadReg     => LoadReg, 
-		  
-        -- to ALU and SReg
-        ALUOp   => ALUOp,
-        ALUSel  => ALUSel,
-        bitmask => BitMask,
-        
-        -- I/O
-        IORegInEn   => IORegInEn,                      
-        IORegOutEn  => IORegOutEn,                     
-        SRegOut     => SRegOut, 
-		  SRegLd		  => SRegLd, 
-        K           => K,
-		  Clk			=> clock
-    );
+signal IndDataIn    : std_logic_vector(ADDRSIZE-1 downto 0);
+signal AddrMuxOut   : std_logic_vector(ADDRSIZE-1 downto 0);
+
+signal DataAddr : std_logic_vector( 15 downto 0);
+signal RegIoFlag : std_logic;
+signal RegIoSelFlag : std_logic;
+signal DataCtrlU : std_logic_vector(5 downto 0);
+
+signal ALUOut : std_logic_vector(7 downto 0);
+signal ProgDB : std_logic_vector(15 downto 0);
+
+signal DataRd : std_logic;
+signal DataWr : std_logic;
+
+signal Reset : std_logic;
+
+signal DataDB : std_logic_vector(7 downto 0);
+
+signal MuxBOut : std_logic_vector(7 downto 0);
+
+signal StatusBuff : std_logic_vector(7 downto 0);
+
+begin
+
+    ALUnit  : entity work.ALU port map(ALUaddsub, ALUsr, ALUfop, ALUcomneg, ALUSel, bitmask, CPC, OperandA, MuxBOut, SReg, Result, StatusBuff);
+
+    MuxBOut <= Immed    when ImmedEn = IMM_EN else   -- mux to select input to operand B
+               OperandB when ImmedEn = IMM_DIS;
+
+    CtrlU   : entity work.CU port map(ProgDB, IR, SReg, load, Immed, ImmedEn, RegWEn, RegWSel,
+                                    RegSelA, RegSelB, IORegWEn, IORegWSel, IndWEn, IndAddrSel,
+                                    IOOutSel, DataRd, DataWr, IORegOutEn, ALUaddsub, ALUsr, ALUfop,
+                                    ALUcomneg, ALUSel, bitmask, CPC, LoadIn, SRegLd,
+                                    DataOffsetSel, PreSel, QOffset, DataDBWEn, DataABMux, clock,
+                                    RegIoFlag, RegIoSelFlag, DataCtrlU);
+
+    StatReg <= SReg;
+
+    process(clock)
+    begin
+        if rising_edge(clock) then
+            SReg <= StatusBuff;
+        end if;
+    end process;
+
 end ALUTB;

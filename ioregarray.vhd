@@ -92,8 +92,10 @@ begin
                 IOregisters(conv_integer(SP_ADDR_H)) <= IndDataIn((ADDRSIZE/2)-1 downto 0);
                 IOregisters(conv_integer(SP_ADDR_L)) <= IndDataIn(ADDRSIZE-1 downto ADDRSIZE/2);
             else
-                IOregisters(conv_integer(SP_ADDR_H)) <= IOregisters(conv_integer(SP_ADDR_H));
-                IOregisters(conv_integer(SP_ADDR_L)) <= IOregisters(conv_integer(SP_ADDR_L));
+                if IndAddrIn /= "XXXXX" then
+                    IOregisters(conv_integer(SP_ADDR_H)) <= IOregisters(conv_integer(SP_ADDR_H));
+                    IOregisters(conv_integer(SP_ADDR_L)) <= IOregisters(conv_integer(SP_ADDR_L));
+                end if;
             end if;
         end if;
     end process write_addr_reg;

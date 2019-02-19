@@ -194,18 +194,21 @@ begin
                 
                                                     -- subber flag mapped in IR as function of 2 bits
                 ALUaddsub(SUBFLAG)  <= IR(11) xor IR(10);
-
                                                     -- carry/nborrow bit mapped in IR
                 if (IR(12) xor IR(11) xor IR(10)) = '1' then
                                                     -- signal to ALU adder to use carry bit
-                    ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
+                    if (IR(11) xor IR(10)) = '1' then
+                        ALUaddsub(CARRY_S1 downto CARRY_S0) <= NCARRY_IN;
+                    else
+                        ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
+                    end if;
                 else
                     -- all no carry operations use same logic block with 
                     -- carry in mapped in IR
                     --  clear active-hi carry for add
                     --  clear active-lo borrow for sub
                     -- maps same as to subFlag
-                    if IR(11) xor IR(10) = '1' then
+                    if (IR(11) xor IR(10)) = '1' then
                                                     -- clearing borrow for subber, sets carry
                         ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;
                     else
@@ -255,40 +258,44 @@ begin
                     RegWSel <= "11" & IR(5 downto 4) & '0';
                 else
                     ALUfop <= FOP_ZERO;             -- add in zero
-                    -- carry out from low byte carries in to high byte add
-                    ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
+                    if IR(8) = '1' then
+                        ALUaddsub(CARRY_S1 downto CARRY_S0) <= NCARRY_IN;
+                    else
+                        -- carry out from low byte carries in to high byte add
+                        ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
+                    end if;
                     -- previous operand addresses + 1
                     RegSelA <= "11" & IR(5 downto 4) & '1';
                     RegWSel <= "11" & IR(5 downto 4) & '1';
                 end if;
             end if;
 
-            -- considering word multiply op
-            if  std_match(IR, OpMUL) then
+--            -- considering word multiply op
+--            if  std_match(IR, OpMUL) then
 
-                LoadIn <= LD_ALU;
+--                LoadIn <= LD_ALU;
 
-                RegWEn <= WRITE_EN;
+--                RegWEn <= WRITE_EN;
 
-                -- takes 2 cycles to complete operation
-                cycle_num <= "10";
-                -- enable MUL operation
-                ALUSel <= MulEn;
+--                -- takes 2 cycles to complete operation
+--                cycle_num <= "10";
+--                -- enable MUL operation
+--                ALUSel <= MulEn;
 
-                -- output of MUL op is saved in R1:R0
-                --  low byte operation uses above bytes while high byte
-                --    operation uses the next highest byte
+--                -- output of MUL op is saved in R1:R0
+--                --  low byte operation uses above bytes while high byte
+--                --    operation uses the next highest byte
 
-                RegSelB <= IR(9) & IR(3 downto 0);
-                -- first do low byte multiply
-                if cycle = "00" then
-                    RegWSel <= "00000";
-                elsif cycle = "01" then
-                    RegWSel <= "00001";
-                end if;
+--                RegSelB <= IR(9) & IR(3 downto 0);
+--                -- first do low byte multiply
+--                if cycle = "00" then
+--                    RegWSel <= "00000";
+--                elsif cycle = "01" then
+--                    RegWSel <= "00001";
+--                end if;
                 
-                BitMask <= MASK_MUL;
-            end if;
+--                BitMask <= MASK_MUL;
+--            end if;
 
             -- considering immediate subber operations
             if  std_match(IR, OpSUBI) or std_match(IR, OpSBCI) or std_match(IR, OpCPI) then
@@ -301,7 +308,7 @@ begin
                 -- carry/nborrow bit mapped in IR
                 if IR(12) = '0' then
                     -- send carry bit to ALU
-                    ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
+                    ALUaddsub(CARRY_S1 downto CARRY_S0) <= NCARRY_IN;
                 else
                     -- all no carry operations use same logic block with 
                     -- carry in mapped in IR
@@ -331,14 +338,14 @@ begin
 
                 ALUSel <= ADDSUBOUT;                -- enable Adder/Subber operation
 
-                ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;   -- set carry flag
-
                 -- add/sub conditional mapped in IR
                 ALUaddsub(subFlag)  <= OP_ADD;
-                if IR(3) = '1' then 
+                if IR(3) = '1' then
                     ALUfop <= FOP_ONES;
+                    ALUaddsub(CARRY_S1 downto CARRY_S0) <= RST_CARRY;   -- set carry flag
                 else
                     ALUfop <= FOP_ZERO;
+                    ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;   -- set carry flag
                 end if;
 
                 ImmedEn <= IMM_EN;                  -- immediate value loads into second operand
@@ -467,7 +474,7 @@ begin
 
                 -- select LSR operation
                 ALUsr <= SR_LSR;
-                RegSelA <= IR(8 downto 4);h
+                RegSelA <= IR(8 downto 4);
                 RegWSel <= IR(8 downto 4);
                 BitMask <= MASK_SHIFT;
             end if;
@@ -495,9 +502,9 @@ begin
                 RegWEn <= WRITE_EN;
 
                 -- select ROR operation
-                ALUOp <= SR_ROR;
+                ALUsr <= SR_ROR;
                 -- ROR op uses carry bit from last operation ----------- TODO
-                ALUsr(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
+                ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
                 RegSelA <= IR(8 downto 4);
                 RegWSel <= IR(8 downto 4);
                 BitMask <= MASK_SHIFT;
@@ -508,7 +515,7 @@ begin
                 if IR(7) = '0' then
                     ALUSel <= BSET;
                 else
-                    ALUSel <= BCLR:
+                    ALUSel <= BCLR;
                 end if;
 
                 bitmask <= (others => '0');

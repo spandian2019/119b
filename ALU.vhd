@@ -41,7 +41,8 @@ use ieee.std_logic_unsigned.all;
 
 use work.opcodes.all;
 
-use work.ALUconstants.all;
+use work.constants.all;
+use work.ALUConstants.all;
 
 entity ALU is
     port(
@@ -71,7 +72,7 @@ architecture behavioral of ALU is
 signal AdderOut     : std_logic_vector(REGSIZE-1 downto 0); -- adder/subtracter output
 signal CarryOut     : std_logic_vector(REGSIZE-1 downto 0); -- carry for adder/subtracter
 
-signal ASCout       : std_logic;
+--signal ASCout       : std_logic;
 signal Bin          : std_logic_vector(REGSIZE-1 downto 0); -- B Input to the adder/subber
 
 signal Fout         : std_logic_vector(REGSIZE-1 downto 0); -- f block output
@@ -80,9 +81,9 @@ signal SRout        : std_logic_vector(REGSIZE-1 downto 0); -- shifter/rotator b
 
 signal Bitout       : std_logic_vector(REGSIZE-1 downto 0); -- bit set block output
 
-signal SwapOut      : std_logic_vector(REGSIZE-1 downto 0); -- swap block output
+signal SwapRegOut   : std_logic_vector(REGSIZE-1 downto 0); -- swap block output
 
-signal MulOut       : std_logic_vector(REGSIZE-1 downto 0); -- MUL block output
+signal MulRegOut    : std_logic_vector(REGSIZE-1 downto 0); -- MUL block output
 
 signal RegBuff      : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output result
 
@@ -153,7 +154,7 @@ begin
     -- clear or set A, for use with COM or NEG
     -- TODO explain?
     GenAClr: for i in REGSIZE-1 downto 0 generate
-        comnegR(i) <= (RegA(i) and CNCtrl(OP_CN_AND)) or CNCtrl(OP_CN_OR);
+        comnegR(i) <= (RegA(i) and ALUCNOp(OP_CN_AND)) or ALUCNOp(OP_CN_OR);
     end generate GenAClr;
 
     -- adder/subtracter carry in MUX
@@ -170,7 +171,7 @@ begin
 
     -- flip bits in B if subtracting
     SubXOR: for i in REGSIZE-1 downto 0 generate
-        Bin(i) <= FOut(i) xor ALUOp(SUBFLAG);
+        Bin(i) <= FOut(i) xor ALUASOp(SUBFLAG);
     end generate SubXOR;
 
     adder0: fullAdder --TODO check
@@ -199,8 +200,8 @@ begin
     -- assign high bit
     SRMux: Mux4to1
         port map(
-            S0          => ALUOp(0),
-            S1          => ALUOp(1),
+            S0          => ALUSROp(0),
+            S1          => ALUSROp(1),
             SIn0        => '0',             -- LSR high bit = 0
             SIn1        => RegA(REGSIZE-1), -- ASR high bit constant
             SIn2        => StatusIn(0),     -- ROR high bit = carry in
@@ -218,31 +219,36 @@ begin
     -- SWAP block
     -- switches high and low nibble of A input
     SWAP_OP : for i in REGSIZE-1 downto 0 generate
-        if i >= NIBBLE then
-            SwapOut(i) <= RegA(i-NIBBLE);
-        else
-            SwapOut(i) <= RegA(i+NIBBLE);
-        end if;
+        SwapRegOut(i) <= RegA(i-NIBBLE) when i >= NIBBLE else
+                         RegA(i+NIBBLE);
     end generate;
 
-    -- final ALU select mux
-    GenALUSel:  for i in REGSIZE-1 downto 0 generate
-    ALUSelMux: Mux8to1
-        port map(
-            S0          => ALUSel(0),
-            S1          => ALUSel(1),
-            S2          => ALUSel(2),
-            SIn0        => AdderOut(i),
-            SIn1        => FOut(i),
-            SIn2        => SROut(i),
-            SIn3        => SwapOut(i),
-            SIn4        => MulOut(i),
-            SIn5        => Bitout(i),
-            SIn6        => 'X',             -- nothing outputted during SReg bit setting
-            SIn7        => 'X',
-            SOut        => RegBuff(i)
-      );
-      end generate GenALUSel;
+    ---- final ALU select mux
+    --GenALUSel:  for i in REGSIZE-1 downto 0 generate
+    --ALUSelMux: Mux8to1
+    --    port map(
+    --        S0          => ALUSel(0),
+    --        S1          => ALUSel(1),
+    --        S2          => ALUSel(2),
+    --        SIn0        => AdderOut(i),
+    --        SIn1        => FOut(i),
+    --        SIn2        => SROut(i),
+    --        SIn3        => SwapRegOut(i),
+    --        SIn4        => MulOut(i),
+    --        SIn5        => Bitout(i),
+    --        SIn6        => 'X',             -- nothing outputted during SReg bit setting
+    --        SIn7        => 'X',
+    --        SOut        => RegBuff(i)
+    --  );
+    --  end generate GenALUSel;
+
+    RegBuff <=  AdderOut    when ALUSel = ADDSUBOUT else
+                FOut        when ALUSel = FBLOCKOUT else
+                SROut       when ALUSel = SHIFTOUT  else
+                SwapRegOut  when ALUSel = SWAPOUT   else
+                MulRegOut   when ALUSel = MULOUT    else
+                BitOut      when ALUSel = BOUT else
+                "XXXXXXXX";
 
 
     RegOut <= RegBuff;
@@ -266,7 +272,7 @@ begin
     StatusOut(5) <= StatusIn(5) when BitMask(5) = '0' else
                     '1' when ALUSel = BSET else
                     '0' when ALUSel = BCLR else
-                    CarryOut(HALFCARRYBIT) when ALUOp(SUBFLAG) = OP_ADD else
+                    CarryOut(HALFCARRYBIT) when ALUASOp(SUBFLAG) = OP_ADD else
                     not CarryOut(HALFCARRYBIT);     -- carry flag opposite when subtracting
 
      -- corrected signed
@@ -279,8 +285,8 @@ begin
     VFlag <= StatusIn(3) when BitMask(3) = '0' else
              '1' when ALUSel = BSET else
              '0' when ALUSel = BCLR else
-             '1' when (ALUSEL = ADDSUBEN and CarryOut(REGSIZE-1) /= CarryOut(REGSIZE-2)) else -- 1 if signed overflow
-             '0' when (ALUSEL = ADDSUBEN or  ALUSEL = FBLOCKEN) else -- 0 if no overflow or logical op
+             '1' when (ALUSEL = ADDSUBOUT and CarryOut(REGSIZE-1) /= CarryOut(REGSIZE-2)) else -- 1 if signed overflow
+             '0' when (ALUSEL = ADDSUBOUT or  ALUSEL = FBLOCKOUT) else -- 0 if no overflow or logical op
              NFlag xor CFlag;  --N xor C for shift operations
     StatusOut(3) <= VFlag;
 
@@ -302,9 +308,9 @@ begin
     CFlag <= StatusIn(0) when BitMask(0) = '0' else
                     '1' when ALUSel = BSET else
                     '0' when ALUSel = BCLR else
-                    ASCout when ALUSel = ADDSUBEN and ALUOp(SUBFLAG) = OP_ADD else
-                    not ASCout when ALUSel = ADDSUBEN else     -- carry flag opposite when subtracting
-                    '1' when ALUSel = FBLOCKEN else -- set for logical operations
+                    CarryOut(REGSIZE-1) when ALUSel = ADDSUBOUT and ALUASOp(SUBFLAG) = OP_ADD else
+                    not CarryOut(REGSIZE-1) when ALUSel = ADDSUBOUT else     -- carry flag opposite when subtracting
+                    '1' when ALUSel = FBLOCKOUT else -- set for logical operations
                     RegA(0); -- when ALUSel = SHIFTEN;
     StatusOut(0) <= CFlag;
 end behavioral;
