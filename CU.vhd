@@ -199,6 +199,9 @@ begin
                                                     -- signal to ALU adder to use carry bit
                     if (IR(11) xor IR(10)) = '1' then
                         ALUaddsub(CARRY_S1 downto CARRY_S0) <= NCARRY_IN;
+                        if IR(10) = '1' then
+                            CPC <= CPC_SET;
+                        end if;
                     else
                         ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
                     end if;

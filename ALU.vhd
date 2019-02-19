@@ -308,6 +308,7 @@ begin
     CFlag <= StatusIn(0) when BitMask(0) = '0' else
                     '1' when ALUSel = BSET else
                     '0' when ALUSel = BCLR else
+                    '1' when ALUCNOp = ALU_COM else
                     CarryOut(REGSIZE-1) when ALUSel = ADDSUBOUT and ALUASOp(SUBFLAG) = OP_ADD else
                     not CarryOut(REGSIZE-1) when ALUSel = ADDSUBOUT else     -- carry flag opposite when subtracting
                     '1' when ALUSel = FBLOCKOUT else -- set for logical operations
