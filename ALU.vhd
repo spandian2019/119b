@@ -299,6 +299,7 @@ begin
 
     -- zero flag
     StatusOut(1) <= StatusIn(1) when BitMask(1) = '0' else
+                    ('1' and StatusIn(1)) when RegBuff = ZERO8 and ALUFOp = FOP_ZERO and ALUASOp(CARRY_S1 downto CARRY_S0) /= SET_CARRY else
                     '1' when ALUSel = BSET else
                     '0' when ALUSel = BCLR else
                     '0' when CPC = '1' and StatusIn(1) = '0' else -- and zero flag if performing cpc
