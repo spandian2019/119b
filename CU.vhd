@@ -895,7 +895,7 @@ begin
     FSM_noSM : process (CLK)
     begin
       if (rising_edge(CLK)) then
-            if load = '0' then
+            if cycle /= cycle_num-1 then
                 cycle <= cycle + 1;
             else
                 cycle <= "00";
