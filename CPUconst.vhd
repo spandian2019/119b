@@ -124,7 +124,7 @@ package constants is
     constant IND_ADDR : std_logic := '0';
 
     subtype  OFFSET_SEL is std_logic_vector(1 downto 0);
-    -- Address Adder - Offset Mux In Control Signals
+    -- Data Address Adder - Offset Mux In Control Signals
     constant ZERO_SEL       : OFFSET_SEL := "00"; -- Selects  0 to add
     constant INC_SEL        : OFFSET_SEL := "01"; -- Selects +1 to add
     constant DEC_SEL        : OFFSET_SEL := "10"; -- Selects -1 to add
@@ -132,7 +132,7 @@ package constants is
 
     subtype OFFSET_CONST is std_logic_vector(ADDRSIZE-1 downto 0);
     -- number of bits in OFFSET_CONST needs to match ADDRSIZE-1 for a 16 bit address bus
-    -- Address Adder - Offset constant values to add
+    -- Data Address Adder - Offset constant values to add
     constant ZERO_OFFSET    : OFFSET_CONST := "0000000000000000"; --  0 constant to add
     constant INC_OFFSET     : OFFSET_CONST := "0000000000000001"; -- +1 constant to add
     constant DEC_OFFSET     : OFFSET_CONST := "1111111111111111"; -- -1 constant to add
@@ -143,6 +143,23 @@ package constants is
     constant Q_OFFSET_SIZE   : integer := 6;
     constant Q_OFFS_ZERO_PAD : std_logic_vector(ADDRSIZE-Q_OFFSET_SIZE-1 downto 0) := "0000000000";
 
+    -----------------------
+    -- ProgMIU CONSTANTS --
+    -----------------------
+    subtype  SOURCE_SEL is std_logic_vector(1 downto 0);
+    -- Prog Address Adder - Source Mux In Control Signals
+    constant IR_SRC     : SOURCE_SEL := "00"; -- Selects IR value to load or add
+    constant Z_SRC      : SOURCE_SEL := "01"; -- Selects Z register value to add
+    constant RST_SRC    : SOURCE_SEL := "10"; -- Selects RST_VECTOR to add, or RST_VECTOR to load
+    constant NORMAL_SRC : SOURCE_SEL := "11"; -- Selects INC_VECTOR to add
+
+    subtype SOURCE_CONST is std_logic_vector(ADDRSIZE-1 downto 0);
+    -- number of bits in SOURCE_CONST needs to match ADDRSIZE-1 for a 16 bit address bus
+    -- Prog Address Adder - Source constant values to add
+    constant RST_VECTOR     : SOURCE_CONST := "0000000000000000"; --  0 constant to load or add
+                                                                  --  loading points to reset vector
+                                                                  --  adding does not change PC
+    constant INC_VECTOR     : SOURCE_CONST := "0000000000000001"; -- +1 constant to add
 
     ------------------------
     -- Register CONSTANTS --

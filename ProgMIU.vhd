@@ -1,22 +1,22 @@
 ----------------------------------------------------------------------------
--- 
--- 
+--
+--
 -- Program Memory Interface Unit
 --
--- The program memory access unit generates the addresses for reading the  
--- program memory data. The program memory is addressed as 16-bit words 
--- with 16-bit addresses. The program counter, containing the currently 
--- executing instruction, is located inside this unit and is incremented 
+-- The program memory access unit generates the addresses for reading the
+-- program memory data. The program memory is addressed as 16-bit words
+-- with 16-bit addresses. The program counter, containing the currently
+-- executing instruction, is located inside this unit and is incremented
 -- or loaded as necessary for the next address.
 --
 -- Ports:
---  Inputs: 
+--  Inputs:
 --        ProgAddr - 16-bit program address source from CU
 --        RegOut   - 16-bit immediate address source from registers
 --        Load     - load select for PC, from CU
---        AddrSel  - address source select, from CU 
+--        AddrSel  - address source select, from CU
 --
---  Outputs: 
+--  Outputs:
 --        ProgAB  : out std_logic_vector(15 downto 0) -- program address bus
 --
 -- Revision History:
@@ -28,19 +28,22 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 
-library opcodes; 
-use opcodes.opcodes.all; 
+library opcodes;
+use opcodes.opcodes.all;
 
-entity ProgMIU is 
+entity ProgMIU is
     port(
-    	clock   : in std_logic;
-        ProgAddr: in std_logic_vector(15 downto 0); -- program address source from CU
-        RegOut  : in std_logic_vector(15 downto 0); -- immediate address source from registers
+        clock   : in std_logic;
         Load    : in std_logic;                     -- load select for PC, from CU
-        AddrSel : in std_logic_vector(1 downto 0);  -- address source select, from CU 
-        ProgAB  : out std_logic_vector(15 downto 0) -- program address bus
-     ); 
-end ProgMIU; 
+        AddrSourceSel : in SOURCE_SEL;  -- address source select, from CU
+        IR_input: in std_logic_vector(ADDRSIZE-1 downto 0);
+
+        -- from RegUnit
+        Z_input : in std_logic_vector(ADDRSIZE-1 downto 0);
+
+        ProgAB  : out std_logic_vector(ADDRSIZE-1 downto 0) -- program address bus
+     );
+end ProgMIU;
 
 architecture ProgMIU_arc of ProgMIU is
 
@@ -85,13 +88,17 @@ signal AddrAdderOut : std_logic_vector(ADDRSIZE-1 downto 0); -- address adder ou
 
 begin
 
-    OffsetMuxOut <=	IR_input 	when AddrSel = IR_OFFSET else
-    				Reg_input	when AddrSel = REG_OFFSET else
-    				RST_VECTOR  when AddrSel = RST_OFFSET else
-    				NORM_INSTR  when AddrSel = NORM_OFFSET;
+    OffsetMuxOut <= IR_input    when AddrSourceSel = IR_SRC else
+                    Z_input     when AddrSourceSel = Z_SRC else
+                    RST_VECTOR  when AddrSourceSel = RST_SRC else
+                    INC_VECTOR  when AddrSourceSel = NORMAL_SRC;
 
-    PCOut <= ProgCtr when Load = '1' else
-    		 CLR_PC;
+    --PCOut <= ProgCtr when Load = '1' else
+    --       CLR_PC;
+
+    AndBlock: for i in ADDRSIZE-1 downto 0 generate
+        PCOut(i) <= ProgCtr(i) and Load;
+    end generate AndBlock;
 
     -- ADDRSIZE bit adder for indirect address manipulations
     adder0: fullAdder

@@ -58,7 +58,7 @@
 -- 02/06/2019   Sundar Pandian  Rewrote to match Glen's preferred structure
 -- 02/07/2019   Sundar Pandian  Started adding support for AVR load/store instr
 -- 02/09/2019   Sundar Pandian  Added documentation for AVR load/store ops
--- 02/09/2019   Sophia Liu      Updated and cleaned doc 
+-- 02/09/2019   Sophia Liu      Updated and cleaned doc
 --
 ----------------------------------------------------------------------------
 library ieee;
@@ -72,10 +72,7 @@ use work.constants.all;
 entity CU is
     port(
         ProgDB  : in std_logic_vector(ADDRSIZE-1 downto 0);     -- program memory data bus
-        IR      : in std_logic_vector(IRSIZE-1 downto 0);       -- instruction register input
         SReg    : in std_logic_vector(REGSIZE-1 downto 0);      -- status flags
-        load    : buffer std_logic;                             -- load output to tell IR register
-                                                                --  when to fetch new instruction
 
         Immed       : out std_logic_vector(REGSIZE-1 downto 0); -- immediate value K
         ImmedEn     : out std_logic;                            -- mux ctrl signal for immed into ALU A Reg
@@ -119,6 +116,11 @@ entity CU is
         RegIoFlag   : in std_logic;                           -- '1' if external address is in register range
         RegIoSelFlag: in std_logic;                           -- external address is in either io or general range
         DataAB      : in std_logic_vector(5 downto 0)         -- address to be remapped to registers
+
+        -- Prog memory access
+        Load            : out std_logic;
+        ProgSourceSel   : out std_logic_vector(ADDRSIZE-1 downto 0);
+        ProgIRSource    : out std_logic_vector(ADDRSIZE-1 downto 0)
     );
 
 end CU;
@@ -133,7 +135,7 @@ architecture RISC of CU is
 begin
 
     -- asynchronously decodes IR inputs
-    decoder : process(IR, CLK)
+    decoder : process(IR, CLK, ProgDB)
     begin
             -- sets cycle number for op_codes
             -- defaults operations to 1 cycle
@@ -168,6 +170,15 @@ begin
             DataWr <= '1';
             -- default address offset value is 0
             DataOffsetSel <= ZERO_SEL;
+            -- default PC to increment when operation is on last cycle
+            --  else no change to PC
+            if cycle = cycle_num - 1 then
+                ProgSourceSel <= NORMAL_SRC;
+            else
+                ProgSourceSel <= RST_SRC;
+            end if;
+            -- load defaults to indirect addressing
+            load = '1';
 
 
 
@@ -191,7 +202,7 @@ begin
 
                 RegWEn <= IR(11);                   -- Writes data from RegA, mapped in IR(11)
                                                     -- only not set for CP, CPC. Don't rewrite reg value
-                
+
                                                     -- subber flag mapped in IR as function of 2 bits
                 ALUaddsub(SUBFLAG)  <= IR(11) xor IR(10);
                                                     -- carry/nborrow bit mapped in IR
@@ -206,7 +217,7 @@ begin
                         ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
                     end if;
                 else
-                    -- all no carry operations use same logic block with 
+                    -- all no carry operations use same logic block with
                     -- carry in mapped in IR
                     --  clear active-hi carry for add
                     --  clear active-lo borrow for sub
@@ -232,11 +243,11 @@ begin
                 BitMask <= MASK_ADIW;
 
                 cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
-                
+
                 ALUSel <= ADDSUBOUT;                -- enable Adder/Subber operation
-                
+
                 ALUaddsub(subFlag) <= IR(8);        -- subFlag mapped in IR
-                
+
                 ImmedEn <= IMM_EN;                  -- immediate value loads into second operand
 
                 -- value in IR is offset added to register 24
@@ -248,7 +259,7 @@ begin
                 if cycle = ZERO_CYCLES then
                     -- mapping to immediate value in IR, max value of 63
                     Immed <= "00" & IR(7 downto 6) & IR(3 downto 0);
-                    -- add/sub op mapped in 
+                    -- add/sub op mapped in
                     ALUaddsub(subFlag)  <= IR(8);
                     -- carry/nborrow cleared
                     if IR(8) = '1' then
@@ -273,37 +284,37 @@ begin
                 end if;
             end if;
 
---            -- considering word multiply op
---            if  std_match(IR, OpMUL) then
+            ---- considering word multiply op
+            --if  std_match(IR, OpMUL) then
 
---                LoadIn <= LD_ALU;
+            --    LoadIn <= LD_ALU;
 
---                RegWEn <= WRITE_EN;
+            --    RegWEn <= WRITE_EN;
 
---                -- takes 2 cycles to complete operation
---                cycle_num <= "10";
---                -- enable MUL operation
---                ALUSel <= MulEn;
+            --    -- takes 2 cycles to complete operation
+            --    cycle_num <= "10";
+            --    -- enable MUL operation
+            --    ALUSel <= MulEn;
 
---                -- output of MUL op is saved in R1:R0
---                --  low byte operation uses above bytes while high byte
---                --    operation uses the next highest byte
+            --    -- output of MUL op is saved in R1:R0
+            --    --  low byte operation uses above bytes while high byte
+            --    --    operation uses the next highest byte
 
---                RegSelB <= IR(9) & IR(3 downto 0);
---                -- first do low byte multiply
---                if cycle = "00" then
---                    RegWSel <= "00000";
---                elsif cycle = "01" then
---                    RegWSel <= "00001";
---                end if;
-                
---                BitMask <= MASK_MUL;
---            end if;
+            --    RegSelB <= IR(9) & IR(3 downto 0);
+            --    -- first do low byte multiply
+            --    if cycle = "00" then
+            --        RegWSel <= "00000";
+            --    elsif cycle = "01" then
+            --        RegWSel <= "00001";
+            --    end if;
+
+            --    BitMask <= MASK_MUL;
+            --end if;
 
             -- considering immediate subber operations
             if  std_match(IR, OpSUBI) or std_match(IR, OpSBCI) or std_match(IR, OpCPI) then
                 -- 0oooKKKKddddKKKK
-                
+
                 LoadIn <= LD_ALU;
 
                 ALUSel <= ADDSUBOUT;                -- enable Adder/Subber operation
@@ -313,7 +324,7 @@ begin
                     -- send carry bit to ALU
                     ALUaddsub(CARRY_S1 downto CARRY_S0) <= NCARRY_IN;
                 else
-                    -- all no carry operations use same logic block with 
+                    -- all no carry operations use same logic block with
                     -- carry in mapped in IR
                     --  clear active-hi carry for add
                     --  clear active-lo borrow for sub
@@ -404,7 +415,7 @@ begin
                 LoadIn <= LD_ALU;
 
                 ALUSel <= FBLOCKOUT;                -- enable F Block Operation
-                
+
                 RegWEn <= WRITE_EN;
 
                 ALUfop <= FOP_AND;                  -- select AND operation
@@ -426,9 +437,9 @@ begin
             end if;
 
             if  std_match(IR, OpOR) or std_match(IR, OpORI) then
-                
+
                 LoadIn <= LD_ALU;
-                
+
                 ALUSel <= FBLOCKOUT;                -- enable F Block Operation
 
                 RegWEn <= WRITE_EN;
@@ -439,7 +450,7 @@ begin
                     -- immediate value loads into second operand
                     ImmedEn <= IMM_EN;
                 end if;
-                
+
                 RegWSel <= IR(8 downto 4);
                 -- ORI operation only maps to upper half of register space
                 if IR(14) = '1' then
@@ -452,9 +463,9 @@ begin
             end if;
 
             if  std_match(IR, OpEOR) then
-                
+
                 LoadIn <= LD_ALU;
-                
+
                 ALUSel <= FBLOCKOUT;                -- enable F Block Operation
 
                 RegWEn <= WRITE_EN;
@@ -470,7 +481,7 @@ begin
             if  std_match(IR, OpLSR) then
 
                 LoadIn <= LD_ALU;
-                
+
                 ALUSel <= SHIFTOUT;                 -- enable F Block Operation
 
                 RegWEn <= WRITE_EN;
@@ -485,7 +496,7 @@ begin
             if  std_match(IR, OpASR) then
 
                 LoadIn <= LD_ALU;
-                
+
                 ALUSel <= SHIFTOUT;                 -- enable F Block Operation
 
                 RegWEn <= WRITE_EN;
@@ -499,7 +510,7 @@ begin
             if  std_match(IR, OpROR) then
 
                 LoadIn <= LD_ALU;
-                
+
                 ALUSel <= SHIFTOUT;                 -- enable F Block Operation
 
                 RegWEn <= WRITE_EN;
@@ -536,7 +547,7 @@ begin
 
                 RegSelA <= IR(8 downto 4);
                 RegWSel <= IR(8 downto 4);
-                
+
                 -- clear bitmask
                 BitMask <= (others => '0');
                 if IR(T_IR) = '0' then
@@ -655,6 +666,7 @@ begin
                         -- do nothing
                     elsif cycle = ONE_CYCLE then        -- during second cycle
                         DataABMux <= MEM_ADDR;          -- signal to latch and output ProgDB memory on DataAB
+                        ProgSourceSel <= NORMAL_SRC;    -- increment PC here so ProgAB points to next IR
                     else                                -- during third cycle
                         DataABMux <= MEM_ADDR;          -- still outputting ProgDB to DataAB
 
@@ -747,6 +759,7 @@ begin
                         -- do nothing
                     elsif cycle = ONE_CYCLE then        -- during second cycle
                         DataABMux <= MEM_ADDR;          -- signal to latch and output ProgDB memory on DataAB
+                        ProgSourceSel <= NORMAL_SRC;    -- increment PC here so ProgAB points to next IR
                     else                                -- during third cycle
                         DataABMux <= MEM_ADDR;          -- still outputting ProgDB to DataAB
 
@@ -760,7 +773,10 @@ begin
                 -- 1110kkkkddddkkkk
                     -- takes 1 cycle to complete operation so no change from default
 
-                    LoadIn <= LD_IMM;                   -- loading values into register space from Immed
+                    LoadIn <= LD_ALU;                   -- loading values into register space from Immed
+                    ImmedEn <= IMM_EN;
+                    ALUSel <= FBLOCKOUT;
+                    ALUfop <= FOP_B;
 
                     RegWSel <= '1' & IR(7 downto 4);    -- Operand 1 is the register being written to
                                                         -- Immediate operations limited to upper half of register space
@@ -884,18 +900,122 @@ begin
                 end if;
             end if;
 
+            if std_match(IR, OpJMP) then
+                -- 1001010aaaaa110a
+                -- aaaaaaaaaaaaaaaa
+
+                cycle_num <= THREE_CYCLES;          -- takes 3 cycles to complete operation
+
+                if cycle = ZERO_CYCLES then         -- during first cycle
+                    ProgIRSource <= ProgDB;
+                    ProgSourceSel <= IR_SRC;
+                    load <= '0';
+                elsif cycle = ONE_CYCLE then        -- during second cycle
+                    ProgIRSource <= ProgIRSource;
+                    ProgSourceSel <= IR_SRC;
+                    load <= '0';
+                else                                -- during third cycle
+                    -- do nothing
+                end if;
+            end if;
+
+            if std_match(IR, OpRJMP) then
+                -- 1100jjjjjjjjjjjj
+
+                cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
+
+                if cycle = ZERO_CYCLES then         -- during first cycle
+                    ProgIRSource <= "0000" & IR(11 downto 0);
+                    ProgSourceSel <= IR_SRC;
+                else                                -- during second cycle
+                    -- do nothing
+                end if;
+            end if;
+
+            if std_match(IR, OpIJMP) then
+                -- 10010100XXXX1001
+
+                cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
+
+                if cycle = ZERO_CYCLES then         -- during first cycle
+                    ProgSourceSel <= Z_SRC;
+                    load <= '0';
+                else                                -- during second cycle
+                    -- do nothing
+                end if;
+            end if;
+
+            if std_match(IR, OpCALL) then
+                -- 1001010aaaaa111a
+                -- aaaaaaaaaaaaaaaa
+
+                cycle_num <= ZERO_CYCLES;           -- takes 4 cycles to complete operation
+
+                if cycle = ZERO_CYCLES then         -- during first cycle
+                    ProgIRSource <= ProgDB;         -- latch ProgDB value, Prog addr to call
+                    ProgSourceSel <= NORMAL_SRC;    -- inc PC to point to next value
+                elsif cycle = ONE_CYCLE then        -- during second cycle
+                    ProgIRSource <= ProgIRSource;   -- hold ProgDB value
+                    ProgSourceSel <= RST_SRC;       -- 
+
+
+                    -- loading values from RegA into DataDB so no change from default
+
+                    DataOffsetSel <= DEC_SEL;           -- Pushing post decrements
+                    PreSel <= POST_ADDR;                --  the Stack Pointer
+
+                    IndAddrSel <= SP_SEL;               -- indirect addressing stored in Stack Pointer
+
+                    RegSelA <= IR(8 downto 4);          -- Operand 1 is the register being read from, loc in IR(8..4)
+
+
+
+                elsif cycle = TWO_CYCLES then       -- during third cycle
+                    ProgIRSource <= ProgIRSource;
+                    -- do nothing
+                    ProgSourceSel <= RST_SRC;
+                else                                -- during fourth cycle
+                    ProgIRSource <= ProgIRSource;
+
+                    ProgSourceSel <= IR_SRC;
+                end if;
+            end if;
+
+            if std_match(IR, OpRCALL) or std_match(IR, OpICALL) then
+
+            end if;
+
+            if std_match(IR, OpICALL) then
+
+            end if;
+
+            if std_match(IR, OpRET) or std_match(IR, OpRETI) then
+
+            end if;
+
+
+
+
     end process decoder;
 
-    -- load enable signal telling when to fetch next instruction
-    -- cycle value is zero indexed so finaly value is one less than cycle_num
-    load <= '1' when cycle = cycle_num-1 else
-            '0';
+    -- Fetches next instruction when on last cycle of operation of previous instruction
+    -- cycle value is zero indexed so final value is one less than cycle_num
+    IR_update: process (CLK)
+    begin
+        if (rising_edge(CLK)) then
+            if cycle = cycle_num-1 then
+                IR <= ProgDB;
+            else
+                IR <= IR;
+            end if;
+        end if;
+    end process IR_update;
 
     -- cycle counter, only operates when cycle_num /= 1
     FSM_noSM : process (CLK)
     begin
       if (rising_edge(CLK)) then
-            if load = '0' then
+            if cycle /= cycle_num-1 then
                 cycle <= cycle + 1;
             else
                 cycle <= "00";
