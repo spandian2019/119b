@@ -206,12 +206,14 @@ package constants is
     -- Register Data In Select constants
     subtype  RegData_selects is std_logic_vector(3 downto 0);
 
-    subtype  LOADIN_SEL is std_logic_vector(1 downto 0);
+    subtype  LOADIN_SEL is std_logic_vector(2 downto 0);
     -- LoadIn select constants
-    constant LD_IMM    : LOADIN_SEL := "00";
-    constant LD_ALU    : LOADIN_SEL := "01";
-    constant LD_DB     : LOADIN_SEL := "10";
-    constant LD_REGA   : LOADIN_SEL := "11";
+    constant LD_IMM    : LOADIN_SEL := "000";
+    constant LD_ALU    : LOADIN_SEL := "001";
+    constant LD_DB     : LOADIN_SEL := "010";
+    constant LD_REGA   : LOADIN_SEL := "011";
+    constant LD_PROG_HI: LOADIN_SEL := "100";
+    constant LD_PROG_LO: LOADIN_SEL := "101";
 
     --subtype  LoadReg_selects is std_logic_vector(1 downto 0);
     ---- LoadReg select constants
