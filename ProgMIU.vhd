@@ -41,6 +41,8 @@ entity ProgMIU is
         -- from RegUnit
         Z_input : in std_logic_vector(ADDRSIZE-1 downto 0);
 
+        DataDB  : in std_logic_vector(REGSIZE-1 downto 0);
+
         ProgAB  : out std_logic_vector(ADDRSIZE-1 downto 0) -- program address bus
      );
 end ProgMIU;
@@ -88,10 +90,12 @@ signal AddrAdderOut : std_logic_vector(ADDRSIZE-1 downto 0); -- address adder ou
 
 begin
 
-    OffsetMuxOut <= IR_input    when AddrSourceSel = IR_SRC else
-                    Z_input     when AddrSourceSel = Z_SRC else
-                    RST_VECTOR  when AddrSourceSel = RST_SRC else
-                    INC_VECTOR  when AddrSourceSel = NORMAL_SRC;
+    OffsetMuxOut <= IR_input            when AddrSourceSel = IR_SRC else
+                    Z_input             when AddrSourceSel = Z_SRC else
+                    RST_VECTOR          when AddrSourceSel = RST_SRC else
+                    INC_VECTOR          when AddrSourceSel = NORMAL_SRC else
+                    "00000000" & DataDB when AddrSourceSel = DB_LO_SRC else
+                    DataDB & "00000000" when AddrSourceSel = DB_HI_SRC;
 
     --PCOut <= ProgCtr when Load = '1' else
     --       CLR_PC;

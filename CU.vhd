@@ -1045,32 +1045,21 @@ begin
 
                 LoadIn <= LD_DB;                    -- loading values into register space from DataDB
 
-                ProgSourceSel(ADDRSIZE-1 downto (ADDRSIZE+1)/2) <= ??????;
-
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    ProgSourceSel <= RST_SRC;       --
-                    -- do nothing else
+                    ProgSourceSel <= DB_LO_SRC;
+                    load = '0'
                 elsif cycle = ONE_CYCLE then        -- during second cycle
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
                     DataRd <= CLK;                  -- DataRd = CLK for the second cycle, so will go active low at end
 
-                    ProgIRSource <= ProgIRSource;   -- hold ProgDB value
-                    ProgSourceSel <= RST_SRC;       --
-
-
                 elsif cycle = TWO_CYCLES then       -- during third cycle
-                    ProgSourceSel <= RST_SRC;       --
-                    -- do nothing else
-
+                    ProgSourceSel <= DB_HI_SRC;
+                    load = '1'
                 else                                -- during fourth cycle
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
                     DataRd <= CLK;                  -- DataRd = CLK for the second cycle, so will go active low at end
-
-                    ProgIRSource <= ProgIRSource;
-                    ProgSourceSel <= IR_SRC;
-                    load = '0';
                 end if;
             end if;
 
@@ -1089,7 +1078,7 @@ begin
 
             if std_match(IR, OpCPSE) then
                 --000100rdddddrrrr
-                
+
             end if;
 
 

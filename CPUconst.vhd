@@ -146,12 +146,14 @@ package constants is
     -----------------------
     -- ProgMIU CONSTANTS --
     -----------------------
-    subtype  SOURCE_SEL is std_logic_vector(1 downto 0);
+    subtype  SOURCE_SEL is std_logic_vector(2 downto 0);
     -- Prog Address Adder - Source Mux In Control Signals
-    constant IR_SRC     : SOURCE_SEL := "00"; -- Selects IR value to load or add
-    constant Z_SRC      : SOURCE_SEL := "01"; -- Selects Z register value to add
-    constant RST_SRC    : SOURCE_SEL := "10"; -- Selects RST_VECTOR to add, or RST_VECTOR to load
-    constant NORMAL_SRC : SOURCE_SEL := "11"; -- Selects INC_VECTOR to add
+    constant IR_SRC     : SOURCE_SEL := "000"; -- Selects IR value to load or add
+    constant Z_SRC      : SOURCE_SEL := "001"; -- Selects Z register value to add
+    constant RST_SRC    : SOURCE_SEL := "010"; -- Selects RST_VECTOR to add, or RST_VECTOR to load
+    constant NORMAL_SRC : SOURCE_SEL := "011"; -- Selects INC_VECTOR to add
+    constant DB_LO_SRC  : SOURCE_SEL := "100"; -- Selects DataDB to load into low byte
+    constant DB_HI_SRC  : SOURCE_SEL := "101"; -- Selects DataDB to load into high byte
 
     subtype SOURCE_CONST is std_logic_vector(ADDRSIZE-1 downto 0);
     -- number of bits in SOURCE_CONST needs to match ADDRSIZE-1 for a 16 bit address bus
