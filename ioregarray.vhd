@@ -83,15 +83,19 @@ begin
             -- holds value otherwise
             if IORegWEn = WRITE_EN then
                 IOregisters(conv_integer(IORegWSel)) <= RegIn;
-            else
+
                 if IORegWSel /= SREG_ADDR then
                     IOregisters(conv_integer(SREG_ADDR)) <= SRegIn;
                 end if;
+
+            else
+                IOregisters(conv_integer(SREG_ADDR)) <= SRegIn;
                 -- only hold value here if it will not be held by the second block
                 if IORegWSel /= SP_ADDR_L or IORegWSel /= SP_ADDR_H then
                     IOregisters(conv_integer(IORegWSel)) <= IOregisters(conv_integer(IORegWSel));
                 end if;
             end if;
+
             -- writes to register only if write enabled and indirect address is SP_ADDR_L
             -- holds value otherwise
             if IndWEn = WRITE_EN and IndAddrIn = SP_ADDR_L then

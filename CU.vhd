@@ -145,7 +145,7 @@ begin
     begin
             -- sets cycle number for op_codes
             -- defaults operations to 1 cycle
-            cycle_num <= ONE_CYCLE;
+            cycle_num   <= ONE_CYCLE;
             -- control signals default values, reset all write signal
             -- this way each operation only enables writes if necessary
             RegWEn      <= WRITE_DIS;
@@ -192,7 +192,9 @@ begin
             -- ADC, ADD, SBC, SUB, CPC, CP
             -- all of these have the top three bits in IR cleared
             -- can be combined with CPSE
-            if  std_match(IR, "000-------------") then
+            if  std_match(IR, OpADC) or std_match(IR, OpADD) or
+                std_match(IR, OpSBC) or std_match(IR, OpSUB) or
+                std_match(IR, OpCPC) or std_match(IR, OpCP)  then
             --  000ooordddddrrrr
 
                 LoadIn <= LD_ALU;
@@ -433,12 +435,12 @@ begin
                 end if;
 
                 RegWSel <= IR(8 downto 4);
+                RegSelA <= IR(8 downto 4);
                 -- ANDI operation only maps to upper half of register space
                 if IR(14) = '1' then
                     RegSelA(4) <= '1';
                     RegWSel(4) <= '1';
                 end if;
-                RegSelA <= IR(8 downto 4);
                 RegSelB <= IR(9) & IR(3 downto 0);
                 BitMask <= MASK_ANDOR;
             end if;
@@ -458,13 +460,13 @@ begin
                     ImmedEn <= IMM_EN;
                 end if;
 
+                RegSelA <= IR(8 downto 4);
                 RegWSel <= IR(8 downto 4);
                 -- ORI operation only maps to upper half of register space
                 if IR(14) = '1' then
                     RegSelA(4) <= '1';
                     RegWSel(4) <= '1';
                 end if;
-                RegSelA <= IR(8 downto 4);
                 RegSelB <= IR(9) & IR(3 downto 0);
                 BitMask <= MASK_ANDOR;
             end if;
@@ -1120,7 +1122,7 @@ begin
                 ALUSel <= ADDSUBOUT;                -- enable Adder/Subber output
 
                 ALUaddsub(SUBFLAG)  <= OP_SUB;
-                ALUaddsub(CARRY_S1 downto CARRY_S0) <= RST_CARRY;
+                ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;
 
                 ProgSourceSel <= NORMAL_SRC;
 
