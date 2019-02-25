@@ -12,7 +12,7 @@
 ----------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
+--use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 
 use work.opcodes.all;
@@ -110,6 +110,8 @@ architecture TB_ARCHITECTURE of CPUTB is
         TB: process
             variable i : integer;
             variable j : integer;
+            variable abtest : integer; 
+            variable ab: integer; 
         begin
 
 
@@ -127,7 +129,9 @@ architecture TB_ARCHITECTURE of CPUTB is
                 -- on falling edge
                 wait for CLK_PERIOD/2;
                 -- check prog AB
-                assert (ProgABTest(i) = ProgAB) 
+                abtest := to_integer(unsigned(ProgABTest(i)));
+                
+                assert (to_integer(unsigned(ProgABTest(i))) = to_integer(unsigned(ProgAB)) - 1) 
                     report  "ProgAB failure at clock number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
 
