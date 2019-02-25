@@ -28,8 +28,9 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 
-library opcodes;
-use opcodes.opcodes.all;
+use work.opcodes.all;
+use work.constants.all;
+use work.ALUconstants.all;
 
 entity ProgMIU is
     port(
@@ -49,27 +50,6 @@ end ProgMIU;
 
 architecture ProgMIU_arc of ProgMIU is
 
-component Mux4to1 is
-    port(
-        S0          :  in      std_logic;  -- mux sel(0)
-        S1          :  in      std_logic;  -- mux sel(1)
-        SIn0        :  in      std_logic;  -- mux inputs
-        SIn1        :  in      std_logic;  -- mux inputs
-        SIn2        :  in      std_logic;  -- mux inputs
-        SIn3        :  in      std_logic;  -- mux inputs
-        SOut        :  out     std_logic   -- mux output
-      );
-end component;
-
-component Mux2to1 is
-    port(
-        S0          :  in      std_logic;  -- mux sel(0)
-        SIn0        :  in      std_logic;  -- mux inputs
-        SIn1        :  in      std_logic;  -- mux inputs
-        SOut        :  out     std_logic   -- mux output
-      );
-end component;
-
 component fullAdder is
     port(
         A           :  in      std_logic;  -- adder input
@@ -80,9 +60,11 @@ component fullAdder is
       );
 end component;
 
-signal OffsetMuxOut : signal std_logic_vector(ADDRSIZE-1 downto 0);
+signal OffsetMuxOut : std_logic_vector(ADDRSIZE-1 downto 0);
 
-signal ProgCtr : signal std_logic_vector(ADDRSIZE-1 downto 0);
+signal ProgCtr      : std_logic_vector(ADDRSIZE-1 downto 0);
+
+signal PCOut        : std_logic_vector(ADDRSIZE-1 downto 0);
 
 signal CarryOut     : std_logic_vector(ADDRSIZE-1 downto 0);    -- carry for adder/subtracter
 
@@ -96,9 +78,6 @@ begin
                     INC_VECTOR          when AddrSourceSel = NORMAL_SRC else
                     "00000000" & DataDB when AddrSourceSel = DB_LO_SRC else
                     DataDB & "00000000" when AddrSourceSel = DB_HI_SRC;
-
-    --PCOut <= ProgCtr when Load = '1' else
-    --       CLR_PC;
 
     AndBlock: for i in ADDRSIZE-1 downto 0 generate
         PCOut(i) <= ProgCtr(i) and Load;

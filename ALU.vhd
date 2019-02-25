@@ -62,7 +62,9 @@ entity ALU is
         StatusIn    : in    std_logic_vector(REGSIZE-1 downto 0);
 
         RegOut      : out   std_logic_vector(REGSIZE-1 downto 0); -- output result
-        StatusOut   : out   std_logic_vector(REGSIZE-1 downto 0)  -- status register output
+        StatusOut   : out   std_logic_vector(REGSIZE-1 downto 0); -- status register output
+        SBFlag      : out   std_logic;                            -- skip bit flag output for SBRC/SBRS
+        ZeroFlag    : out   std_logic                             -- zero flag output for CPSE
     );
 end ALU;
 
@@ -95,6 +97,8 @@ signal CFlag        : std_logic;
 signal CIn          : std_logic; -- carry in from adder sel
 
 signal comnegR      : std_logic_vector(REGSIZE-1 downto 0);
+
+signal nCarryFlag   : std_logic;
 ---- component declarations
 
 component Mux8to1 is
@@ -157,6 +161,8 @@ begin
         comnegR(i) <= (RegA(i) and ALUCNOp(OP_CN_AND)) or ALUCNOp(OP_CN_OR);
     end generate GenAClr;
 
+    nCarryFlag <= not StatusIn(0);
+
     -- adder/subtracter carry in MUX
     adderCarry: Mux4to1
         port map(
@@ -165,7 +171,7 @@ begin
             SIn0        => '0',
             SIn1        => '1',
             SIn2        => StatusIn(0),
-            SIn3        => not StatusIn(0),
+            SIn3        => nCarryFlag,
             SOut        => CIn
       );
 
@@ -194,6 +200,10 @@ begin
   );
   end generate GenAdder;
 
+  -- zero flag outputted to Ctrl Unit for CPSE
+  ZeroFlag <= '1' when RegBuff = ZERO8 else
+              '0';
+
     -- shifter/rotator
     -- assign middle and low bits
     SROut(REGSIZE - 2 downto 0) <= RegA(REGSIZE - 1 downto 1);
@@ -216,31 +226,15 @@ begin
                         RegA(i);
     end generate;
 
+    -- Skip bit flag outputted to Ctrl Unit for CPSE
+    SBFlag <= RegA(to_integer(unsigned(RegB(2 downto 0))));
+
     -- SWAP block
     -- switches high and low nibble of A input
     SWAP_OP : for i in REGSIZE-1 downto 0 generate
         SwapRegOut(i) <= RegA(i-NIBBLE) when i >= NIBBLE else
                          RegA(i+NIBBLE);
     end generate;
-
-    ---- final ALU select mux
-    --GenALUSel:  for i in REGSIZE-1 downto 0 generate
-    --ALUSelMux: Mux8to1
-    --    port map(
-    --        S0          => ALUSel(0),
-    --        S1          => ALUSel(1),
-    --        S2          => ALUSel(2),
-    --        SIn0        => AdderOut(i),
-    --        SIn1        => FOut(i),
-    --        SIn2        => SROut(i),
-    --        SIn3        => SwapRegOut(i),
-    --        SIn4        => MulOut(i),
-    --        SIn5        => Bitout(i),
-    --        SIn6        => 'X',             -- nothing outputted during SReg bit setting
-    --        SIn7        => 'X',
-    --        SOut        => RegBuff(i)
-    --  );
-    --  end generate GenALUSel;
 
     RegBuff <=  AdderOut    when ALUSel = ADDSUBOUT else
                 FOut        when ALUSel = FBLOCKOUT else
@@ -305,6 +299,7 @@ begin
                     '0' when CPC = '1' and StatusIn(1) = '0' else -- and zero flag if performing cpc
                     '1' when RegBuff = ZERO8 else -- compare with 0
                     '0';
+
     -- carry
     CFlag <= StatusIn(0) when BitMask(0) = '0' else
                     '1' when ALUSel = BSET else

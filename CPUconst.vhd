@@ -235,23 +235,25 @@ package constants is
     ------------------------------
     -- Sreg: I T H S V N Z C
     subtype BIT_MASK is std_logic_vector(7 downto 0);
-    constant MASK_ADD : BIT_MASK:= "00111111"; -- add sub(except adiw, sbiw), including neg
-    constant MASK_CP : BIT_MASK:= "00111111"; -- compares
-    constant MASK_ADIW : BIT_MASK:= "00011111"; -- adiw, sbiw
-    constant MASK_DECINC : BIT_MASK:= "00011110"; -- dec, inc
+    constant MASK_ADD   : BIT_MASK := "00111111"; -- add sub(except adiw, sbiw), including neg
+    constant MASK_CP    : BIT_MASK := "00111111"; -- compares
+    constant MASK_ADIW  : BIT_MASK := "00011111"; -- adiw, sbiw
+    constant MASK_DECINC: BIT_MASK := "00011110"; -- dec, inc
 
-    constant MASK_ANDOR : BIT_MASK:= "00011110"; -- and, or
-    constant MASK_COM : BIT_MASK:= "00011111"; -- com
-    constant MASK_NEG : BIT_MASK:= "00111111"; -- neg
-    constant MASK_EOR : BIT_MASK:= "00011110"; -- eor
+    constant MASK_ANDOR : BIT_MASK := "00011110"; -- and, or
+    constant MASK_COM   : BIT_MASK := "00011111"; -- com
+    constant MASK_NEG   : BIT_MASK := "00111111"; -- neg
+    constant MASK_EOR   : BIT_MASK := "00011110"; -- eor
 
-    constant MASK_SHIFT : BIT_MASK:= "00011111"; -- asr, lsr, ror
+    constant MASK_SHIFT : BIT_MASK := "00011111"; -- asr, lsr, ror
 
-    constant MASK_BLD : BIT_MASK:= "00000000"; -- bld
-    constant MASK_BST : BIT_MASK:= "01000000"; -- bst
+    constant MASK_BLD   : BIT_MASK := "00000000"; -- bld
+    constant MASK_BST   : BIT_MASK := "01000000"; -- bst
 
-    constant MASK_MUL : BIT_MASK:= "00000001"; -- mul
-    constant MASK_NONE : BIT_MASK:= "00000000"; -- change nothing
+    constant MASK_MUL   : BIT_MASK := "00000001"; -- mul
+    constant MASK_NONE  : BIT_MASK := "00000000"; -- change nothing
+
+    constant MASK_INT   : BIT_MASK := "10000000"; -- change interrupt flag
 
     constant T_SREG : natural := 6; -- transfer bit number in sreg
     constant T_IR : natural := 9; -- transfer bit number in IR

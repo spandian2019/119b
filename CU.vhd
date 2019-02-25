@@ -73,6 +73,8 @@ entity CU is
     port(
         ProgDB  : in std_logic_vector(ADDRSIZE-1 downto 0);     -- program memory data bus
         SReg    : in std_logic_vector(REGSIZE-1 downto 0);      -- status flags
+        ZeroFlag: in std_logic;                                 -- zero flag from ALU for CPSE op
+        SBFlag  : in std_logic;                                 -- skip bit flag from ALU for SBRC/SBRS op
 
         Immed       : out std_logic_vector(REGSIZE-1 downto 0); -- immediate value K
         ImmedEn     : out std_logic;                            -- mux ctrl signal for immed into ALU A Reg
@@ -115,7 +117,7 @@ entity CU is
         CLK         : in std_logic;                           -- system clock
         RegIoFlag   : in std_logic;                           -- '1' if external address is in register range
         RegIoSelFlag: in std_logic;                           -- external address is in either io or general range
-        DataAB      : in std_logic_vector(5 downto 0)         -- address to be remapped to registers
+        DataAB      : in std_logic_vector(5 downto 0);        -- address to be remapped to registers
 
         -- Prog memory access
         Load            : out std_logic;
@@ -132,10 +134,14 @@ end CU;
 architecture RISC of CU is
     signal cycle_num    :   OP_CYCLE := ZERO_CYCLES;                -- TODO delete
     signal cycle        :   std_logic_vector(1 downto 0) := "00";   -- TODO delete
+
+    signal IR           :   std_logic_vector(ADDRSIZE-1 downto 0);  -- instruction register
+    
+    signal ProgDBLatch  :   std_logic_vector(ADDRSIZE-1 downto 0);  -- Prog Address Bus latch
 begin
 
     -- asynchronously decodes IR inputs
-    decoder : process(IR, CLK, ProgDB)
+    decoder : process(IR, CLK, ProgDB, SBFlag, ZeroFlag)
     begin
             -- sets cycle number for op_codes
             -- defaults operations to 1 cycle
@@ -178,13 +184,14 @@ begin
                 ProgSourceSel <= RST_SRC;
             end if;
             -- load defaults to indirect addressing
-            load = '1';
+            load <= '1';
 
 
 
             -- considering single byte adder/subber ops:
             -- ADC, ADD, SBC, SUB, CPC, CP
             -- all of these have the top three bits in IR cleared
+            -- can be combined with CPSE
             if  std_match(IR, "000-------------") then
             --  000ooordddddrrrr
 
@@ -907,15 +914,13 @@ begin
                 cycle_num <= THREE_CYCLES;          -- takes 3 cycles to complete operation
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    ProgIRSource <= ProgDB;
-                    ProgSourceSel <= IR_SRC;
-                    load <= '0';
+                    ProgDBLatch <= ProgDB;          -- latch ProgDB
                 elsif cycle = ONE_CYCLE then        -- during second cycle
-                    ProgIRSource <= ProgIRSource;
+                    ProgIRSource <= ProgDBLatch;
                     ProgSourceSel <= IR_SRC;
                     load <= '0';
                 else                                -- during third cycle
-                    -- do nothing
+                    ProgSourceSel <= RST_SRC;
                 end if;
             end if;
 
@@ -928,7 +933,7 @@ begin
                     ProgIRSource <= "0000" & IR(11 downto 0);
                     ProgSourceSel <= IR_SRC;
                 else                                -- during second cycle
-                    -- do nothing
+                    ProgSourceSel <= RST_SRC;
                 end if;
             end if;
 
@@ -941,7 +946,7 @@ begin
                     ProgSourceSel <= Z_SRC;
                     load <= '0';
                 else                                -- during second cycle
-                    -- do nothing
+                    ProgSourceSel <= RST_SRC;
                 end if;
             end if;
 
@@ -957,13 +962,14 @@ begin
                 IndAddrSel <= SP_SEL;               -- indirect addressing stored in Stack Pointer
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    ProgIRSource <= ProgDB;         -- latch ProgDB value, Prog addr to call
+                    ProgDBLatch <= ProgDB;          -- latch ProgDB value, Prog addr to call
                     ProgSourceSel <= NORMAL_SRC;    -- inc PC to point to next value
-                elsif cycle = ONE_CYCLE then        -- during second cycle
-                    ProgIRSource <= ProgIRSource;   -- hold ProgDB value
-                    ProgSourceSel <= RST_SRC;       --
 
-                    LoadIn <= LD_PROG_HI;
+                elsif cycle = ONE_CYCLE then        -- during second cycle
+                    ProgSourceSel <= RST_SRC;       -- hold PC value here, pointing to next op IR
+
+                    LoadIn <= LD_PROG_HI;           -- load high byte of next IR into DataDB to
+                                                    --  save into stack
 
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
@@ -972,10 +978,10 @@ begin
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
 
                 elsif cycle = TWO_CYCLES then       -- during third cycle
-                    ProgIRSource <= ProgIRSource;
-                    ProgSourceSel <= RST_SRC;
+                    ProgSourceSel <= RST_SRC;       -- hold PC value here, pointing to next op IR
 
-                    LoadIn <= LD_PROG_LO;
+                    LoadIn <= LD_PROG_LO;           -- load high byte of next IR into DataDB to
+                                                    --  save into stack
 
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
@@ -984,9 +990,9 @@ begin
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
 
                 else                                -- during fourth cycle
-                    ProgIRSource <= ProgIRSource;
-                    ProgSourceSel <= IR_SRC;
-                    load = '0';
+                    ProgIRSource <= ProgDBLatch;    -- hold ProgDB value
+                    ProgSourceSel <= IR_SRC;        -- output address of subroutine
+                    load <= '0';                     -- loading address, not adding
                 end if;
             end if;
 
@@ -1001,9 +1007,10 @@ begin
                 IndAddrSel <= SP_SEL;               -- indirect addressing stored in Stack Pointer
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    ProgSourceSel <= RST_SRC;       --
+                    ProgSourceSel <= RST_SRC;       -- hold PC value here, pointing to next op IR
 
-                    LoadIn <= LD_PROG_HI;
+                    LoadIn <= LD_PROG_HI;           -- load high byte of next IR into DataDB to
+                                                    --  save into stack
 
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
@@ -1012,16 +1019,16 @@ begin
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
 
                 elsif cycle = ONE_CYCLE then        -- during second cycle
-                    ProgSourceSel <= RST_SRC;
+                    ProgSourceSel <= RST_SRC;       -- hold PC value here, pointing to next op IR
 
-                    LoadIn <= LD_PROG_LO;
+                    LoadIn <= LD_PROG_LO;           -- load high byte of next IR into DataDB to
+                                                    --  save into stack
 
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
                     DataWr <= CLK;                  -- DataWr = CLK for the second cycle, so will go active low at end
 
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
-
                 else                                -- during third cycle
                     if IR(14) = '1' then            -- then RCALL op
                         ProgIRSource <= "0000" & IR(11 downto 0);
@@ -1039,27 +1046,35 @@ begin
                 cycle_num <= ZERO_CYCLES;           -- takes 4 cycles to complete operation
 
                 DataOffsetSel <= INC_SEL;           -- Pushing post decrements
-                PreSel <= PRE_ADDR;                --  the Stack Pointer
+                PreSel <= PRE_ADDR;                 --  the Stack Pointer
 
                 IndAddrSel <= SP_SEL;               -- indirect addressing stored in Stack Pointer
 
-                LoadIn <= LD_DB;                    -- loading values into register space from DataDB
+                --LoadIn <= LD_DB;                    -- loading values into register space from DataDB
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    ProgSourceSel <= DB_LO_SRC;
-                    load = '0'
+                    -- do nothing
                 elsif cycle = ONE_CYCLE then        -- during second cycle
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
-
+                                                    --  incremented SP val is written back into SP reg
                     DataRd <= CLK;                  -- DataRd = CLK for the second cycle, so will go active low at end
 
-                elsif cycle = TWO_CYCLES then       -- during third cycle
-                    ProgSourceSel <= DB_HI_SRC;
-                    load = '1'
-                else                                -- during fourth cycle
+                    ProgSourceSel <= DB_LO_SRC;     --
+                    load <= '0';
+
+                elsif cycle = TWO_CYCLES then       -- duri ng third cycle
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
-
+                                                    --  incremented SP val is written back into SP reg
                     DataRd <= CLK;                  -- DataRd = CLK for the second cycle, so will go active low at end
+
+                    ProgSourceSel <= DB_HI_SRC;
+                    load <= '1';
+
+                else                                -- during fourth cycle
+                    if IR(4) = '1' then
+                        BitMask <= MASK_INT;
+                    end if;
+                    ProgSourceSel <= RST_SRC;
                 end if;
             end if;
 
@@ -1071,18 +1086,59 @@ begin
                     ProgIRSource <= "000000000" & IR(9 downto 3);
                     ProgSourceSel <= IR_SRC;
                 else
-                    --dont
+                    -- dont branch
                     cycle_num <= ONE_CYCLE;
+                end if;
+
+                if cycle = ONE_CYCLE then
+                    ProgSourceSel <= RST_SRC;
                 end if;
             end if;
 
             if std_match(IR, OpCPSE) then
                 --000100rdddddrrrr
 
+                BitMask <= MASK_NONE;
+
+                RegSelA <= IR(8 downto 4);          -- Operand 1 is the first addend, loc in IR(8..4)
+
+                RegSelB <= IR(9) & IR(3 downto 0);  -- Operand 2 is the second addend, loc in IR(9)&IR(3..0)
+
+                ALUSel <= ADDSUBOUT;                -- enable Adder/Subber output
+
+                ALUaddsub(SUBFLAG)  <= OP_SUB;
+                ALUaddsub(CARRY_S1 downto CARRY_S0) <= RST_CARRY;
+
+                if ZeroFlag = '0' then
+                    cycle_num <= ONE_CYCLE;
+                else
+                    if std_match(ProgDB, OpLDS) or std_match(ProgDB, OpSTS) or
+                       std_match(ProgDB, OpJMP) or std_match(ProgDB, OpCALL) then
+                            cycle_num <= THREE_CYCLES;
+                    else
+                            cycle_num <= TWO_CYCLES;
+                    end if;
+                end if;
             end if;
 
+            if std_match(IR, OpSBRC) or std_match(IR, OpSBRS) then
+                --111111orrrrrXbbb
 
+                ImmedEn <= IMM_EN;
 
+                RegSelA <= IR(8 downto 4);
+
+                if SBFlag = IR(9) then
+                    cycle_num <= ONE_CYCLE;
+                else
+                    if std_match(ProgDB, OpLDS) or std_match(ProgDB, OpSTS) or
+                       std_match(ProgDB, OpJMP) or std_match(ProgDB, OpCALL) then
+                            cycle_num <= THREE_CYCLES;
+                    else
+                            cycle_num <= TWO_CYCLES;
+                    end if;
+                end if;
+            end if;
 
     end process decoder;
 
