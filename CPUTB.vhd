@@ -110,7 +110,6 @@ architecture TB_ARCHITECTURE of CPUTB is
         TB: process
             variable i : integer;
             variable j : integer;
-            variable prevAB : std_logic_vector(15 downto 0);
         begin
 
 
@@ -122,17 +121,13 @@ architecture TB_ARCHITECTURE of CPUTB is
 
             Reset <= '1'; -- de-assert reset, program should begin from start
             wait for CLK_PERIOD*0.2; -- offset for clock edge
-            prevAB := ProgABTest(TEST_SIZE_AB); -- address bus test vector only has the address order
-            j := TEST_SIZE_AB;
 
 			-- check with test vectors every clock
 			for i in TEST_SIZE downto 0 loop
-                -- on rising edge
+                -- on falling edge
+                wait for CLK_PERIOD/2;
                 -- check prog AB
-                if ProgAB /= prevAB then
-                    j := j-1; -- check if address changed
-                end if;
-                assert (ProgABTest(j) = ProgAB) --TODO
+                assert (ProgABTest(i) = ProgAB) 
                     report  "ProgAB failure at clock number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
 
@@ -140,9 +135,7 @@ architecture TB_ARCHITECTURE of CPUTB is
                 assert (std_match(DataABTest(i), DataAB))
                     report  "DataAB failure at clock number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
-
-                -- on falling edge (delayed)
-                wait for CLK_PERIOD/2;
+                    
                 -- check data DB (for ld, st)
                 assert (std_match(DataDBRdTest(i), DataDB))
                     report  "DataAB failure at clock number " & integer'image(TEST_SIZE-i)
@@ -160,7 +153,7 @@ architecture TB_ARCHITECTURE of CPUTB is
                 wait for CLK_PERIOD/2; -- wait for rest of clock
 
 			end loop;
-
+            wait for CLK_PERIOD*50; 
             END_SIM <= TRUE;        -- end of stimulus events
             wait;                   -- wait for simulation to end
         end process;
