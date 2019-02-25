@@ -275,7 +275,7 @@ EOR1:
 	LDI 	R25, $15
 	CPSE 	R24, R25	; check sreg correctly set
 	ADD		R16, R17	; skip if success
-
+    NOP
 	CPI 	R16, $FF	; check xor result
 	BRBS 	1, EOR2		; branch if equal (zero bit set)
 	LDI 	R16, $00 	; skip if equal
@@ -290,8 +290,8 @@ EOR2:
 	NOP					; skip if success
 
 	CPI 	R16, $00	; check xor result
-	BRBS 	1, NEG1		; branch if equal (zero bit set)
-	STS 	$FF00, R16	; should skip if succeeds
+	BRBS 	1, NEG1		; branch if equal (zero bit set) should skip if succeeds
+	STS 	$FF00, R16	; W 00 FF00
 
 NEG1:
 	LDI 	R17, $FF
@@ -446,7 +446,7 @@ BR1:
 	SBRS	R16, 0		; SBRC $11 bit 0
 	LDI		R16, $FF	; skip if success
 	SBRC	R16, 2		; SBRS $11 bit 2
-	LDS		R16, $FF00	; skip if success
+	ADD		R16, R17	; skip if success
 	SBRC	R16, 5		; SBRS $11 bit 5
 	ADIW	R25:R24, $11; skip if success
 
@@ -585,14 +585,13 @@ LdYQSReg:
 	NOP
 
 LdYQJmp:
-; LDD Z + q unsigned displacement
+; LDD Z + q unsigned displacement-IO Reg addr
 	LDI 	R18, $FF
-	STS 	$0023, R18	; IO Reg addr - W FF 002C
+	STS 	$0023, R18	; W FF 002C
 	CLR 	R31			; clear Z high byte to $00
 	LDI 	R30, $22	; set Z low byte to $22
 	IN      R24, SREG	; store flags
-	LDD  	R16, Z+1	; IO Reg addr - R FF 002C
-						; load R16 with contents of data space Z+10
+	LDD  	R16, Z+1	; R FF 002C
 	IN      R25, SREG	; store new flags
 	CP 		R24, R25    ; check flags unchanged
 	BRBC 	1, LdZQSReg	; skip if check fails
@@ -690,11 +689,11 @@ StXdCheck:
 	NOP
 
 StXdJmp:
-; St Y + post increment
+; St Y + post increment - reg remap
 	CLR		R29			; clear Y high byte
 	LDI 	R28, $19	; set Y low byte to $19
 	LDI 	R16, $12	; load R16 with $12
-	ST  	Y+, R16		; -reg remap addr - W 12 0019
+	ST  	Y+, R16		; W 12 0019
 
 	LDI 	R18, $1A	; check Y incremented
 	LDI 	R19, $00 	; compare Y with R19:R18
@@ -705,16 +704,16 @@ StXdJmp:
 	NOP
 
 StYpCheck:
-	LD 		R17, -Y		; load R17 with pre decremented Y
+	LD 		R17, -Y		; R 12 0019
 	CPI		R17, $12	; check R17 loaded/stored correctly
 	BRBC 	1, StYpJmp	; skip if check fails
 	NOP
 
 StYpJmp:
-; St -Y pre decrement
+; St -Y pre decrement - reg remap
 	; Y $0019
 	LDI     R18, $44    ; load R18 with $44
-	ST  	-Y, R18		; store to R24 - W 44 0018
+	ST  	-Y, R18		; W 44 0018
 
 	LDI 	R18, $18	; check Y incremented
 	LDI 	R19, $00 	; compare Y with R19:R18
@@ -724,7 +723,7 @@ StYpJmp:
 	NOP
 
 StYdCheck:
-	LD 		R19, Y+		; load R19 with Y (remapped, R24)
+	LD 		R19, Y+		; R 44 0018
 	CPI		R19, $44    ; check loaded from Y correctly
 	BRBC 	1, StYdJmp		; skip if check fails
 	NOP
@@ -744,7 +743,7 @@ StYdJmp:
 	NOP
 
 StZpCheck:
-	LD 		R17, -Z		; load R17 with pre decremented Z
+	LD 		R17, -Z		; R 12 0069
 	CPI		R17, $23	; check stored/loaded correctly
 	BRBC 	1, StZpJmp		; skip if check fails
 	NOP
@@ -762,7 +761,7 @@ StZpJmp:
 	NOP
 
 StZdCheck:
-	LD 		R19, Z		; load R19 with Z
+	LD 		R19, Z+		; R 44 0068
 	CPI		R19, $44    ; check stored/loaded correctly
 	BRBC 	1, StZdJmp		; skip if check fails
 	NOP
@@ -772,7 +771,7 @@ StZdJmp:
 	CLR 	R29			; clear high byte of Y
 	LDI 	R28, $77	; load low byte of Y with $77
 	LDI 	R20, $73	; load R20 with $73
-	STD  	Y + $11, R20; W 73 0088
+	STD  	Y + $11, R20    ; W 73 0088
 	LDD		R21, Y + $11 	; R 73 0088
 	CP 		R20, R21		; compare R20 and R21
 	BRBC 	1, StdYqJmp		; skip if check fails
@@ -783,7 +782,7 @@ StdYqJmp:
 	CLR 	R21			; clear high byte of Z
 	LDI 	R30, $67	; load low byte of Z with $67
 	LDI 	R20, $AA	; load R20 with $AA
-	STD  	Z + $11, R20; W 73 0078
+	STD  	Z + $11, R20    ; W 73 0078
 	LDD		R21, Z + $11    ; R 73 0078
 	CP 		R20, R21		; compare R20 and R21
 	BRBC 	1, StdZqJmp		; skip if check fails

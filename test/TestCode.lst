@@ -1,10 +1,10 @@
 
-AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestCode.asm Sat Feb 23 21:23:35 2019
+AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestCode.asm Mon Feb 25 11:49:20 2019
 
-                 
-                 
+
+
                  .equ SREG = $3f 	; stack register location
-                 
+
                  ; clear all registers
 000000 2411      CLEAR:      EOR     R1, R1
 000001 2422                  EOR     R2, R2
@@ -151,7 +151,7 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 00007f 3400                  CPI     R16, $40
 000080 f409                  BRBC 	1, BCLR1
 000081 0000                  NOP
-                 
+
                  BCLR1:
 000082 e109                  LDI     R16, $19
 000083 bf0f                  OUT     SReg, R16
@@ -234,226 +234,226 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 0000c9 3008                  CPI     R16, $08
 0000ca f409                  BRBC 	1, COM1
 0000cb 0000                  NOP
-                 
+
                  COM1:
 0000cc e000      	LDI 	R16, $00
 0000cd 9500      	COM 	R16 		; COM 00
 0000ce ef1f      	LDI 	R17, $FF
 0000cf 1301      	CPSE 	R16, R17 	; check result
 0000d0 0000      	NOP					; skip if success
-                 
+
 0000d1 b78f      	IN 		R24, SREG 	; store new sreg
 0000d2 e195      	LDI 	R25, $15
 0000d3 1389      	CPSE 	R24, R25	; check sreg correctly set
 0000d4 0000      	NOP					; skip if success
-                 
+
                  COM2:
 0000d5 9500      	COM 	R16 		; COM FF
 0000d6 e010      	LDI 	R17, $00
 0000d7 1301      	CPSE 	R16, R17 	; check result
 0000d8 0000      	NOP					; skip if success
-                 
+
 0000d9 b78f      	IN 		R24, SREG 	; store new sreg
 0000da e093      	LDI 	R25, $03
 0000db 1389      	CPSE 	R24, R25	; check sreg correctly set
 0000dc 0000      	NOP					; skip if success
-                 
+
                  COM3:
 0000dd e506      	LDI 	R16, $56
 0000de 9500      	COM 	R16 		; COM 56
 0000df ea19      	LDI 	R17, $A9
 0000e0 1301      	CPSE 	R16, R17 	; check result
 0000e1 0000      	NOP					; skip if success
-                 
+
 0000e2 b78f      	IN 		R24, SREG 	; store new sreg
 0000e3 e195      	LDI 	R25, $15
 0000e4 1389      	CPSE 	R24, R25	; check sreg correctly set
 0000e5 0000      	NOP					; skip if success
-                 
+
                  EOR1:
 0000e6 e505      	LDI 	R16, $55
 0000e7 ea1a      	LDI 	R17, $AA
 0000e8 2701      	EOR 	R16, R17	; EOR $55, $AA
-                 
+
 0000e9 b78f      	IN 		R24, SREG 	; store new sreg
 0000ea e195      	LDI 	R25, $15
 0000eb 1389      	CPSE 	R24, R25	; check sreg correctly set
 0000ec 0f01      	ADD		R16, R17	; skip if success
-                 
-0000ed 3f0f      	CPI 	R16, $FF	; check xor result
-0000ee f009      	BRBS 	1, EOR2		; branch if equal (zero bit set)
-0000ef e000      	LDI 	R16, $00 	; skip if equal
-                 
+0000ed 0000          NOP
+0000ee 3f0f      	CPI 	R16, $FF	; check xor result
+0000ef f009      	BRBS 	1, EOR2		; branch if equal (zero bit set)
+0000f0 e000      	LDI 	R16, $00 	; skip if equal
+
                  EOR2:
-0000f0 be0f          OUT     SReg, R0    ; Clear sreg
-0000f1 ef1f      	LDI 	R17, $FF
-0000f2 2701      	EOR 	R16, R17 	; EOR $FF, $FF
-0000f3 b78f      	IN 		R24, SREG 	; store new sreg
-0000f4 e092      	LDI 	R25, $02
-0000f5 1389      	CPSE 	R24, R25	; check sreg correctly set
-0000f6 0000      	NOP					; skip if success
-                 
-0000f7 3000      	CPI 	R16, $00	; check xor result
-0000f8 f011      	BRBS 	1, NEG1		; branch if equal (zero bit set)
-0000f9 9300 ff00 	STS 	$FF00, R16	; should skip if succeeds
-                 
+0000f1 be0f          OUT     SReg, R0    ; Clear sreg
+0000f2 ef1f      	LDI 	R17, $FF
+0000f3 2701      	EOR 	R16, R17 	; EOR $FF, $FF
+0000f4 b78f      	IN 		R24, SREG 	; store new sreg
+0000f5 e092      	LDI 	R25, $02
+0000f6 1389      	CPSE 	R24, R25	; check sreg correctly set
+0000f7 0000      	NOP					; skip if success
+
+0000f8 3000      	CPI 	R16, $00	; check xor result
+0000f9 f011      	BRBS 	1, NEG1		; branch if equal (zero bit set) should skip if succeeds
+0000fa 9300 ff00 	STS 	$FF00, R16	; W 00 FF00
+
                  NEG1:
-0000fb ef1f      	LDI 	R17, $FF
-0000fc 9511      	NEG 	R17		 	; NEG $FF
-0000fd b78f      	IN 		R24, SREG 	; store new sreg
-0000fe e291      	LDI 	R25, $21
-0000ff 1389      	CPSE 	R24, R25	; check sreg correctly set
-000100 0000      	NOP					; skip if success
-                 
-000101 3011      	CPI 	R17, $01	; check result
-000102 f409      	BRBC 	1, NEG2		; branch if not equal
-000103 0000      	NOP					; skip if fails
-                 
+0000fc ef1f      	LDI 	R17, $FF
+0000fd 9511      	NEG 	R17		 	; NEG $FF
+0000fe b78f      	IN 		R24, SREG 	; store new sreg
+0000ff e291      	LDI 	R25, $21
+000100 1389      	CPSE 	R24, R25	; check sreg correctly set
+000101 0000      	NOP					; skip if success
+
+000102 3011      	CPI 	R17, $01	; check result
+000103 f409      	BRBC 	1, NEG2		; branch if not equal
+000104 0000      	NOP					; skip if fails
+
                  NEG2:
-000104 e010      	LDI 	R17, $00
-000105 9511      	NEG 	R17		 	; NEG $00
-000106 b78f      	IN 		R24, SREG 	; store new sreg
-000107 e092      	LDI 	R25, $02
-000108 1389      	CPSE 	R24, R25	; check sreg correctly set
-000109 0000      	NOP					; skip if success
-                 
-00010a 3010      	CPI 	R17, $00	; check result
-00010b f409      	BRBC 	1, NEG3		; branch if not equal
-00010c 0000      	NOP					; skip if fails
-                 
+000105 e010      	LDI 	R17, $00
+000106 9511      	NEG 	R17		 	; NEG $00
+000107 b78f      	IN 		R24, SREG 	; store new sreg
+000108 e092      	LDI 	R25, $02
+000109 1389      	CPSE 	R24, R25	; check sreg correctly set
+00010a 0000      	NOP					; skip if success
+
+00010b 3010      	CPI 	R17, $00	; check result
+00010c f409      	BRBC 	1, NEG3		; branch if not equal
+00010d 0000      	NOP					; skip if fails
+
                  NEG3:
-00010d e810      	LDI 	R17, $80
-00010e 9511      	NEG 	R17		 	; NEG $FF
-00010f b78f      	IN 		R24, SREG 	; store new sreg
-000110 e09d      	LDI 	R25, $0D
-000111 1389      	CPSE 	R24, R25	; check sreg correctly set
-000112 0000      	NOP					; skip if success
-                 
-000113 3810      	CPI 	R17, $80	; check result
-000114 f409      	BRBC 	1, OR1		; branch if not equal
-000115 0000      	NOP					; skip if fails
-                 
+00010e e810      	LDI 	R17, $80
+00010f 9511      	NEG 	R17		 	; NEG $FF
+000110 b78f      	IN 		R24, SREG 	; store new sreg
+000111 e09d      	LDI 	R25, $0D
+000112 1389      	CPSE 	R24, R25	; check sreg correctly set
+000113 0000      	NOP					; skip if success
+
+000114 3810      	CPI 	R17, $80	; check result
+000115 f409      	BRBC 	1, OR1		; branch if not equal
+000116 0000      	NOP					; skip if fails
+
                  OR1:
-000116 e505      	LDI 	R16, $55
-000117 ea1a      	LDI 	R17, $AA
-000118 2b01      	OR  	R16, R17 	; OR $55, $AA
-000119 b78f      	IN 		R24, SREG 	; store new sreg
-00011a e194      	LDI 	R25, $14
-00011b 1389      	CPSE 	R24, R25	; check sreg correctly set
-00011c 0000      	NOP					; skip if success
-                 
-00011d 3f0f      	CPI 	R16, $FF	; check or result
-00011e f409      	BRBC 	1, ORI1		; branch if not equal
-00011f 0000      	NOP					; skip if fails
-                 
+000117 e505      	LDI 	R16, $55
+000118 ea1a      	LDI 	R17, $AA
+000119 2b01      	OR  	R16, R17 	; OR $55, $AA
+00011a b78f      	IN 		R24, SREG 	; store new sreg
+00011b e194      	LDI 	R25, $14
+00011c 1389      	CPSE 	R24, R25	; check sreg correctly set
+00011d 0000      	NOP					; skip if success
+
+00011e 3f0f      	CPI 	R16, $FF	; check or result
+00011f f409      	BRBC 	1, ORI1		; branch if not equal
+000120 0000      	NOP					; skip if fails
+
                  ORI1:
-000120 6212      	ORI 	R17, $22 	; OR $AA, $22
-000121 b78f      	IN 		R24, SREG 	; store new sreg
-000122 e194      	LDI 	R25, $14
-000123 1389      	CPSE 	R24, R25	; check sreg correctly set
-000124 0000      	NOP					; skip if success
-                 
-000125 3a1a      	CPI 	R17, $AA	; check ori result
-000126 f409      	BRBC 	1, ROR1		; branch if not equal
-000127 0000      	NOP					; skip if fails
-                 
+000121 6212      	ORI 	R17, $22 	; OR $AA, $22
+000122 b78f      	IN 		R24, SREG 	; store new sreg
+000123 e194      	LDI 	R25, $14
+000124 1389      	CPSE 	R24, R25	; check sreg correctly set
+000125 0000      	NOP					; skip if success
+
+000126 3a1a      	CPI 	R17, $AA	; check ori result
+000127 f409      	BRBC 	1, ROR1		; branch if not equal
+000128 0000      	NOP					; skip if fails
+
                  ROR1:
-000128 be0f          OUT     SReg, R0    ; Clear sreg
-000129 9408      	BSET 	0			; set carry bit
-00012a 9517        	ROR 	R17		 	; -ROR $AA
-00012b b78f      	IN 		R24, SREG 	; store new sreg
-00012c e09c      	LDI 	R25, $0C
-00012d 1389      	CPSE 	R24, R25	; check sreg correctly set
-00012e 0000      	NOP					; skip if success
-                 
-00012f 3d15      	CPI 	R17, $D5	; check result
-000130 f409      	BRBC 	1, ROR2		; branch if not equal
-000131 0000      	NOP					; skip if fails
-                 
+000129 be0f          OUT     SReg, R0    ; Clear sreg
+00012a 9408      	BSET 	0			; set carry bit
+00012b 9517        	ROR 	R17		 	; -ROR $AA
+00012c b78f      	IN 		R24, SREG 	; store new sreg
+00012d e09c      	LDI 	R25, $0C
+00012e 1389      	CPSE 	R24, R25	; check sreg correctly set
+00012f 0000      	NOP					; skip if success
+
+000130 3d15      	CPI 	R17, $D5	; check result
+000131 f409      	BRBC 	1, ROR2		; branch if not equal
+000132 0000      	NOP					; skip if fails
+
                  ROR2:
-000132 be0f          OUT     SReg, R0    ; Clear sreg
-000133 9488      	BCLR 	0			; clear carry bit
-000134 9517        	ROR 	R17		 	; -ROR $D5
-000135 b78f      	IN 		R24, SREG 	; store new sreg
-000136 e199      	LDI 	R25, $19
-000137 1389      	CPSE 	R24, R25	; check sreg correctly set
-000138 0000      	NOP					; skip if success
-                 
-000139 361a      	CPI 	R17, $6A	; check result
-00013a f409      	BRBC 	1, SBC1		; branch if not equal
-00013b 0000      	NOP					; skip if fails
-                 
+000133 be0f          OUT     SReg, R0    ; Clear sreg
+000134 9488      	BCLR 	0			; clear carry bit
+000135 9517        	ROR 	R17		 	; -ROR $D5
+000136 b78f      	IN 		R24, SREG 	; store new sreg
+000137 e199      	LDI 	R25, $19
+000138 1389      	CPSE 	R24, R25	; check sreg correctly set
+000139 0000      	NOP					; skip if success
+
+00013a 361a      	CPI 	R17, $6A	; check result
+00013b f409      	BRBC 	1, SBC1		; branch if not equal
+00013c 0000      	NOP					; skip if fails
+
                  SBC1:
-00013c be0f          OUT     SReg, R0    ; Clear sreg
-00013d 9488      	BCLR 	0			; clear carry bit
-00013e e000      	LDI 	R16, $00
-00013f ef1f      	LDI 	R17, $FF
-000140 0b01        	SBC 	R16, R17	; SBC 00, FF no carry
-000141 b78f      	IN 		R24, SREG 	; store new sreg
-000142 e291      	LDI 	R25, $21
-000143 1389      	CPSE 	R24, R25	; check sreg correctly set
-000144 0000      	NOP					; skip if success
-                 
-000145 3001      	CPI 	R16, $01	; check result
-000146 f409      	BRBC 	1, SBC2		; branch if not equal
-000147 0000      	NOP					; skip if fails
-                 
+00013d be0f          OUT     SReg, R0    ; Clear sreg
+00013e 9488      	BCLR 	0			; clear carry bit
+00013f e000      	LDI 	R16, $00
+000140 ef1f      	LDI 	R17, $FF
+000141 0b01        	SBC 	R16, R17	; SBC 00, FF no carry
+000142 b78f      	IN 		R24, SREG 	; store new sreg
+000143 e291      	LDI 	R25, $21
+000144 1389      	CPSE 	R24, R25	; check sreg correctly set
+000145 0000      	NOP					; skip if success
+
+000146 3001      	CPI 	R16, $01	; check result
+000147 f409      	BRBC 	1, SBC2		; branch if not equal
+000148 0000      	NOP					; skip if fails
+
                  SBC2:
-000148 be0f          OUT     SReg, R0    ; Clear sreg
-000149 9408      	BSET 	0			; set carry bit
-00014a e500      	LDI 	R16, $50
-00014b e710      	LDI 	R17, $70
-00014c 0b01        	SBC 	R16, R17	; SBC 50, 70 with carry
-00014d b78f      	IN 		R24, SREG 	; store new sreg
-00014e e395      	LDI 	R25, $35
-00014f 1389      	CPSE 	R24, R25	; check sreg correctly set
-000150 0000      	NOP					; skip if success
-                 
-000151 3d0f      	CPI 	R16, $DF	; check result
-000152 f409      	BRBC 	1, SBCI1	; branch if not equal
-000153 0000      	NOP					; skip if fails
-                 
+000149 be0f          OUT     SReg, R0    ; Clear sreg
+00014a 9408      	BSET 	0			; set carry bit
+00014b e500      	LDI 	R16, $50
+00014c e710      	LDI 	R17, $70
+00014d 0b01        	SBC 	R16, R17	; SBC 50, 70 with carry
+00014e b78f      	IN 		R24, SREG 	; store new sreg
+00014f e395      	LDI 	R25, $35
+000150 1389      	CPSE 	R24, R25	; check sreg correctly set
+000151 0000      	NOP					; skip if success
+
+000152 3d0f      	CPI 	R16, $DF	; check result
+000153 f409      	BRBC 	1, SBCI1	; branch if not equal
+000154 0000      	NOP					; skip if fails
+
                  SBCI1:
-000154 be0f          OUT     SReg, R0    ; Clear sreg
-000155 9408      	BSET	0			; set carry bit
-000156 e71a      	LDI 	R17, $7A
-000157 471a        	SBCI 	R17, $7A	; SBCI 7A, 7A with carry
-000158 b78f      	IN 		R24, SREG 	; store new sreg
-000159 e395      	LDI 	R25, $35
-00015a 1389      	CPSE 	R24, R25	; check sreg correctly set
-00015b 0000      	NOP					; skip if success
-                 
-00015c 3f1f      	CPI 	R17, $FF	; check result
-00015d f409      	BRBC 	1, SBIW1	; branch if not equal
-00015e 0000      	NOP					; skip if fails
-                 
+000155 be0f          OUT     SReg, R0    ; Clear sreg
+000156 9408      	BSET	0			; set carry bit
+000157 e71a      	LDI 	R17, $7A
+000158 471a        	SBCI 	R17, $7A	; SBCI 7A, 7A with carry
+000159 b78f      	IN 		R24, SREG 	; store new sreg
+00015a e395      	LDI 	R25, $35
+00015b 1389      	CPSE 	R24, R25	; check sreg correctly set
+00015c 0000      	NOP					; skip if success
+
+00015d 3f1f      	CPI 	R17, $FF	; check result
+00015e f409      	BRBC 	1, SBIW1	; branch if not equal
+00015f 0000      	NOP					; skip if fails
+
                  SBIW1:
-00015f be0f          OUT     SReg, R0    ; Clear sreg
-000160 e78a      	LDI 	R24, $7A
-000161 e091      	LDI 	R25, $01
-000162 970a        	SBIW 	R24, $0A	; SBCI 017A, A
-000163 b70f      	IN 		R16, SREG 	; store new sreg
-000164 e010      	LDI 	R17, $00
-000165 1301      	CPSE 	R16, R17	; check sreg correctly set
-000166 0000      	NOP					; skip if success
-                 
-000167 9408      	BSET	0			; clear carry bit
-000168 e700      	LDI 	R16, $70
-000169 e011      	LDI 	R17, $01 	; compare R25:R24 with R17:R16
-00016a 1780      	CP 		R24, R16	; compare low byte
-00016b 0791      	CPC 	R25, R17	; compare high byte
-00016c f409      	BRBC 	1, BR1		; branch if not equal
-00016d 0000      	NOP					; skip if fails
-                 
+000160 be0f          OUT     SReg, R0    ; Clear sreg
+000161 e78a      	LDI 	R24, $7A
+000162 e091      	LDI 	R25, $01
+000163 970a        	SBIW 	R24, $0A	; SBCI 017A, A
+000164 b70f      	IN 		R16, SREG 	; store new sreg
+000165 e010      	LDI 	R17, $00
+000166 1301      	CPSE 	R16, R17	; check sreg correctly set
+000167 0000      	NOP					; skip if success
+
+000168 9408      	BSET	0			; clear carry bit
+000169 e700      	LDI 	R16, $70
+00016a e011      	LDI 	R17, $01 	; compare R25:R24 with R17:R16
+00016b 1780      	CP 		R24, R16	; compare low byte
+00016c 0791      	CPC 	R25, R17	; compare high byte
+00016d f409      	BRBC 	1, BR1		; branch if not equal
+00016e 0000      	NOP					; skip if fails
+
                  BR1:
-00016e e101      	LDI		R16, $11
-00016f ff00      	SBRS	R16, 0		; SBRC $11 bit 0
-000170 ef0f      	LDI		R16, $FF	; skip if success
-000171 fd02      	SBRC	R16, 2		; SBRS $11 bit 2
-000172 9100 ff00 	LDS		R16, $FF00	; skip if success
+00016f e101      	LDI		R16, $11
+000170 ff00      	SBRS	R16, 0		; SBRC $11 bit 0
+000171 ef0f      	LDI		R16, $FF	; skip if success
+000172 fd02      	SBRC	R16, 2		; SBRS $11 bit 2
+000173 0f01      	ADD		R16, R17	; skip if success
 000174 fd05      	SBRC	R16, 5		; SBRS $11 bit 5
 000175 9641      	ADIW	R25:R24, $11; skip if success
-                 
+
                  LoadStore:
                  ; AVR load/store operations
                  ; LDI
@@ -463,12 +463,12 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 000179 1789      	CP 		R24, R25    ; check flags unchanged
 00017a f409      	BRBC 	1, LdISreg	; skip if check fails
 00017b 0000      	NOP
-                 
+
                  LdISreg:
 00017c 3a0b      	CPI		R16, $AB	; compare R16 with correct value
 00017d f409      	BRBC 	1, LdIJmp	; skip if check fails
 00017e 0000      	NOP
-                 
+
                  LdIJmp:
                  ; LD X
 00017f e011      	LDI 	R17, $01
@@ -481,12 +481,12 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 000187 1789      	CP 		R24, R25    ; check flags unchanged
 000188 f409      	BRBC 	1,LdXSReg	; skip if check fails
 000189 0000      	NOP
-                 
+
                  LdXSReg:
 00018a 3001      	CPI		R16, $01	; compare R16 with correct value
 00018b f409      	BRBC 	1, LdXJmp	; skip if check fails
 00018c 0000      	NOP
-                 
+
                  LdXJmp:
                  ; LD X+ post increment
 00018d b78f      	IN      R24, SREG   ; store flags
@@ -495,12 +495,12 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 000190 1789      	CP 		R24, R25    ; check flags unchanged
 000191 f409      	BRBC 	1,LdXpSReg	; skip if check fails
 000192 0000      	NOP
-                 
+
                  LdXpSreg:
 000193 1710      	CP 		R17, R16 	; compare R17 with initially stored X
 000194 f409      	BRBC 	1, LdXpJmp	; skip if check fails
 000195 0000      	NOP
-                 
+
                  LdXpJmp:
 000196 e212      	LDI 	R17, $22
 000197 9310 ff24 	STS 	$FF24, R17	; W 22 FF24
@@ -508,7 +508,7 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 00019a 3222      	CPI     R18, $22	; check X incremented
 00019b f409      	BRBC 	1, LdXpCheck   ; skip if check fails
 00019c 0000      	NOP
-                 
+
                  LdXpCheck:
                  ; LD -X pre decrement
 00019d b78f      	IN		R24, SREG 	; store flags
@@ -517,12 +517,12 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 0001a0 1789      	CP		R24, R25    ; check flags unchanged
 0001a1 f409      	BRBC 	1, LdXdSreg	; skip if check fails
 0001a2 0000      	NOP
-                 
+
                  LdXdSreg:
 0001a3 1730      	CP 		R19, R16	; compare R19 with initially stored X
 0001a4 f409      	BRBC 	1, LdXdJmp 	; skip if check fails
 0001a5 0000      	NOP
-                 
+
                  LdXdJmp:
                  ; LD Y+ post increment
 0001a6 ee0e      	LDI 	R16, $EE
@@ -533,12 +533,12 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 0001ac 3e1e      	CPI		R17, $EE 	; compare R17 with initially stored Y
 0001ad f409      	BRBC 	1, LdYpJmp	; skip if check fails
 0001ae 0000      	NOP
-                 
+
                  LdYpJmp:
 0001af 34c6      	CPI     R28, $46	; check Y incremented
 0001b0 f409      	BRBC 	1, LdYpCheck   ; skip if check fails
 0001b1 0000      	NOP
-                 
+
                  LdYpCheck:
                  ; LD -Y pre decrement
 0001b2 913a      	LD		R19, -Y  	; R EE FF45
@@ -546,7 +546,7 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 0001b3 1730      	CP 		R19, R16	; compare R25 with initially stored Y
 0001b4 f409      	BRBC 	1, LdYdJmp 	; skip if check fails
 0001b5 0000      	NOP
-                 
+
                  LdYdJmp:
                  ; LD Z+ post increment
 0001b6 e708      	LDI 	R16, $78
@@ -557,19 +557,19 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 0001bc 1710      	CP 		R17, R16 	; compare R17 with initially stored Z
 0001bd f409      	BRBC 	1, LdZpJmp	; skip if check fails
 0001be 0000      	NOP
-                 
+
                  LdZpJmp:
 0001bf 3ae2      	CPI     R30, $A2	; check Z incremented
 0001c0 f409      	BRBC 	1, LdZpCheck   ; skip if check fails
 0001c1 0000      	NOP
-                 
+
                  LdZpCheck:
                  ; LD -Z pre decrement
 0001c2 9132      	LD		R19, -Z  	; R 78 FEA1
 0001c3 1730      	CP 		R19, R16	; compare R25 with initially stored Z
 0001c4 f409      	BRBC 	1, LdZdJmp 	; skip if check fails
 0001c5 0000      	NOP
-                 
+
                  LdZdJmp:
                  ; LDD Y + q unsigned displacement
 0001c6 e026      	LDI 	R18, $06
@@ -582,31 +582,30 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 0001ce 1789      	CP 		R24, R25    ; check flags unchanged
 0001cf f409      	BRBC 	1, LdYQSReg	; skip if check fails
 0001d0 0000      	NOP
-                 
+
                  LdYQSReg:
 0001d1 3006      	CPI		R16, $06	; compare R16 with correct value
 0001d2 f409      	BRBC 	1, LdYQJmp		; skip if check fails
 0001d3 0000      	NOP
-                 
+
                  LdYQJmp:
-                 ; LDD Z + q unsigned displacement
+                 ; LDD Z + q unsigned displacement-IO Reg addr
 0001d4 ef2f      	LDI 	R18, $FF
-0001d5 9320 0023 	STS 	$0023, R18	; IO Reg addr - W FF 002C
+0001d5 9320 0023 	STS 	$0023, R18	; W FF 002C
 0001d7 27ff      	CLR 	R31			; clear Z high byte to $00
 0001d8 e2e2      	LDI 	R30, $22	; set Z low byte to $22
 0001d9 b78f      	IN      R24, SREG	; store flags
-0001da 8101      	LDD  	R16, Z+1	; IO Reg addr - R FF 002C
-                 						; load R16 with contents of data space Z+10
+0001da 8101      	LDD  	R16, Z+1	; R FF 002C
 0001db b79f      	IN      R25, SREG	; store new flags
 0001dc 1789      	CP 		R24, R25    ; check flags unchanged
 0001dd f409      	BRBC 	1, LdZQSReg	; skip if check fails
 0001de 0000      	NOP
-                 
+
                  LdZQSReg:
 0001df 3f0f      	CPI		R16, $FF	; compare R16 with correct value
 0001e0 f409      	BRBC 	1, LdZQJmp	; skip if check fails
 0001e1 0000      	NOP
-                 
+
                  LdZQJmp:
                  ; LDS
 0001e2 e22b      	LDI		R18, $2B
@@ -616,7 +615,7 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 0001e7 324b      	CPI		R20, $2B	; compare R20 with correct value
 0001e8 f409      	BRBC 	1, LdSJmp	; skip if check fails
 0001e9 0000      	NOP
-                 
+
                  LdSJmp:
                  ; MOV
 0001ea e246      	LDI		R20, $26	; load R20 with x26
@@ -627,17 +626,17 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 0001ef 1789      	CP 		R24, R25    ; check flags unchanged
 0001f0 f409      	BRBC 	1, MovSReg	; skip if check fails
 0001f1 0000      	NOP
-                 
+
                  MovSreg:
 0001f2 1754      	CP 		R21, R20 	; check R21 = R20
 0001f3 f409      	BRBC 	1, MovJmp	; skip if check fails
 0001f4 0000      	NOP
-                 
+
                  MovJmp:
 0001f5 3256      	CPI 	R21, $26  	; check R20 copied to R21
 0001f6 f409      	BRBC 	1, MovJmp1	; skip if check fails
 0001f7 0000      	NOP
-                 
+
                  MovJmp1:
                  ; St X
 0001f8 e568      	LDI     R22, $58	; load R22 with x58
@@ -649,150 +648,150 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 0001fe 1789      	CP 		R24, R25    ; check flags unchanged
 0001ff f409      	BRBC 	1, StXSReg	; skip if check fails
 000200 0000      	NOP
-                 
+
                  StXSReg:
 000201 917c      	LD 		R23, X		; R 58 007B
 000202 1776      	CP		R23, R22	; compare R23 with R22 (=$58)
 000203 f409      	BRBC 	1, StXJmp	; skip if check fails
 000204 0000      	NOP
-                 
+
                  StXJmp:
                  ; St X + post increment
 000205 e102      	LDI 	R16, $12	; load R16 with $12
 000206 930d      	ST  	X+, R16		; W 12 007B
-                 
+
 000207 e72c      	LDI 	R18, $7C	; check X incremented
 000208 e030      	LDI 	R19, $00 	; compare X with R19:R18
 000209 17a2      	CP 		R26, R18	; compare low byte
 00020a 07b3      	CPC 	R27, R19	; compare high byte
 00020b f409      	BRBC 	1, StXpCheck	; skip if check fails
 00020c 0000      	NOP
-                 
+
                  StXpCheck:
 00020d 911e      	LD 		R17, -X		; R 12 007B
 00020e 3112      	CPI		R17, $12	; check loaded correctly
 00020f f409      	BRBC 	1, StXpJmp	; skip if check fails
 000210 0000      	NOP
-                 
+
                  StXpJmp:
                  ; St -X pre decrement
                  	; X $007B
 000211 e424      	LDI     R18, $44    ; load R18 with $44
 000212 932e      	ST  	-X, R18		; W 44 007A
-                 
+
 000213 e72a      	LDI 	R18, $7A	; check X incremented
 000214 e030      	LDI 	R19, $00 	; compare X with R19:R18
 000215 17a2      	CP 		R26, R18	; compare low byte
 000216 07b3      	CPC 	R27, R19	; compare high byte
 000217 f409      	BRBC 	1, StXdCheck	; skip if check fails
 000218 0000      	NOP
-                 
+
                  StXdCheck:
 000219 913c      	LD 		R19, X		; R 44 007A
 00021a 3434      	CPI		R19, $44    ; check stored correctly
 00021b f409      	BRBC 	1, StXdJmp	; skip if check fails
 00021c 0000      	NOP
-                 
+
                  StXdJmp:
-                 ; St Y + post increment
+                 ; St Y + post increment - reg remap
 00021d 27dd      	CLR		R29			; clear Y high byte
 00021e e1c9      	LDI 	R28, $19	; set Y low byte to $19
 00021f e102      	LDI 	R16, $12	; load R16 with $12
-000220 9309      	ST  	Y+, R16		; -reg remap addr - W 12 0019
-                 
+000220 9309      	ST  	Y+, R16		; W 12 0019
+
 000221 e12a      	LDI 	R18, $1A	; check Y incremented
 000222 e030      	LDI 	R19, $00 	; compare Y with R19:R18
 000223 17c2      	CP 		R28, R18	; compare low byte
 000224 07d3      	CPC 	R29, R19	; compare high byte
-                 
+
 000225 f409      	BRBC 	1, StYpCheck	; skip if check fails
 000226 0000      	NOP
-                 
+
                  StYpCheck:
-000227 911a      	LD 		R17, -Y		; load R17 with pre decremented Y
+000227 911a      	LD 		R17, -Y		; R 12 0019
 000228 3112      	CPI		R17, $12	; check R17 loaded/stored correctly
 000229 f409      	BRBC 	1, StYpJmp	; skip if check fails
 00022a 0000      	NOP
-                 
+
                  StYpJmp:
-                 ; St -Y pre decrement
+                 ; St -Y pre decrement - reg remap
                  	; Y $0019
 00022b e424      	LDI     R18, $44    ; load R18 with $44
-00022c 932a      	ST  	-Y, R18		; store to R24 - W 44 0018
-                 
+00022c 932a      	ST  	-Y, R18		; W 44 0018
+
 00022d e128      	LDI 	R18, $18	; check Y incremented
 00022e e030      	LDI 	R19, $00 	; compare Y with R19:R18
 00022f 17c2      	CP 		R28, R18	; compare low byte
 000230 07d3      	CPC 	R29, R19	; compare high byte
 000231 f409      	BRBC 	1, StYdCheck	; skip if check fails
 000232 0000      	NOP
-                 
+
                  StYdCheck:
-000233 9139      	LD 		R19, Y+		; load R19 with Y (remapped, R24)
+000233 9139      	LD 		R19, Y+		; R 44 0018
 000234 3434      	CPI		R19, $44    ; check loaded from Y correctly
 000235 f409      	BRBC 	1, StYdJmp		; skip if check fails
 000236 0000      	NOP
-                 
+
                  StYdJmp:
                  ; St Z + post increment
 000237 27ff      	CLR		R31			; clear Z high byte
 000238 e6e9      	LDI 	R30, $69	; set Z low byte to $69
 000239 e203      	LDI 	R16, $23	; load R16 with $12
 00023a 9301      	ST  	Z+, R16		; W 12 0069
-                 
+
 00023b e62a      	LDI 	R18, $6A	; check Z incremented
 00023c e030      	LDI 	R19, $00 	; compare Z with R19:R18
 00023d 17e2      	CP 		R30, R18	; compare low byte
 00023e 07f3      	CPC 	R31, R19	; compare high byte
 00023f f409      	BRBC 	1, StZpCheck	; skip if check fails
 000240 0000      	NOP
-                 
+
                  StZpCheck:
-000241 9112      	LD 		R17, -Z		; load R17 with pre decremented Z
+000241 9112      	LD 		R17, -Z		; R 12 0069
 000242 3213      	CPI		R17, $23	; check stored/loaded correctly
 000243 f409      	BRBC 	1, StZpJmp		; skip if check fails
 000244 0000      	NOP
-                 
+
                  StZpJmp:
                  ; St -Z pre decrement (Z = 0069)
 000245 e424      	LDI     R18, $44    ; load R18 with $44
 000246 9322      	ST  	-Z, R18		; W 44 0068
-                 
+
 000247 e628      	LDI 	R18, $68	; check Z decremented
 000248 e030      	LDI 	R19, $00 	; compare Z with R19:R18
 000249 17e2      	CP 		R30, R18	; compare low byte
 00024a 07f3      	CPC 	R31, R19	; compare high byte
 00024b f409      	BRBC 	1, StZdCheck	; skip if check fails
 00024c 0000      	NOP
-                 
+
                  StZdCheck:
-00024d 8130      	LD 		R19, Z		; load R19 with Z
+00024d 9131      	LD 		R19, Z+		; R 44 0068
 00024e 3434      	CPI		R19, $44    ; check stored/loaded correctly
 00024f f409      	BRBC 	1, StZdJmp		; skip if check fails
 000250 0000      	NOP
-                 
+
                  StZdJmp:
                  ; STD Y + q
 000251 27dd      	CLR 	R29			; clear high byte of Y
 000252 e7c7      	LDI 	R28, $77	; load low byte of Y with $77
 000253 e743      	LDI 	R20, $73	; load R20 with $73
-000254 8b49      	STD  	Y + $11, R20; W 73 0088
+000254 8b49      	STD  	Y + $11, R20    ; W 73 0088
 000255 8959      	LDD		R21, Y + $11 	; R 73 0088
 000256 1745      	CP 		R20, R21		; compare R20 and R21
 000257 f409      	BRBC 	1, StdYqJmp		; skip if check fails
 000258 0000      	NOP
-                 
+
                  StdYqJmp:
                  ; STD Z + q
 000259 2755      	CLR 	R21			; clear high byte of Z
 00025a e6e7      	LDI 	R30, $67	; load low byte of Z with $67
 00025b ea4a      	LDI 	R20, $AA	; load R20 with $AA
-00025c 8b41      	STD  	Z + $11, R20; W 73 0078
+00025c 8b41      	STD  	Z + $11, R20    ; W 73 0078
 00025d 8951      	LDD		R21, Z + $11    ; R 73 0078
 00025e 1745      	CP 		R20, R21		; compare R20 and R21
 00025f f409      	BRBC 	1, StdZqJmp		; skip if check fails
 000260 0000      	NOP
-                 
+
                  StdZqJmp:
                  ; STS
 000261 e909      	LDI 	R16, $99	; load R16 with $99
@@ -801,7 +800,7 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 000266 1701      	CP 		R16, R17 	; compare R16 and R17
 000267 f409      	BRBC 	1, StsJmp		; skip if check fails
 000268 0000      	NOP
-                 
+
                  StsJmp:
                  ; PUSH, POP
 000269 938f      	PUSH 	R24			; put some things on the stack
@@ -814,11 +813,11 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 000270 1789      	CP 		R24, R25    ; check flags unchanged
 000271 f409      	BRBC 	1, PushSReg	; skip if check fails
 000272 0000      	NOP
-                 
+
                  PushSReg:
 000273 ee3f      	LDI 	R19, $EF	; load R19 with $EF
 000274 933f      	PUSH 	R19			; push R19 onto stack
-                 
+
 000275 e331      	LDI 	R19, $31 	; load a different value into R19
 000276 e627      	LDI 	R18, $67 	; load a different value into R18
 000277 b78f      	IN      R24, SREG	; store flags
@@ -832,13 +831,13 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 00027d 3e3f      	CPI		R19, $EF 	; check R19 popped off stack
 00027e f409      	BRBC 	1, PopJmp	; skip if check fails
 00027f 0000      	NOP
-                 
+
                  PopJmp:
 000280 912f      	POP 	R18			; pop R18 off stack
 000281 3520      	CPI		R18, $50 	; check R18 popped off stack
 000282 f409      	BRBC 	1, PopJmp1	; skip if check fails
 000283 0000      	NOP
-                 
+
                  PopJmp1:
                  ; Unconditional branches
                  ; JMP
@@ -846,13 +845,13 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 000285 c002      	RJMP 	JmpTest		; skip if check succeeds
 000286 0000      	NOP
 000287 0000      	NOP
-                 
+
                  JmpTest:
 000288 b79f      	IN      R25, SREG	; store new flags
 000289 1789      	CP 		R24, R25    ; check flags unchanged
 00028a f409      	BRBC 	1, JumpSReg	; skip if check fails
 00028b 0000      	NOP					; skip if fails
-                 
+
                  JumpSReg:
                  ; CALL
 00028c b78f      	IN      R24, SREG	; store flags
@@ -864,7 +863,7 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 000292 c002      	RJMP 	CallSReg 	; jmp test
 000293 0000      	NOP
 000294 0000      	NOP
-                 
+
                  CallSReg:
                  ; ICALL
 000295 eae1      	LDI 	R30, $A1
@@ -875,27 +874,27 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 00029a 1389      	CPSE 	R24, R25    ; check flags unchanged
                  	;BRBS 	1, ICallSReg	; skip if check succeeds
 00029b 0000      	NOP
-                 
+
                  ICallSreg:
                  ; I/O tests
                  	; check registers
 00029c 9a93      	SBI 	$12, 3		; set bit 3 of port D
 00029d 9893      	CBI 	$12, 3		; clear bit 3 of port D
-                 
+
                  	; SLEEP		; sleep until interrupt
 00029e 0000      	NOP
-                 
+
                  End:
 00029f 9508      	RET		; -return to very top
 0002a0 0000      	NOP
-                 
-                 
+
+
                  CallTest:				; subroutine test
                  ; -RET
 0002a1 0000      	NOP
 0002a2 2d00      	MOV R16, R0			; do something
 0002a3 9508      	RET					; -return from subroutine
-                 
+
                  ICallTest:				; indirect subroutine call test
 0002a4 0000      	NOP
 0002a5 0c12      	ADD R1, R2			; do something
@@ -917,31 +916,31 @@ counted separately from r26..r31 here.
 .dseg memory usage only counts static data declared with .byte
 
 AT90S4414 register use summary:
-r0 :   9 r1 :   6 r2 :   3 r3 :  44 r4 :   2 r5 :   2 r6 :   2 r7 :   2 
-r8 :   2 r9 :   2 r10:   2 r11:   2 r12:   2 r13:   2 r14:   2 r15:   2 
-r16: 115 r17:  72 r18:  39 r19:  33 r20:  13 r21:   9 r22:   3 r23:   2 
-r24:  66 r25:  63 r26:   4 r27:   4 r28:   7 r29:   6 r30:   8 r31:   6 
-x  :  10 y  :   9 z  :   9 
+r0 :   9 r1 :   6 r2 :   3 r3 :  44 r4 :   2 r5 :   2 r6 :   2 r7 :   2
+r8 :   2 r9 :   2 r10:   2 r11:   2 r12:   2 r13:   2 r14:   2 r15:   2
+r16: 115 r17:  73 r18:  39 r19:  33 r20:  13 r21:   9 r22:   3 r23:   2
+r24:  66 r25:  63 r26:   4 r27:   4 r28:   7 r29:   6 r30:   8 r31:   6
+x  :  10 y  :   9 z  :   9
 Registers used: 35 out of 35 (100.0%)
 
 AT90S4414 instruction use summary:
-.lds  :   0 .sts  :   0 adc   :   2 add   :   5 adiw  :   2 and   :   2 
-andi  :   2 asr   :   1 bclr  :   6 bld   :   1 brbc  :  77 brbs  :   2 
-brcc  :   0 brcs  :   0 breq  :   0 brge  :   0 brhc  :   0 brhs  :   0 
-brid  :   0 brie  :   0 brlo  :   0 brlt  :   0 brmi  :   0 brne  :   0 
-brpl  :   0 brsh  :   0 brtc  :   0 brts  :   0 brvc  :   0 brvs  :   0 
-bset  :   6 bst   :   1 cbi   :   1 cbr   :   0 clc   :   0 clh   :   0 
-cli   :   0 cln   :   0 clr   :   7 cls   :   0 clt   :   0 clv   :   0 
-clz   :   0 com   :   3 cp    :  28 cpc   :   7 cpi   :  51 cpse  :  21 
-dec   :   1 eor   :  25 icall :   1 ijmp  :   0 in    :  64 inc   :   1 
-ld    :  15 ldd   :   4 ldi   : 114 lds   :   3 lpm   :   0 lsl   :   0 
-lsr   :   1 mov   :   2 neg   :   3 nop   : 105 or    :   1 ori   :   1 
-out   :  10 pop   :   2 push  :   5 rcall :   2 ret   :   3 reti  :   0 
-rjmp  :   3 rol   :   0 ror   :   2 sbc   :   2 sbci  :   1 sbi   :   1 
-sbic  :   0 sbis  :   0 sbiw  :   1 sbr   :   0 sbrc  :   2 sbrs  :   1 
-sec   :   0 seh   :   0 sei   :   0 sen   :   0 ser   :   0 ses   :   0 
-set   :   0 sev   :   0 sez   :   0 sleep :   0 st    :   7 std   :   2 
-sts   :  31 sub   :   1 subi  :   1 swap  :   2 tst   :   0 wdr   :   0 
+.lds  :   0 .sts  :   0 adc   :   2 add   :   6 adiw  :   2 and   :   2
+andi  :   2 asr   :   1 bclr  :   6 bld   :   1 brbc  :  77 brbs  :   2
+brcc  :   0 brcs  :   0 breq  :   0 brge  :   0 brhc  :   0 brhs  :   0
+brid  :   0 brie  :   0 brlo  :   0 brlt  :   0 brmi  :   0 brne  :   0
+brpl  :   0 brsh  :   0 brtc  :   0 brts  :   0 brvc  :   0 brvs  :   0
+bset  :   6 bst   :   1 cbi   :   1 cbr   :   0 clc   :   0 clh   :   0
+cli   :   0 cln   :   0 clr   :   7 cls   :   0 clt   :   0 clv   :   0
+clz   :   0 com   :   3 cp    :  28 cpc   :   7 cpi   :  51 cpse  :  21
+dec   :   1 eor   :  25 icall :   1 ijmp  :   0 in    :  64 inc   :   1
+ld    :  15 ldd   :   4 ldi   : 114 lds   :   2 lpm   :   0 lsl   :   0
+lsr   :   1 mov   :   2 neg   :   3 nop   : 106 or    :   1 ori   :   1
+out   :  10 pop   :   2 push  :   5 rcall :   2 ret   :   3 reti  :   0
+rjmp  :   3 rol   :   0 ror   :   2 sbc   :   2 sbci  :   1 sbi   :   1
+sbic  :   0 sbis  :   0 sbiw  :   1 sbr   :   0 sbrc  :   2 sbrs  :   1
+sec   :   0 seh   :   0 sei   :   0 sen   :   0 ser   :   0 ses   :   0
+set   :   0 sev   :   0 sez   :   0 sleep :   0 st    :   7 std   :   2
+sts   :  31 sub   :   1 subi  :   1 swap  :   2 tst   :   0 wdr   :   0
 
 Instructions used: 53 out of 102 (52.0%)
 
