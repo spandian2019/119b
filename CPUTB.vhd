@@ -17,7 +17,7 @@ use ieee.numeric_std.all;
 
 use work.opcodes.all;
 use work.constants.all;
-use work.TBConstants.all; 
+use work.TBConstants.all;
 
 entity CPUTB is
 end CPUTB;
@@ -122,20 +122,20 @@ architecture TB_ARCHITECTURE of CPUTB is
 
             Reset <= '1'; -- de-assert reset, program should begin from start
             wait for CLK_PERIOD*0.2; -- offset for clock edge
-            prevAB := ProgABTest(TEST_SIZE_AB); -- address bus test vector only has the address order 
-            j := TEST_SIZE_AB; 
-            
+            prevAB := ProgABTest(TEST_SIZE_AB); -- address bus test vector only has the address order
+            j := TEST_SIZE_AB;
+
 			-- check with test vectors every clock
 			for i in TEST_SIZE downto 0 loop
                 -- on rising edge
                 -- check prog AB
-                if ProgAB /= prevAB then 
-                    j := j-1; -- check if address changed  
-                end if; 
+                if ProgAB /= prevAB then
+                    j := j-1; -- check if address changed
+                end if;
                 assert (ProgABTest(j) = ProgAB) --TODO
                     report  "ProgAB failure at clock number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
-                    
+
                 -- check data AB (for ld, st)
                 assert (std_match(DataABTest(i), DataAB))
                     report  "DataAB failure at clock number " & integer'image(TEST_SIZE-i)
@@ -190,16 +190,16 @@ architecture TB_ARCHITECTURE of CPUTB is
 
 end TB_ARCHITECTURE;
 
-configuration TESTBENCH_FOR_CPU of CPUTB is
-    for TB_ARCHITECTURE
-		for UUT : AVR_CPU
-            use entity work.AVR_CPU;
-        end for;
-        for UUTP : PROG_MEMORY
-            use entity work.PROG_MEMORY;
-        end for;
-        for UUTD : DATA_MEMORY
-            use entity work.DATA_MEMORY;
-        end for;
-    end for;
-end TESTBENCH_FOR_CPU;
+--configuration TESTBENCH_FOR_CPU of CPUTB is
+--    for TB_ARCHITECTURE
+--		for UUT : AVR_CPU
+--            use entity work.AVR_CPU;
+--        end for;
+--        for UUTP : PROG_MEMORY
+--            use entity work.PROG_MEMORY;
+--        end for;
+--        for UUTD : DATA_MEMORY
+--            use entity work.DATA_MEMORY;
+--        end for;
+--    end for;
+--end TESTBENCH_FOR_CPU;

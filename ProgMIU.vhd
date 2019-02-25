@@ -113,7 +113,7 @@ begin
             ProgCtr <= AddrAdderOut;
         end if;
         if rising_edge(clock) and reset = '0' then
-            ProgCtr <= "0000000000000000";--(others => '0');
+            ProgCtr <= "1111111111111111";--(others => '1');
         end if;
     end process;
 
