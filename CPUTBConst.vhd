@@ -15,8 +15,8 @@ use ieee.numeric_std.all;
 
 package TBConstants is
     constant CLK_PERIOD : time := 20 ns;
-    constant TEST_SIZE : natural := 695; -- number of clocks for test program
-    constant TEST_SIZE_AB: natural := 672;
+    constant TEST_SIZE : natural := 694; -- number of clocks for test program
+    constant TEST_SIZE_AB: natural := 671;
 
     type DB16Vector is array(natural range <>) of std_logic_vector(15 downto 0);
     --signal ProgABTest : DB16Vector(TEST_SIZE_AB downto 0); -- ProgAB expected output

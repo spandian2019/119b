@@ -109,7 +109,7 @@ signal RegIoSelFlag : std_logic;
 signal DataCtrlU : std_logic_vector(5 downto 0);
 
 signal Load            : std_logic;
-signal ProgSourceSel   : std_logic_vector(ADDRSIZE-1 downto 0);
+signal ProgSourceSel   : SOURCE_SEL;
 signal ProgIRSource    : std_logic_vector(ADDRSIZE-1 downto 0);
 
 signal StatReg         : std_logic_vector(REGSIZE-1 downto 0);

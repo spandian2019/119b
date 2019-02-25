@@ -121,7 +121,7 @@ entity CU is
 
         -- Prog memory access
         Load            : out std_logic;
-        ProgSourceSel   : out std_logic_vector(ADDRSIZE-1 downto 0);
+        ProgSourceSel   : out SOURCE_SEL;
         ProgIRSource    : out std_logic_vector(ADDRSIZE-1 downto 0)
     );
 
