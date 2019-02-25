@@ -180,7 +180,7 @@ begin
         Bin(i) <= FOut(i) xor ALUASOp(SUBFLAG);
     end generate SubXOR;
 
-    adder0: fullAdder --TODO check
+    adder0_ALU: fullAdder --TODO check
     port map(
         A           => comnegR(0),
         B           => Bin(0),
@@ -189,8 +189,8 @@ begin
         Sum         => AdderOut(0)
   );
   -- other bits
-  GenAdder:  for i in 1 to REGSIZE - 1 generate
-  adderi: fullAdder
+  GenAdder_ALU:  for i in 1 to REGSIZE - 1 generate
+  adderi_ALU: fullAdder
     port map(
         A           => comnegR(i),
         B           => Bin(i),
@@ -198,7 +198,7 @@ begin
         Cout        => Carryout(i),
         Sum         => AdderOut(i)
   );
-  end generate GenAdder;
+  end generate GenAdder_ALU;
 
   -- zero flag outputted to Ctrl Unit for CPSE
   ZeroFlag <= '1' when RegBuff = ZERO8 else

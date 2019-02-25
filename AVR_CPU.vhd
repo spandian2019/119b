@@ -103,7 +103,7 @@ signal RegAOut      : std_logic_vector(REGSIZE-1 downto 0);
 signal RegBOut      : std_logic_vector(REGSIZE-1 downto 0);
 signal AddrMuxOut   : std_logic_vector(ADDRSIZE-1 downto 0);
 
-signal DataAddr : std_logic_vector( 15 downto 0);
+signal DataAddrBuffer : std_logic_vector( 15 downto 0);
 signal RegIoFlag : std_logic;
 signal RegIoSelFlag : std_logic;
 signal DataCtrlU : std_logic_vector(5 downto 0);
@@ -149,18 +149,18 @@ begin
                                     RegAOut, RegBOut, AddrMuxOut);
 
     DataMemU : entity work.DataMIU port map(AddrMuxOut, RegIn, QOffset, DataOffsetSel, PreSel, DataDBWEn,
-                                    DataABMux, ProgDB, IndDataIn, DataDB, DataAddr);
+                                    DataABMux, ProgDB, IndDataIn, DataDB, DataAddrBuffer);
 
     ProgMemU : entity work.ProgMIU port map(Reset, clock, load, ProgSourceSel, ProgIRSource, AddrMuxOut, DataDB, ProgAB);
 
-    DataAB <= DataAddr;
+    DataAB <= DataAddrBuffer;
     -- flags for remapping lowest addresses to registers
-    DataCtrlU <= DataAddr(6) & DataAddr(4 downto 0); -- address for register or io register select
+    DataCtrlU <= DataAddrBuffer(6) & DataAddrBuffer(4 downto 0); -- address for register or io register select
     -- use general regs or io regs instead of external memory for addresses 0 to 95 (total size of reg)
-    RegIoFlag <= '1' when std_match(DataAddr, "0000000000------") or  std_match(DataAddr, "00000000010-----") else
+    RegIoFlag <= '1' when std_match(DataAddrBuffer, "0000000000------") or  std_match(DataAddrBuffer, "00000000010-----") else
                  '0';
     -- detect whether to use register or io register
-    RegIoSelFlag <= REG_A_OUT when std_match(DataAddr, "00000000000-----") else -- use general regs if addr < reg size (32 bits)
+    RegIoSelFlag <= REG_A_OUT when std_match(DataAddrBuffer, "00000000000-----") else -- use general regs if addr < reg size (32 bits)
                     IO_OUTPUT;
 
 
