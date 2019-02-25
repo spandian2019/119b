@@ -124,26 +124,26 @@ begin
 	    wait for 0 ns;
 	end if;
 
-	AddrBus_ERROR: for i in 15 downto 0 loop
-		-- finally check if WE low with the address changing
-		if  ((rising_edge(DataAB(i)) or falling_edge(DataAB(i))) and (WE = '0'))  then
-	            -- output error message
-		    REPORT "Glitch on Data Address bus"
-		    SEVERITY  ERROR;
-		    -- address changed with WE low - trash the old location
-		    if  (CONV_INTEGER(DataAB) < 128)  then
-		        RAMbits0000(CONV_INTEGER(DataAB)) <= DataDB;
-		    elsif  (CONV_INTEGER(DataAB) >= 16#FF80#)  then
-		        RAMbitsFF80(CONV_INTEGER(DataAB - 16#FF80#)) <= DataDB;
-		    elsif  (CONV_INTEGER(DataAB) >= 16#FF00#)  then
-		        RAMbitsFF00(CONV_INTEGER(DataAB - 16#FF00#)) <= DataDB;
-		    elsif  (CONV_INTEGER(DataAB) >= 16#FE80#)  then
-		        RAMbitsFE80(CONV_INTEGER(DataAB - 16#FE80#)) <= DataDB;
-		    elsif  (CONV_INTEGER(DataAB) >= 16#FE00#)  then
-		        RAMbitsFE00(CONV_INTEGER(DataAB - 16#FE00#)) <= DataDB;
-	            end if;
-		end if;
-	end loop AddrBus_ERROR;
+	--AddrBus_ERROR: for i in 15 downto 0 loop
+	--	-- finally check if WE low with the address changing
+	--	if  ((rising_edge(DataAB(i)) or falling_edge(DataAB(i))) and (WE = '0'))  then
+	--            -- output error message
+	--	    REPORT "Glitch on Data Address bus"
+	--	    SEVERITY  ERROR;
+	--	    -- address changed with WE low - trash the old location
+	--	    if  (CONV_INTEGER(DataAB'delayed) < 128)  then
+	--	        RAMbits0000(CONV_INTEGER(DataAB'delayed)) <= DataDB;
+	--	    elsif  (CONV_INTEGER(DataAB'delayed) >= 16#FF80#)  then
+	--	        RAMbitsFF80(CONV_INTEGER(DataAB'delayed - 16#FF80#)) <= DataDB;
+	--	    elsif  (CONV_INTEGER(DataAB'delayed) >= 16#FF00#)  then
+	--	        RAMbitsFF00(CONV_INTEGER(DataAB'delayed - 16#FF00#)) <= DataDB;
+	--	    elsif  (CONV_INTEGER(DataAB'delayed) >= 16#FE80#)  then
+	--	        RAMbitsFE80(CONV_INTEGER(DataAB'delayed - 16#FE80#)) <= DataDB;
+	--	    elsif  (CONV_INTEGER(DataAB'delayed) >= 16#FE00#)  then
+	--	        RAMbitsFE00(CONV_INTEGER(DataAB'delayed - 16#FE00#)) <= DataDB;
+	--            end if;
+	--	end if;
+	--end loop AddrBus_ERROR;
 
     end process;
 

@@ -101,7 +101,7 @@ end component;
 signal offset_buffer : std_logic_vector(ADDRSIZE-1 downto 0);   -- fully zero padded offset vector
 signal IndAddrMuxOut : std_logic_vector(ADDRSIZE-1 downto 0);   -- Indirect Address to output to DataAB
 signal CarryOut     : std_logic_vector(ADDRSIZE-1 downto 0);    -- carry for adder/subtracter
-signal ProgDBLatch  : std_logic_vector(ADDRSIZE-1 downto 0);    -- latched ProgDB to output to DataAB for direct memory
+signal DataABLatch  : std_logic_vector(ADDRSIZE-1 downto 0);    -- latched ProgDB to output to DataAB for direct memory
 
 begin
 
@@ -161,13 +161,13 @@ begin
     latch_ProgDB : process (DataABMux)
     begin
         if (rising_edge(DataABMux)) then
-            ProgDBLatch <= ProgDB;
+            DataABLatch <= ProgDB;
         end if;
     end process latch_ProgDB;
 
     -- DataAB either outputs indirect address value or direct memory address value
     DataAB <= IndAddrMuxOut when DataABMux = IND_ADDR else
-              ProgDBLatch;
+              DataABLatch;
 
     -- DataDB outputs RegIn when enabled, or high impedance so it can still be read
     DataDB <= RegIn  when DataDBWEn = WRITE_EN else

@@ -229,11 +229,16 @@ begin
     -- Skip bit flag outputted to Ctrl Unit for CPSE
     SBFlag <= RegA(to_integer(unsigned(RegB(2 downto 0))));
 
-    -- SWAP block
+    -- SWAP block high NIBBLE
     -- switches high and low nibble of A input
-    SWAP_OP : for i in REGSIZE-1 downto 0 generate
-        SwapRegOut(i) <= RegA(i-NIBBLE) when i >= NIBBLE else
-                         RegA(i+NIBBLE);
+    SWAP_OP_HI : for i in REGSIZE-1 downto NIBBLE generate
+        SwapRegOut(i) <= RegA(i-NIBBLE);
+    end generate;
+
+    -- SWAP block low NIBBLE
+    -- switches high and low nibble of A input
+    SWAP_OP_LO : for i in NIBBLE-1 downto 0 generate
+        SwapRegOut(i) <= RegA(i+NIBBLE);
     end generate;
 
     RegBuff <=  AdderOut    when ALUSel = ADDSUBOUT else

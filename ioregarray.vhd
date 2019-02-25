@@ -56,6 +56,9 @@ entity IORegArray is
         IndAddrIn 	: in std_logic_vector(IOADDRSIZE-1 downto 0);   -- Indirect Addr value in, from RegUnit
         IndWEn 		: in std_logic;                                 -- Indirect Addr write enable, from CU
 
+        SRegIn      : in std_logic_vector(REGSIZE-1 downto 0);      -- Status Register in from ALU
+        SRegOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- Status Register out to ALU
+
         IORegOut    :  out std_logic_vector(REGSIZE-1 downto 0);    -- IO register bus out
         SPRegOut    :  out std_logic_vector(ADDRSIZE-1 downto 0)    -- SP register bus out
     );
@@ -81,6 +84,9 @@ begin
             if IORegWEn = WRITE_EN then
                 IOregisters(conv_integer(IORegWSel)) <= RegIn;
             else
+                if IORegWSel /= SREG_ADDR then
+                    IOregisters(conv_integer(SREG_ADDR)) <= SRegIn;
+                end if;
                 -- only hold value here if it will not be held by the second block
                 if IORegWSel /= SP_ADDR_L or IORegWSel /= SP_ADDR_H then
                     IOregisters(conv_integer(IORegWSel)) <= IOregisters(conv_integer(IORegWSel));
@@ -103,6 +109,7 @@ begin
     -- can always output IO reg to IO data bus since value needs to be selected
     --  by Control Unit to be used
     IORegOut <= IOregisters(conv_integer(IORegWSel));
+    SRegOut  <= IOregisters(conv_integer(SREG_ADDR));
 
     -- synchronously output indirect address lines to avoid errors with DataMIU
     --  such as incrementing twice in one operation

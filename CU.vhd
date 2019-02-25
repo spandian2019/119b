@@ -141,7 +141,7 @@ architecture RISC of CU is
 begin
 
     -- asynchronously decodes IR inputs
-    decoder : process(IR, CLK, ProgDB, SBFlag, ZeroFlag)
+    decoder : process(IR, CLK, cycle, SBFlag, ZeroFlag)
     begin
             -- sets cycle number for op_codes
             -- defaults operations to 1 cycle

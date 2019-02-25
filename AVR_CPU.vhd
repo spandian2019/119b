@@ -145,7 +145,7 @@ begin
                                        RegAOut, MuxBOut, SReg, ALUResult, StatusBuff, SBFlag, ZeroFlag);
 
     RegU    : entity work.RegUnit port map(clock, Reset, RegIn, RegWEn, RegWSel, RegSelA, RegSelB, IORegWEn,
-                                    IORegWSel, IndDataIn, IndWEn, IndAddrSel, IOOutSel,
+                                    IORegWSel, IndDataIn, IndWEn, IndAddrSel, IOOutSel, StatusBuff, SReg,
                                     RegAOut, RegBOut, AddrMuxOut);
 
     DataMemU : entity work.DataMIU port map(AddrMuxOut, RegIn, QOffset, DataOffsetSel, PreSel, DataDBWEn,
@@ -162,15 +162,6 @@ begin
     -- detect whether to use register or io register
     RegIoSelFlag <= REG_A_OUT when std_match(DataAddr, "00000000000-----") else -- use general regs if addr < reg size (32 bits)
                     IO_OUTPUT;
-
-    StatReg <= SReg;
-
-    process(clock)
-    begin
-        if rising_edge(clock) then
-            SReg <= StatusBuff;
-        end if;
-    end process;
 
 
 end architecture ; -- behavioral

@@ -70,6 +70,9 @@ entity RegUnit is
         IndAddrSel  : in ADDR_SEL;                                  -- Ind addr select, from CU
         IOOutSel    : in std_logic;                                 -- MUX select line for outputting RegA or IO
 
+        SRegIn      : in std_logic_vector(REGSIZE-1 downto 0);      -- Status Register from ALU
+        SRegOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- Status Register out to ALU
+
         RegAOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- register bus A out
         RegBOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- register bus B out
         AddrMuxOut  : out std_logic_vector(ADDRSIZE-1 downto 0)     -- Indirect Address line out, to DataMIU
@@ -129,6 +132,9 @@ component IORegArray is
         IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0);     -- Indirect Addr data in, from DataMIU
         IndAddrIn   : in std_logic_vector(IOADDRSIZE-1 downto 0);   -- Indirect Addr value in, from RegUnit
         IndWEn      : in std_logic;                                 -- Indirect Addr write enable, from CU
+
+        SRegIn      : in std_logic_vector(REGSIZE-1 downto 0);      -- Status Register from ALU
+        SRegOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- Status Register out to ALU
 
         IORegOut    :  out std_logic_vector(REGSIZE-1 downto 0);    -- IO register bus out
         SPRegOut    :  out std_logic_vector(ADDRSIZE-1 downto 0)    -- SP register bus out
@@ -193,6 +199,9 @@ begin
         IndDataIn   => IndDataIn,
         IndAddrIn   => IndAddrIn,
         IndWEn      => IndWEn,
+
+        SRegIn      => SRegIn,
+        SRegOut     => SRegOut,
 
         IORegOut    => IOMuxOut,
         SPRegOut    => SPMuxOut
