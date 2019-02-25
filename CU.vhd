@@ -670,10 +670,10 @@ begin
                     RegWSel <= IR(8 downto 4);          -- Operand 1 is the register being written to, loc in IR(8..4)
 
                     if cycle = ZERO_CYCLES then         -- during first cycle
+                        ProgSourceSel <= NORMAL_SRC;    -- increment PC here so ProgAB points to next IR
                         -- do nothing
                     elsif cycle = ONE_CYCLE then        -- during second cycle
                         DataABMux <= MEM_ADDR;          -- signal to latch and output ProgDB memory on DataAB
-                        ProgSourceSel <= NORMAL_SRC;    -- increment PC here so ProgAB points to next IR
                     else                                -- during third cycle
                         DataABMux <= MEM_ADDR;          -- still outputting ProgDB to DataAB
 
@@ -763,10 +763,10 @@ begin
                     RegSelA <= IR(8 downto 4);          -- Operand 1 is the register being written to, loc in IR(8..4)
 
                     if cycle = ZERO_CYCLES then         -- during first cycle
+                        ProgSourceSel <= NORMAL_SRC;    -- increment PC here so ProgAB points to next IR
                         -- do nothing
                     elsif cycle = ONE_CYCLE then        -- during second cycle
                         DataABMux <= MEM_ADDR;          -- signal to latch and output ProgDB memory on DataAB
-                        ProgSourceSel <= NORMAL_SRC;    -- increment PC here so ProgAB points to next IR
                     else                                -- during third cycle
                         DataABMux <= MEM_ADDR;          -- still outputting ProgDB to DataAB
 
