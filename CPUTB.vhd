@@ -116,8 +116,8 @@ architecture TB_ARCHITECTURE of CPUTB is
 
         	-- initially everything is 0, have not started
             Reset <= '1'; -- begin with reset
-            INT0 <= '0'; -- disable interrupts
-            INT1 <= '0';
+            INT0 <= '1'; -- disable interrupts
+            INT1 <= '1';
         	wait for CLK_PERIOD*5.5; -- wait for a bit
 
             Reset <= '0'; -- de-assert reset, program should begin from start
