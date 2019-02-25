@@ -34,6 +34,7 @@ use work.ALUconstants.all;
 
 entity ProgMIU is
     port(
+	reset	: in std_logic; 
         clock   : in std_logic;
         Load    : in std_logic;                     -- load select for PC, from CU
         AddrSourceSel : in SOURCE_SEL;  -- address source select, from CU
@@ -110,6 +111,9 @@ begin
     begin
         if rising_edge(clock) then
             ProgCtr <= AddrAdderOut;
+        end if;
+        if rising_edge(clock) and reset = '0' then
+            ProgCtr <= "0000000000000000";--(others => '0');
         end if;
     end process;
 

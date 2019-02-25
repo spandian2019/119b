@@ -151,7 +151,7 @@ begin
     DataMemU : entity work.DataMIU port map(AddrMuxOut, RegIn, QOffset, DataOffsetSel, PreSel, DataDBWEn,
                                     DataABMux, ProgDB, IndDataIn, DataDB, DataAddr);
 
-    ProgMemU : entity work.ProgMIU port map(clock, load, ProgSourceSel, ProgIRSource, AddrMuxOut, DataDB, ProgAB);
+    ProgMemU : entity work.ProgMIU port map(Reset, clock, load, ProgSourceSel, ProgIRSource, AddrMuxOut, DataDB, ProgAB);
 
     DataAB <= DataAddr;
     -- flags for remapping lowest addresses to registers
