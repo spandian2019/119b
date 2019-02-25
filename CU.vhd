@@ -930,10 +930,11 @@ begin
                 cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    ProgIRSource <= "0000" & IR(11 downto 0);
-                    ProgSourceSel <= IR_SRC;
+                    ProgSourceSel <= NORMAL_SRC;
                 else                                -- during second cycle
-                    ProgSourceSel <= RST_SRC;
+                    ProgIRSource(11 downto 0) <= IR(11 downto 0);
+                    ProgIRSource(15 downto 12) <= (others => IR(11));
+                    ProgSourceSel <= IR_SRC;
                 end if;
             end if;
 
@@ -947,10 +948,10 @@ begin
                 IndAddrSel <= Z_SEL;
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
+                    ProgSourceSel <= NORMAL_SRC;
+                else                                -- during second cycle
                     ProgSourceSel <= Z_SRC;
                     load <= '0';
-                else                                -- during second cycle
-                    ProgSourceSel <= RST_SRC;
                 end if;
             end if;
 
@@ -1035,7 +1036,8 @@ begin
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
                 else                                -- during third cycle
                     if IR(14) = '1' then            -- then RCALL op
-                        ProgIRSource <= "0000" & IR(11 downto 0);
+                        ProgIRSource(11 downto 0) <= IR(11 downto 0);
+                        ProgIRSource(15 downto 12) <= (others => IR(11));
                         ProgSourceSel <= IR_SRC;
                     else                            -- then ICALL op
                         DataOffsetSel <= ZERO_SEL;
@@ -1091,15 +1093,17 @@ begin
                 if SReg(to_integer(unsigned(IR(2 downto 0)))) = not IR(10) then
                     --branch
                     cycle_num <= TWO_CYCLES;
-                    ProgIRSource <= "000000000" & IR(9 downto 3);
-                    ProgSourceSel <= IR_SRC;
                 else
                     -- dont branch
                     cycle_num <= ONE_CYCLE;
                 end if;
 
-                if cycle = ONE_CYCLE then
-                    ProgSourceSel <= RST_SRC;
+                if cycle = ZERO_CYCLES then
+                    ProgSourceSel <= NORMAL_SRC;
+                else
+                    ProgIRSource(6 downto 0) <= IR(9 downto 3);
+                    ProgIRSource(15 downto 7) <= (others => IR(9));
+                    ProgSourceSel <= IR_SRC;
                 end if;
             end if;
 
@@ -1116,6 +1120,8 @@ begin
 
                 ALUaddsub(SUBFLAG)  <= OP_SUB;
                 ALUaddsub(CARRY_S1 downto CARRY_S0) <= RST_CARRY;
+
+                ProgSourceSel <= NORMAL_SRC;
 
                 if ZeroFlag = '0' then
                     cycle_num <= ONE_CYCLE;
@@ -1135,6 +1141,8 @@ begin
                 ImmedEn <= IMM_EN;
 
                 RegSelA <= IR(8 downto 4);
+
+                ProgSourceSel <= NORMAL_SRC;
 
                 if SBFlag = IR(9) then
                     cycle_num <= ONE_CYCLE;
