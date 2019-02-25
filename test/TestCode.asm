@@ -2,33 +2,33 @@
 .equ SREG = $3f 	; stack register location
 
 ; clear all registers
-CLEAR:      EOR     R1, R1
-            EOR     R2, R2
-            EOR     R3, R3
-            EOR     R4, R4
-            EOR     R5, R5
-            EOR     R6, R6
-            EOR     R7, R7
-            EOR     R8, R8
-            EOR     R9, R9
-            EOR     R10, R10
-            EOR     R11, R11
-            EOR     R12, R12
-            EOR     R13, R13
-            EOR     R14, R14
-            EOR     R15, R15
-            EOR     R16, R16
-            EOR     R17, R17
-            EOR     R18, R18
-            EOR     R19, R19
-            EOR     R20, R20
+CLEAR:      LDI     R16, $00
+            LDI     R17, $00
+            LDI     R18, $00
+            LDI     R19, $00
+            LDI     R20, $00
+            MOV 	R1, R16
+            MOV     R2, R16
+            MOV     R3, R16
+            MOV     R4, R16
+            MOV     R5, R16
+            MOV     R6, R16
+            MOV     R7, R16
+            MOV     R8, R16
+            MOV     R9, R16
+            MOV     R10, R16
+            MOV     R11, R16
+            MOV     R12, R16
+            MOV     R13, R16
+            MOV     R14, R16
+            MOV     R15, R16
 ; ALU tests
 ALUtests:
             RJMP     ADD1F
 ADD1F: ;test ADIW
             EOR     R1, R1
-            EOR     R25, R25
-            EOR     R24, R24
+            LDI     R25, $00
+            LDI     R24, $00
             OUT     SReg, R1
             ADIW    R25:R24, $11    ; ADDIW 0, $11
             IN      R3, SReg

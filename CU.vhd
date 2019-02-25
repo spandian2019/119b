@@ -185,8 +185,8 @@ begin
             end if;
             -- load defaults to indirect addressing
             load <= '1';
-
-
+            -- clear IO register write select line, allows for ALU default writing to SReg
+            IORegWSel <= (others => '0');
 
             -- considering single byte adder/subber ops:
             -- ADC, ADD, SBC, SUB, CPC, CP
@@ -577,17 +577,18 @@ begin
                 BitMask <= MASK_NONE;
             end if;
 
-            --if std_match(IR, OpIN) or std_match(IR, OpOUT) then
-            --    -- not done
-            --    RegWSel <= IR(8 downto 4);
-            --    RegWEn     <= IR(11);
-            --    IORegInEn  <= not IR(11);
-            --    IORegOutEn <= IR(11);
-            --    LoadIn <= LdIO;
-            --end if;
+            if std_match(IR, OpIN) or std_match(IR, OpOUT) then
+                -- 1011oppdddddpppp
+                RegSelA     <= IR(8 downto 4);
+                RegWSel     <= IR(8 downto 4);
+                RegWEn      <= not IR(11);
 
+                IOOutSel    <= not IR(11);
 
-
+                IORegWSel   <= IR(10 downto 9) & IR(3 downto 0);
+                IORegWEn    <= IR(11);
+                IORegOutEn  <= IR(11);
+            end if;
 
             if  std_match(IR, OpLDX) or
                 std_match(IR, OpLDXI) or
