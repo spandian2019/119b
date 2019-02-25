@@ -942,6 +942,10 @@ begin
 
                 cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
 
+                DataOffsetSel <= ZERO_SEL;
+
+                IndAddrSel <= Z_SEL;
+
                 if cycle = ZERO_CYCLES then         -- during first cycle
                     ProgSourceSel <= Z_SRC;
                     load <= '0';
@@ -1034,6 +1038,10 @@ begin
                         ProgIRSource <= "0000" & IR(11 downto 0);
                         ProgSourceSel <= IR_SRC;
                     else                            -- then ICALL op
+                        DataOffsetSel <= ZERO_SEL;
+
+                        IndAddrSel <= Z_SEL;
+
                         ProgSourceSel <= Z_SRC;
                         load <= '0';
                     end if;
