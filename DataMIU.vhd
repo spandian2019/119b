@@ -105,7 +105,7 @@ signal DataABLatch  : std_logic_vector(ADDRSIZE-1 downto 0);    -- latched ProgD
 
 begin
 
-    offset_buffer(ADDRSIZE-1 downto Q_OFFSET_SIZE-1) <= (others => '0');
+    offset_buffer(ADDRSIZE-1 downto Q_OFFSET_SIZE) <= (others => '0');
     offset_buffer(Q_OFFSET_SIZE-1 downto 0) <= QOffset;         -- zero pad MSB of the QOffset input
 
     -- Offset Mux In
