@@ -131,35 +131,39 @@ architecture TB_ARCHITECTURE of CPUTB is
                 assert (to_integer(unsigned(ProgABTest(i))) = to_integer(unsigned(ProgAB)))
                     report  "ProgAB failure at clock number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
-
+                if i = TEST_SIZE then 
+                    j := TEST_SIZE;
+                else 
+                    j := i+1;
+                end if; -- delay data test bus by one clock 
                 -- check data AB (for ld, st)
-                assert (std_match(DataABTest(i), DataAB))
+                assert (std_match(DataABTest(j), DataAB))
                     report  "DataAB failure at clock number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
 
                 -- check data DB (for ld)
-                assert (std_match(DataDBRdTest(i), DataDB))
+                assert (std_match(DataDBRdTest(j), DataDB))
                     report  "DataDBRd failure at clock number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
 
                 -- check data DB (for st)
-                assert (std_match(DataDBWrTest(i), DataDB))
+                assert (std_match(DataDBWrTest(j), DataDB))
                         report  "DataDBWr failure at clock number " & integer'image(TEST_SIZE-i)
                         severity  ERROR;
 
                 -- check rd/wr (check for glitches)
-                assert (std_match(DataRdTest(i), DataRd))
-                    report  "DataRd DataDBRd failure at test number " & integer'image(TEST_SIZE-i)
+                assert (std_match(DataRdTest(j), DataRd))
+                    report  "DataRd failure at test number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
                 -- check write not asserted
-                assert (std_match(DataWrTest(i), DataWr))
-                    report  "DataWr DataDBRd at test number " & integer'image(TEST_SIZE-i)
+                assert (std_match(DataWrTest(j), DataWr))
+                    report  "DataWr failure at test number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
 
                 wait for CLK_PERIOD/2; -- wait for rest of clock
 
 			end loop;
-            wait for CLK_PERIOD*50;
+            wait for CLK_PERIOD*5;
             END_SIM <= TRUE;        -- end of stimulus events
             wait;                   -- wait for simulation to end
         end process;
