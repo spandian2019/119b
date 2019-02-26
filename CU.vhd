@@ -602,8 +602,8 @@ begin
 
                     if cycle = ZERO_CYCLES then         -- during first cycle
                         -- do nothing
-                        IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
                     else                                -- during second cycle
+                        IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
                         DataRd <= CLK;                  -- DataRd = CLK for the second cycle, so will go active low at end
 
@@ -695,8 +695,8 @@ begin
 
                     if cycle = ZERO_CYCLES then         -- during first cycle
                         -- do nothing
-                        IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
                     else                                -- during second cycle
+                        IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
                         DataWr <= CLK;                  -- DataWr = CLK for the second cycle, so will go active low at end
 
