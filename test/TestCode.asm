@@ -2,44 +2,44 @@
 .equ SREG = $3f 	; stack register location
 
 ; clear all registers
-CLEAR:      LDI     R16, $00
-            LDI     R17, $00
-            LDI     R18, $00
-            LDI     R19, $00
-            LDI     R20, $00
-            MOV 	R1, R16
-            MOV     R2, R16
-            MOV     R3, R16
-            MOV     R4, R16
-            MOV     R5, R16
-            MOV     R6, R16
-            MOV     R7, R16
-            MOV     R8, R16
-            MOV     R9, R16
-            MOV     R10, R16
-            MOV     R11, R16
-            MOV     R12, R16
-            MOV     R13, R16
-            MOV     R14, R16
-            MOV     R15, R16
+CLEAR:      EOR     R1, R1
+            EOR     R2, R2
+            EOR     R3, R3
+            EOR     R4, R4
+            EOR     R5, R5
+            EOR     R6, R6
+            EOR     R7, R7
+            EOR     R8, R8
+            EOR     R9, R9
+            EOR     R10, R10
+            EOR     R11, R11
+            EOR     R12, R12
+            EOR     R13, R13
+            EOR     R14, R14
+            EOR     R15, R15
+            EOR     R16, R16
+            EOR     R17, R17
+            EOR     R18, R18
+            EOR     R19, R19
+            EOR     R20, R20
 ; ALU tests
 ALUtests:
             RJMP     ADD1F
 ADD1F: ;test ADIW
             EOR     R1, R1
-            LDI     R25, $00
-            LDI     R24, $00
+            EOR     R25, R25
+            EOR     R24, R24
             OUT     SReg, R1
             ADIW    R25:R24, $11    ; ADDIW 0, $11
             IN      R3, SReg
             STS     $FE00, R3       ; W 00 FE00
 ADD1resF:
             CPI     R25, 0
-            BRBS 	1, ADD1resL
+            BRBC 	1, ADD1resL
             NOP
 ADD1resL:
             CPI     R24, $11
-            BRBS 	1, ADD2F
+            BRBC 	1, ADD2F
             NOP
 ADD2F: ;test ADD Carry Flag
             LDI     R16, $F0
@@ -49,7 +49,7 @@ ADD2F: ;test ADD Carry Flag
             STS     $FE00, R18      ; W 01 FE00
 ADD2res:
             CPI     R16, $42
-            BRBS 	1, ADD3F
+            BRBC 	1, ADD3F
             NOP
 ADD3F: ;test ADD Zero Flag
             LDI     R18, $00
@@ -59,7 +59,7 @@ ADD3F: ;test ADD Zero Flag
             STS     $FE01, R3       ; W 02 FE01
 ADD3res:
             CPI     R16, $00
-            BRBS 	1, ADC1F
+            BRBC 	1, ADC1F
             NOP
 ADC1F: ;test H,S,N flag
             LDI     R16, $0F
@@ -69,7 +69,7 @@ ADC1F: ;test H,S,N flag
             STS     $FE02, R3       ; W 34 FE02
 ADC1res:
             CPI     R16, $90
-            BRBS 	1, ADC2F
+            BRBC 	1, ADC2F
             NOP
 ADC2F: ;test S,V,C flags
             LDI     R18, $80
@@ -85,11 +85,11 @@ ADD4F: ;test S,V,N flags
             STS     $FE00, R3       ; W 0C FE00
 ADC2res:
             CPI     R16, $00
-            BRBS 	1, ADD4res
+            BRBC 	1, ADD4res
             NOP
 ADD4res:
             CPI     R17, $80
-            BRBS 	1, AND1F
+            BRBC 	1, AND1F
             NOP
 AND1F:  ;test S,V,N,Z
             LDI     R16, $00
@@ -101,7 +101,7 @@ AND1F:  ;test S,V,N,Z
             STS     $FF00, R3       ; W 14 FF00
 AND1res:
             CPI     R16, $D0
-            BRBS 	1, AND2F
+            BRBC 	1, AND2F
             NOP
 AND2F: ; test S,V,N,Z
             LDI     R17, $2F
@@ -110,7 +110,7 @@ AND2F: ; test S,V,N,Z
             STS     $FF00, R3       ; W 02 FF00
 AND1res1:
             CPI     R16, $00
-            BRBS 	1, ANDI1F
+            BRBC 	1, ANDI1F
             NOP
 ANDI1F:  ;test S,V,N,Z
             LDI     R16, $D8
@@ -119,7 +119,7 @@ ANDI1F:  ;test S,V,N,Z
             STS     $FF00, R3       ; W 14 FF00
 ANDI1res:
             CPI     R16, $D0
-            BRBS 	1, ANDI2F
+            BRBC 	1, ANDI2F
             NOP
 ANDI2F: ; test S,V,N,Z
             ANDI    R16, $2F        ; ANDI D0, 2F
@@ -127,7 +127,7 @@ ANDI2F: ; test S,V,N,Z
             STS     $FF00, R3       ; W 02 FF00
 ANDI1res1:
             CPI     R16, $00
-            BRBS 	1, ASR1F
+            BRBC 	1, ASR1F
             NOP
 ASR1F:
             LDI     R16, $81
@@ -136,7 +136,7 @@ ASR1F:
             STS     $FF00, R3       ; W 15 FF00
 ASR1res:
             CPI     R16, $C0
-            BRBS 	1, LSR1F
+            BRBC 	1, LSR1F
             NOP
 LSR1F:
             LDI     R16, $81
@@ -145,7 +145,7 @@ LSR1F:
             STS     $FF00, R3       ; W 19 FF00
 LSR1res:
             CPI     R16, $40
-            BRBS 	1, BCLR1
+            BRBC 	1, BCLR1
             NOP
 
 BCLR1:
@@ -181,7 +181,7 @@ BLD1F:
             STS     $FF00, R3       ; W 4A FF00
 BLD1res:
             CPI     R16, $81
-            BRBS 	1, BST1F
+            BRBC 	1, BST1F
             NOP
 BST1F:
             BST     R16, 1
@@ -189,17 +189,17 @@ BST1F:
             STS     $FF00, R3       ; W 02 FF00
 BLD1res1:
             CPI     R16, $81
-            BRBS 	1, INC1res
+            BRBC 	1, INC1res
             NOP
 INC1res:
             INC     R16
             CPI     R16, $82        ; INC $81
-            BRBS 	1, DEC1res
+            BRBC 	1, DEC1res
             NOP
 DEC1res:
             DEC     R16
             CPI     R16, $81        ; DEC $82
-            BRBS 	1, SUB1F
+            BRBC 	1, SUB1F
             NOP
 SUB1F: ;test V
             LDI     R16, $AF
@@ -209,7 +209,7 @@ SUB1F: ;test V
             STS     $FF00, R3       ; W 18 FF00
 SUB1res:
             CPI     R16, $30
-            BRBS 	1, SUBI1F
+            BRBC 	1, SUBI1F
             NOP
 SUBI1F: ;test 0
             SUBI    R16, $30        ; SUBI $30, $30
@@ -217,18 +217,18 @@ SUBI1F: ;test 0
             STS     $FF00, R3       ; W 02 FF00
 SUBI1res:
             CPI     R16, $00
-            BRBS 	1, SWAP1
+            BRBC 	1, SWAP1
             NOP
 SWAP1:
             SWAP    R16             ; SWAP 0
             CPI     R16, $00
-            BRBS 	1, SWAP2
+            BRBC 	1, SWAP2
             NOP
 SWAP2:
             LDI     R16, $80
             SWAP    R16             ; SWAP $80
             CPI     R16, $08
-            BRBS 	1, COM1
+            BRBC 	1, COM1
             NOP
 
 COM1:
@@ -281,7 +281,7 @@ EOR1:
 	LDI 	R16, $00 	; skip if equal
 
 EOR2:
-    OUT     SReg, R1    ; Clear sreg
+    OUT     SReg, R0    ; Clear sreg
 	LDI 	R17, $FF
 	EOR 	R16, R17 	; EOR $FF, $FF
 	IN 		R24, SREG 	; store new sreg
@@ -354,7 +354,7 @@ ORI1:
 	NOP					; skip if fails
 
 ROR1:
-    OUT     SReg, R1    ; Clear sreg
+    OUT     SReg, R0    ; Clear sreg
 	BSET 	0			; set carry bit
   	ROR 	R17		 	; -ROR $AA
 	IN 		R24, SREG 	; store new sreg
@@ -367,7 +367,7 @@ ROR1:
 	NOP					; skip if fails
 
 ROR2:
-    OUT     SReg, R1    ; Clear sreg
+    OUT     SReg, R0    ; Clear sreg
 	BCLR 	0			; clear carry bit
   	ROR 	R17		 	; -ROR $D5
 	IN 		R24, SREG 	; store new sreg
@@ -380,7 +380,7 @@ ROR2:
 	NOP					; skip if fails
 
 SBC1:
-    OUT     SReg, R1    ; Clear sreg
+    OUT     SReg, R0    ; Clear sreg
 	BCLR 	0			; clear carry bit
 	LDI 	R16, $00
 	LDI 	R17, $FF
@@ -395,7 +395,7 @@ SBC1:
 	NOP					; skip if fails
 
 SBC2:
-    OUT     SReg, R1    ; Clear sreg
+    OUT     SReg, R0    ; Clear sreg
 	BSET 	0			; set carry bit
 	LDI 	R16, $50
 	LDI 	R17, $70
@@ -410,7 +410,7 @@ SBC2:
 	NOP					; skip if fails
 
 SBCI1:
-    OUT     SReg, R1    ; Clear sreg
+    OUT     SReg, R0    ; Clear sreg
 	BSET	0			; set carry bit
 	LDI 	R17, $7A
   	SBCI 	R17, $7A	; SBCI 7A, 7A with carry
@@ -424,7 +424,7 @@ SBCI1:
 	NOP					; skip if fails
 
 SBIW1:
-    OUT     SReg, R1    ; Clear sreg
+    OUT     SReg, R0    ; Clear sreg
 	LDI 	R24, $7A
 	LDI 	R25, $01
   	SBIW 	R24, $0A	; SBCI 017A, A
@@ -585,7 +585,7 @@ LdYQSReg:
 	NOP
 
 LdYQJmp:
-; LDD Z + q unsigned displacement-IO Reg addr
+; LDD Z + q unsigned displacement-IO Reg addr remap
 	LDI 	R18, $FF
 	STS 	$0023, R18	; W FF 002C
 	CLR 	R31			; clear Z high byte to $00
@@ -732,8 +732,8 @@ StYdJmp:
 ; St Z + post increment
 	CLR		R31			; clear Z high byte
 	LDI 	R30, $69	; set Z low byte to $69
-	LDI 	R16, $23	; load R16 with $12
-	ST  	Z+, R16		; W 12 0069
+	LDI 	R16, $23	; load R16 with $23
+	ST  	Z+, R16		; W 23 0069
 
 	LDI 	R18, $6A	; check Z incremented
 	LDI 	R19, $00 	; compare Z with R19:R18
@@ -743,7 +743,7 @@ StYdJmp:
 	NOP
 
 StZpCheck:
-	LD 		R17, -Z		; R 12 0069
+	LD 		R17, -Z		; R 23 0069
 	CPI		R17, $23	; check stored/loaded correctly
 	BRBC 	1, StZpJmp		; skip if check fails
 	NOP
@@ -768,11 +768,11 @@ StZdCheck:
 
 StZdJmp:
 ; STD Y + q
-	CLR 	R29			; clear high byte of Y
+	LDI 	R29, $FF	; set high byte of Y to $FF
 	LDI 	R28, $77	; load low byte of Y with $77
 	LDI 	R20, $73	; load R20 with $73
-	STD  	Y + $11, R20    ; W 73 0088
-	LDD		R21, Y + $11 	; R 73 0088
+	STD  	Y + $11, R20    ; W 73 FF88
+	LDD		R21, Y + $11 	; R 73 FF88
 	CP 		R20, R21		; compare R20 and R21
 	BRBC 	1, StdYqJmp		; skip if check fails
 	NOP
@@ -782,8 +782,8 @@ StdYqJmp:
 	CLR 	R21			; clear high byte of Z
 	LDI 	R30, $67	; load low byte of Z with $67
 	LDI 	R20, $AA	; load R20 with $AA
-	STD  	Z + $11, R20    ; W 73 0078
-	LDD		R21, Z + $11    ; R 73 0078
+	STD  	Z + $11, R20    ; W AA 0078
+	LDD		R21, Z + $11    ; R AA 0078
 	CP 		R20, R21		; compare R20 and R21
 	BRBC 	1, StdZqJmp		; skip if check fails
 	NOP
@@ -800,7 +800,7 @@ StdZqJmp:
 StsJmp:
 ; PUSH, POP
 	PUSH 	R24			; put some things on the stack
-	PUSH 	R1
+	PUSH 	R16
 	PUSH 	R24
 	LDI 	R18, $50	; load R18 with $50
 	IN      R24, SREG	; store flags
@@ -888,7 +888,7 @@ End:
 CallTest:				; subroutine test
 ; -RET
 	NOP
-	MOV R16, R1			; do something
+	MOV R16, R0			; do something
 	RET					; -return from subroutine
 
 ICallTest:				; indirect subroutine call test
