@@ -918,6 +918,7 @@ begin
                 cycle_num <= THREE_CYCLES;          -- takes 3 cycles to complete operation
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
+                    ProgSourceSel <= NORMAL_SRC;    -- increment PC here so ProgAB points to next IR
                     ProgDBLatch <= ProgDB;          -- latch ProgDB
                 elsif cycle = ONE_CYCLE then        -- during second cycle
                     ProgIRSource <= ProgDBLatch;
@@ -974,10 +975,12 @@ begin
                     ProgDBLatch <= ProgDB;          -- latch ProgDB value, Prog addr to call
                     ProgSourceSel <= NORMAL_SRC;    -- inc PC to point to next value
 
+                elsif cycle = ONE_CYCLE then        -- during second cycle
+                    ProgSourceSel <= NORMAL_SRC;    -- hold PC value here, pointing to next op IR
+
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
-                elsif cycle = ONE_CYCLE then        -- during second cycle
-                    ProgSourceSel <= RST_SRC;       -- hold PC value here, pointing to next op IR
+                elsif cycle = TWO_CYCLES then       -- during third cycle
 
                     LoadIn <= LD_PROG_HI;           -- load high byte of next IR into DataDB to
                                                     --  save into stack
@@ -987,11 +990,11 @@ begin
 
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
 
-                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
-                elsif cycle = TWO_CYCLES then       -- during third cycle
                     ProgSourceSel <= RST_SRC;       -- hold PC value here, pointing to next op IR
 
+                else                                -- during fourth cycle
+                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
                     LoadIn <= LD_PROG_LO;           -- load high byte of next IR into DataDB to
                                                     --  save into stack
 
@@ -999,7 +1002,6 @@ begin
 
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
 
-                else                                -- during fourth cycle
                     ProgIRSource <= ProgDBLatch;    -- hold ProgDB value
                     ProgSourceSel <= IR_SRC;        -- output address of subroutine
                     load <= '0';                     -- loading address, not adding
@@ -1132,13 +1134,16 @@ begin
                 if ZeroFlag = '0' then
                     cycle_num <= ONE_CYCLE;
                 else
+                    cycle_num <= TWO_CYCLES;
+                end if;
+
+                if cycle = ZERO_CYCLES then
                     if std_match(ProgDB, OpLDS) or std_match(ProgDB, OpSTS) or
                        std_match(ProgDB, OpJMP) or std_match(ProgDB, OpCALL) then
                             cycle_num <= THREE_CYCLES;
-                    else
-                            cycle_num <= TWO_CYCLES;
                     end if;
                 end if;
+
             end if;
 
             if std_match(IR, OpSBRC) or std_match(IR, OpSBRS) then
@@ -1153,11 +1158,13 @@ begin
                 if SBFlag /= IR(9) then
                     cycle_num <= ONE_CYCLE;
                 else
+                    cycle_num <= TWO_CYCLES;
+                end if;
+
+                if cycle = ZERO_CYCLES then
                     if std_match(ProgDB, OpLDS) or std_match(ProgDB, OpSTS) or
                        std_match(ProgDB, OpJMP) or std_match(ProgDB, OpCALL) then
                             cycle_num <= THREE_CYCLES;
-                    else
-                            cycle_num <= TWO_CYCLES;
                     end if;
                 end if;
             end if;
