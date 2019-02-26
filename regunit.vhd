@@ -74,7 +74,9 @@ entity RegUnit is
 
         RegAOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- register bus A out
         RegBOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- register bus B out
-        AddrMuxOut  : out std_logic_vector(ADDRSIZE-1 downto 0)     -- Indirect Address line out, to DataMIU
+        AddrMuxOut  : out std_logic_vector(ADDRSIZE-1 downto 0);    -- Indirect Address line out, to DataMIU
+
+        ZAddrOut    : out std_logic_vector(ADDRSIZE-1 downto 0)
     );
 
 end RegUnit;
@@ -251,4 +253,7 @@ begin
             SOut        => RegAOut(i)
       );
       end generate OutAMux;
+
+      ZAddrOut <= ZMuxOut;
+
 end RegUnit_arc;

@@ -119,6 +119,11 @@ signal ALUResult       : std_logic_vector(REGSIZE-1 downto 0);
 signal StatusBuff : std_logic_vector(7 downto 0);
 signal MuxBOut : std_logic_vector(7 downto 0);
 
+signal ProgABBuffer : std_logic_vector(ADDRSIZE-1 downto 0);
+signal ProgABLatch_Lo : std_logic_vector(ADDRSIZE/2-1 downto 0);
+
+signal ZAddrOut : std_logic_vector(ADDRSIZE-1 downto 0);
+
 begin
 
     CtrlU   : entity work.CU port map(ProgDB, SReg, ZeroFlag, SBFlag, Immed, ImmedEn, RegWEn, RegWSel,
@@ -129,12 +134,12 @@ begin
                                     RegIoFlag, RegIoSelFlag, DataCtrlU, Load, ProgSourceSel, ProgIRSource);
 
     -- mux to select input to registers
-    RegIn <= Immed                                  when LoadIn = LD_IMM else
-             DataDB                                 when LoadIn = LD_DB else
-             RegAOut                                when LoadIn = LD_REGA else
-             ALUResult                              when LoadIn = LD_ALU else
-             ProgDB(ADDRSIZE-1 downto ADDRSIZE/2)   when LoadIn = LD_PROG_HI else
-             ProgDB(ADDRSIZE/2-1 downto 0)          when LoadIn = LD_PROG_LO else
+    RegIn <= Immed                                      when LoadIn = LD_IMM else
+             DataDB                                     when LoadIn = LD_DB else
+             RegAOut                                    when LoadIn = LD_REGA else
+             ALUResult                                  when LoadIn = LD_ALU else
+             ProgABBuffer(ADDRSIZE-1 downto ADDRSIZE/2) when LoadIn = LD_PROG_HI else
+             ProgABLatch_Lo                             when LoadIn = LD_PROG_LO else
              "XXXXXXXX";
 
     -- mux to select input to Register B of ALU
@@ -146,14 +151,20 @@ begin
 
     RegU    : entity work.RegUnit port map(clock, Reset, RegIn, RegWEn, RegWSel, RegSelA, RegSelB, IORegWEn,
                                     IORegWSel, IndDataIn, IndWEn, IndAddrSel, IOOutSel, StatusBuff, SReg,
-                                    RegAOut, RegBOut, AddrMuxOut);
+                                    RegAOut, RegBOut, AddrMuxOut, ZAddrOut);
 
     DataMemU : entity work.DataMIU port map(AddrMuxOut, RegIn, QOffset, DataOffsetSel, PreSel, DataDBWEn,
                                     DataABMux, ProgDB, IndDataIn, DataDB, DataAddrBuffer);
 
-    ProgMemU : entity work.ProgMIU port map(Reset, clock, load, ProgSourceSel, ProgIRSource, AddrMuxOut, DataDB, ProgAB);
+    ProgMemU : entity work.ProgMIU port map(Reset, clock, load, ProgSourceSel, ProgIRSource, ZAddrOut, DataDB, ProgABBuffer);
+
+    ProgAB <= ProgABBuffer;
+
+    ProgABLatch_Lo <= ProgABBuffer(ADDRSIZE/2-1 downto 0) when LoadIn = LD_PROG_HI else
+                      ProgABLatch_Lo;
 
     DataAB <= DataAddrBuffer;
+
     -- flags for remapping lowest addresses to registers
     DataCtrlU <= DataAddrBuffer(6) & DataAddrBuffer(4 downto 0); -- address for register or io register select
     -- use general regs or io regs instead of external memory for addresses 0 to 95 (total size of reg)

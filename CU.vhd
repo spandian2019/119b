@@ -816,9 +816,9 @@ begin
                     RegWSel <= IR(8 downto 4);          -- Operand 1 is the register being written to, loc in IR(8..4)
 
                     if cycle = ZERO_CYCLES then         -- during first cycle
+                        IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
                         -- do nothing
                     else                                -- during second cycle
-                        IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
                         DataRd <= CLK;                  -- DataRd = CLK for the second cycle, so will go active low at end
 
@@ -841,9 +841,9 @@ begin
                     RegSelA <= IR(8 downto 4);          -- Operand 1 is the register being read from, loc in IR(8..4)
                     -- during first cycle
                     if cycle = ZERO_CYCLES then
+                        IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
                         -- do nothing
                     else                                -- during second cycle
-                        IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
                         DataWr <= CLK;                  -- DataWr = CLK for the second cycle, so will go active low at end
 
@@ -1018,38 +1018,39 @@ begin
                 IndAddrSel <= SP_SEL;               -- indirect addressing stored in Stack Pointer
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    ProgSourceSel <= RST_SRC;       -- hold PC value here, pointing to next op IR
+                    ProgSourceSel <= NORMAL_SRC;    -- hold PC value here, pointing to next op IR
 
+                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
+
+
+                elsif cycle = ONE_CYCLE then        -- during second cycle
                     LoadIn <= LD_PROG_HI;           -- load high byte of next IR into DataDB to
                                                     --  save into stack
 
-                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
-
                     DataWr <= CLK;                  -- DataWr = CLK for the second cycle, so will go active low at end
 
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
 
-                elsif cycle = ONE_CYCLE then        -- during second cycle
                     ProgSourceSel <= RST_SRC;       -- hold PC value here, pointing to next op IR
 
+                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
+
+
+                else                                -- during third cycle
+                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
                     LoadIn <= LD_PROG_LO;           -- load high byte of next IR into DataDB to
                                                     --  save into stack
 
-                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
-
                     DataWr <= CLK;                  -- DataWr = CLK for the second cycle, so will go active low at end
 
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
-                else                                -- during third cycle
+
+
                     if IR(14) = '1' then            -- then RCALL op
                         ProgIRSource(11 downto 0) <= IR(11 downto 0);
                         ProgIRSource(15 downto 12) <= (others => IR(11));
                         ProgSourceSel <= IR_SRC;
                     else                            -- then ICALL op
-                        DataOffsetSel <= ZERO_SEL;
-
-                        IndAddrSel <= Z_SEL;
-
                         ProgSourceSel <= Z_SRC;
                         load <= '0';
                     end if;
@@ -1069,7 +1070,7 @@ begin
                 --LoadIn <= LD_DB;                    -- loading values into register space from DataDB
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    -- do nothing
+
                 elsif cycle = ONE_CYCLE then        -- during second cycle
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
                                                     --  incremented SP val is written back into SP reg
@@ -1079,6 +1080,8 @@ begin
                     load <= '0';
 
                 elsif cycle = TWO_CYCLES then       -- duri ng third cycle
+
+                else                                -- during fourth cycle
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
                                                     --  incremented SP val is written back into SP reg
                     DataRd <= CLK;                  -- DataRd = CLK for the second cycle, so will go active low at end
@@ -1086,11 +1089,9 @@ begin
                     ProgSourceSel <= DB_HI_SRC;
                     load <= '1';
 
-                else                                -- during fourth cycle
                     if IR(4) = '1' then
                         BitMask <= MASK_INT;
                     end if;
-                    ProgSourceSel <= RST_SRC;
                 end if;
             end if;
 

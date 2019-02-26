@@ -74,7 +74,7 @@ begin
 
 
     -- writing to SP Register occurs synchronously
-    write_addr_reg : process (CLK, Reset)
+    write_addr_reg : process (CLK)
     begin
         if Reset = '0' then
             IOregisters(conv_integer(SP_ADDR_H)) <= (others => '1');
