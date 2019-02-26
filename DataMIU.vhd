@@ -12,21 +12,21 @@
 --
 -- Ports:
 --  Input:
---        DataAddr    - data indirect address source from registers
---        RegIn       - outputted to DataDB when write enabled
---        QOffset     - unsigned address offset source from CU
---        OffsetSel   - address offset source select from CU
---        PreSel      - pre/post address select from CU
---        DataDBWEn   - DataDB write enable from CU
---        DataABMux   - DataAB mux control signal
---        ProgDB      - program memory data bus
+--        DataAddr    - 16 bit data indirect address source from registers
+--        RegIn       - 8 bit outputted to DataDB when write enabled
+--        QOffset     - 6 bit unsigned address offset source from CU
+--        OffsetSel   - 2 bit address offset source select from CU
+--        PreSel      - 1 bit pre/post address select from CU
+--        DataDBWEn   - 1 bit DataDB write enable from CU
+--        DataABMux   - 1 bit DataAB mux control signal
+--        ProgDB      - 16 bit program memory data bus
 --
 --  Outputs:
---        DataReg - 16-bit data address register source
---        DataAB  - 16-bit program address bus
+--        DataReg - 16 bit data address register source
+--        DataAB  - 16 bit program address bus
 --
 --  In/Out:
---        DataDB      - program data bus
+--        DataDB      - 8 bit program data bus
 --
 -- Revision History:
 -- 01/24/2019   Sophia Liu      Initial revision

@@ -4,50 +4,53 @@
 -- Control Unit
 --
 -- RISC Control Unit for the AVR CPU. This contains the 16-bit instruction
--- register, logic for instruction decoding, and a finite state machine for
--- instruction cycle counts. It outputs all the necessary control signals for
--- executing instructions, including addressing, ALU operations, register
--- operations,
+-- register and logic for instruction decoding. The main inputs are from the
+-- program data bus and status register, and it outputs the necessary control
+-- signals for executing instructions, including data and program addressing,
+-- ALU operations, status register controls, and register and IO operations.
+-- For each decoded instruction, the appropriate control signals are outputted
+-- for each cycle in the instruction. 
 --
 -- Inputs:
--- ProgDB  - program memory data bus
--- IR      - instruction register input
--- SReg    - status flags
--- load    - load output to tell IR register when to fetch new instruction
--- CLK         - system clock
--- RegIoFlag   - '1' if external address is in register range
--- RegIoSelFlag- external address is in either io or general range
--- DataAB      - address to be remapped to registers
+--
+-- ProgDB       - 16 bit program memory data bus
+-- SReg         - 8 bit status flag bus
+-- ZeroFlag     - 1 bit zero flag from ALU for CPSE op
+-- SBFlag       - 1 bit skip bit flag from ALU for SBRC/SBRS op
+-- CLK          - 1 bit system clock
+-- RegIoFlag    - 1 bit flag, '1' if external address is in register range
+-- RegIoSelFlag - 1 bit flag, external address is in either io or general range
+-- DataAB       - 6 bit address to be remapped to registers
 --
 -- Outputs:
 --
--- Immed       - immediate value K
--- ImmedEn     - mux ctrl signal for immed into ALU A Reg
--- RegWSel     - register write select
--- RegSelA     - register A select
--- RegSelB     - register B select
--- IORegWEn    - IO register write enable
--- IORegWSel   - IO register write select
--- IndWEn      - Indirect Addr write enable
--- IndAddrSel  - Indirect Addr write select
--- IOOutSel    - Mux ctrl signal for outputting IO reg to A Reg
--- DataRd      - indicates data memory is being read, active lo
--- DataWr      - indicates data memory is being written, active lo
--- IORegOutEn  - OUT command enable TODO delete
--- ALUaddsub   - ALU adder/subber operation signals
--- ALUsr       - ALU shifter/rotator operation signals
--- ALUfop      - ALU F Block operation signals
--- ALUcomneg   - ALU com/neg operation signals
--- ALUSel      - ALU output select
--- bitmask     - mask for writing to flags (SReg)
--- CPC         - bit for signalling to ALU when CPC is the op
--- LoadIn      - selects data line into reg
--- SRegLd          - select line to mux status reg source
--- DataOffsetSel   - data address offset source select
--- PreSel          - data pre/post address select
--- QOffset         - address offset for data memory unit
--- DataDBWEn       - DataDB write enable
--- DataABMux       - DataAB mux control signal
+-- Immed        - 8 bit immediate value K
+-- ImmedEn      - 1 bit mux ctrl signal for immed into ALU A Reg
+-- RegWSel      - 5 bit register write select
+-- RegSelA      - 5 bit register A select
+-- RegSelB      - 5 bit register B select
+-- IORegWEn     - 1 bit IO register write enable
+-- IORegWSel    - 6 bit IO register write select
+-- IndWEn       - 1 bit Indirect Addr write enable
+-- IndAddrSel   - 1 bit Indirect Addr write select
+-- IOOutSel     - 2 bit Mux ctrl signal for outputting IO reg to A Reg
+-- DataRd       - 1 bit ctrl, indicates data memory is being read, active lo
+-- DataWr       - 1 bit ctrl, indicates data memory is being written, active lo
+-- IORegOutEn   - 1 bit IO command enable
+-- ALUaddsub    - 3 bit ALU adder/subber operation signals
+-- ALUsr        - 2 bit ALU shifter/rotator operation signals
+-- ALUfop       - 4 bit ALU F Block operation signals
+-- ALUcomneg    - 2 bit ALU com/neg operation signals
+-- ALUSel       - 3 bit ALU output select
+-- bitmask      - 8 bit mask for writing to status flags (SReg)
+-- CPC          - 1 bit ctrl for signalling to ALU when CPC is the op
+-- LoadIn       - 3 bit ctrl, selects data line into reg
+-- SRegLd          - 1 bit select line to mux status reg source
+-- DataOffsetSel   - 2 bit data address offset source select
+-- PreSel          - 1 bit data pre/post address select
+-- QOffset         - 6 bit address offset for data memory unit
+-- DataDBWEn       - 1 bit DataDB write enable
+-- DataABMux       - 1 bit DataAB mux control signal
 --
 -- Revision History:
 -- 01/24/2019   Sophia Liu      Initial revision
@@ -136,7 +139,7 @@ architecture RISC of CU is
     signal cycle        :   std_logic_vector(1 downto 0) := "00";   -- TODO delete
 
     signal IR           :   std_logic_vector(ADDRSIZE-1 downto 0);  -- instruction register
-    
+
     signal ProgDBLatch  :   std_logic_vector(ADDRSIZE-1 downto 0);  -- Prog Address Bus latch
 begin
 

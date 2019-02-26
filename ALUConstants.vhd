@@ -4,7 +4,7 @@
 --
 -- ALUConstants.vhd
 --
--- This file contains constants for the ALU entity and testbench.
+-- This file contains constants and definitions for the ALU entity. 
 --
 --  Revision History:
 --     01/29/19     Sophia Liu      initial revision
@@ -17,11 +17,8 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
---use ieee.std_logic_arith.all;
---use ieee.numeric_std.all;
 
 package ALUConstants is
-    -- SReg
     constant HALFCARRYBIT : natural := 3; -- half carry is carry out of bit 3
 end package ALUConstants;
 
