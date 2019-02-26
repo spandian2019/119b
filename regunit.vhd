@@ -1,37 +1,36 @@
 ----------------------------------------------------------------------------
 --
 --
--- Registers
+-- Register Unit
 --
--- General purpose registers for the AVR CPU. There are 32 8-bit registers,
--- R0 to R31. Registers 26 and 27 form the 16-bit X register, 28 and 29
--- form the Y register, and 30 and 31 form the Z register. Registers
--- 24 and 25 may be used as a 16-bit value for some operations, and registers
--- 0 and 1 may be used for 16-bit results of some operations.
--- The register array consists of a 5:32 decoder, 32 DFFS, and a selecting
--- interface. It takes as an input the system clock, input data, and enable
--- and select control signals. It outputs 8 bit registers A and B to the ALU.
+-- Top-level entity for the 32 general registers and 64 IO registers,
+-- including the stack pointer. Assigns control signals for the RegArray
+-- and IORegArray entities.
+-- It also selects the appropriate X, Y, Z, or SP input and output signals,
+-- and selects RegAOut from either the general or io registers.
 --
 -- Ports:
 --  Inputs:
 --        RegIn    - 8 bit input register bus
 --        Clk      - system clock
---        RegWEn   - register write enable
+--        Reset    - active low reset
+--        RegWEn   - 1 bit register write enable
 --        RegWSel  - 5 bit register write select
 --        RegSelA  - 5 bit register A select
 --        RegSelB  - 5 bit register B select
---        LoadIn   - 2 bit select line for pipelining A and B output
---        IORegWEn    - IO register write enable
---        IORegWSel   - IO register address bus
---        IndDataIn   - Indirect Address Data In, from DataMIU
---        IndWEn      - Indirect Address write enable, from CU
---        IndAddrSel  - Ind addr select, from CU
---        IOOutSel    - MUX select line for outputting RegA or IO
+--        IORegWEn    - 1 bit IO register write enable
+--        IORegWSel   - 6 bit IO register address bus
+--        IndDataIn   - 16 bit indirect Address Data In, from DataMIU
+--        IndWEn      - 1 bit indirect Address write enable, from CU
+--        IndAddrSel  - 2 bit indirect addr select, from CU
+--        IOOutSel    - 1 bit MUX select line for outputting RegA or IO
+--        SRegIn      - 8 bit status register input from ALU
 --
 --  Outputs:
+--        SRegOut  - 8 bit status register to ALu
 --        RegAOut  - 8 bit register bus A output
 --        RegBOut  - 8 bit register bus B output
---        AddrMuxOut  - Indirect Address line out, to DataMIU
+--        AddrMuxOut  - 16 bit indirect Address line out, to DataMIU
 --
 -- Revision History:
 -- 01/24/2019   Sophia Liu      Initial revision

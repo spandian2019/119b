@@ -7,23 +7,24 @@
 -- manipulated, located at addreses 32 to 95. The status register and stack
 -- pointer are included in the I/O registers, located at 95 and 94:93.
 -- The inputs include the input data register, address values,
--- and status register inputs. The output is the 8-bit data output.
+-- and status register inputs. The outputs are the 8-bit data output and 16-bit
+-- stack pointer.
 --
 --
 -- Ports:
 --  Inputs:
---    Clk      - system clock
---    Reset    - system reset, used to init SP to all 1s
---    RegIn    - input register
---    IORegWEn    - IO register write enable, from CU
---    IORegWSel   - IO register address select line, from CU
---    IndDataIn   - Indirect Addr data in, from DataMIU
---    IndAddrIn 	- Indirect Addr value in, from RegUnit
---    IndWEn 		- Indirect Addr write enable, from CU
+--    Clk           - system clock
+--    Reset         - active low system reset, used to init SP to all 1s
+--    RegIn         - 8 bit input register
+--    IORegWEn      - 1 bit IO register write enable, from CU
+--    IORegWSel     - 6 bit IO register address select line, from CU
+--    IndDataIn     - 16 bit indirect Addr data in, from DataMIU
+--    IndAddrIn 	- 6 bit indirect Addr value in, from RegUnit
+--    IndWEn 		- 1 bit indirect Addr write enable, from CU
 --
 --  Outputs:
---    IORegOut    - IO register bus out
---    SPRegOut    - SP register bus out
+--    IORegOut    - 8 bit IO register bus out
+--    SPRegOut    - 16 bit SP register bus out
 --
 -- Revision History:
 -- 01/24/2019   Sophia Liu      Initial revision

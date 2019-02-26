@@ -10,26 +10,27 @@
 -- 0 and 1 may be used for 16-bit results of some operations.
 -- The register array consists of a 5:32 decoder, 32 DFFS, and a selecting
 -- interface. It takes as an input the system clock, input data, and enable
--- and select control signals. It outputs 8 bit registers A and B to the ALU.
+-- and select control signals. It outputs 8 bit registers A and B, along with
+-- and registers X, Y, and Z to the Data MIU and ALU.
 --
 -- Ports:
 --  Inputs:
 --        RegIn    - 8 bit input register bus
 --        Clk      - system clock
---        RegWEn   - register write enable
+--        RegWEn   - 1 bit register write enable
 --        RegWSel  - 5 bit register write select
 --        RegSelA  - 5 bit register A select
 --        RegSelB  - 5 bit register B select
---        IndDataIn   - Indirect Addr data in, from DataMIU
---        IndAddrIn   - Indirect Addr value in, from DataMIU
---        IndWEn      - Indirect Addr write enable, from CU
+--        IndDataIn   - 16 bit indirect Addr data in, from DataMIU
+--        IndAddrIn   - 5 bit indirect Addr value in, from DataMIU
+--        IndWEn      - 1 bit indirect Addr write enable, from CU
 --
 --  Outputs:
 --        RegAOut  - 8 bit register bus A output
 --        RegBOut  - 8 bit register bus B output
---        RegXOut 	- register bus X out
---        RegYOut 	- register bus Y out
---        RegZOut 	- register bus Z out
+--        RegXOut 	- 16 bit register bus X out
+--        RegYOut 	- 16 bit register bus Y out
+--        RegZOut 	- 16 bit register bus Z out
 --
 -- Revision History:
 -- 01/24/2019   Sophia Liu      Initial revision

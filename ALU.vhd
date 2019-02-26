@@ -11,20 +11,29 @@
 -- immediate values.
 -- The ALU consists of a functional block for logical operations,
 -- an adder/subtracter, and a shifter/rotator. It takes several control
--- signals from the control unit as inputs, along with the operands A
+-- signals and flags from the control unit as inputs, along with the operands A
 -- and B from the register array, or from an immediate value encoded in the
 -- instruction. It outputs the computed result and computed flags.
 --
--- Ports:
---  Inputs:
---        ALUOp   - 4 bit operation control signal
---        ALUSel  - 3 bit control signal for the final operation select
---        RegA    - 8 bit operand A
---        RegB    - 8 bit operand B, or immediate value
+-- Inputs:
 --
---  Outputs:
---        RegOut  - 8 bit output result
---        StatusOut - 8 bit status flags to status register
+-- ALUASOp      - 3 bit ALU adder/subber operation signals
+-- ALUSROp      - 2 bit ALU shifter/rotator operation signals
+-- ALUFop       - 4 bit ALU F Block operation signals
+-- ALUCNOp      - 2 bit ALU com/neg operation signals
+-- ALUSel       - 3 bit ALU output select
+-- BitMask      - 8 bit mask for writing to status flags
+-- CPC          - 1 bit control for cpc command, to set zero flag appropriately
+-- RegA         - 8 bit operand A
+-- RegA         - 8 bit operand B, or immediate value
+-- StatusIn     - 8 bit status flag input
+--
+-- Outputs:
+--
+-- RegOut       - 8 bit output result
+-- StatusOut    - 8 bit status flag output
+-- SBFlag       - 1 bit skip bit flag output for SBRC/SBRS
+-- ZeroFlag     - 1 bit zero flag output for CPSE
 --
 -- Revision History:
 -- 01/24/2019   Sophia Liu      Initial revision

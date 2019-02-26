@@ -15,6 +15,7 @@
 --                                  updated commenting.
 --     21 Jan 08  Glen George       Updated commenting.
 --     17 Jan 18  Glen George       Updated commenting.
+--     25 Feb 19  Sophia Liu        Changed sample program
 --
 ----------------------------------------------------------------------------
 
@@ -57,7 +58,7 @@ architecture  ROM  of  PROG_MEMORY  is
     -- define the type for the ROM (an array)
     type  ROMtype  is array(0 to 678) of std_logic_vector(15 downto 0);
 
-    -- define the actual ROM (initialized to a simple program)
+    -- define the actual ROM to test program 
     signal  ROMbits  :  ROMtype  :=  ( X"E000", X"E010", X"E020", X"E030", X"E040",
                                         X"2EF0", X"2E10", X"2E20", X"2E30", X"2E40",
                                         X"2E50", X"2E60", X"2E70", X"2E80", X"2E90",

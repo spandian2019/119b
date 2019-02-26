@@ -9,15 +9,19 @@
 -- executing instruction, is located inside this unit and is incremented
 -- or loaded as necessary for the next address.
 --
--- Ports:
 --  Inputs:
---        ProgAddr - 16-bit program address source from CU
---        RegOut   - 16-bit immediate address source from registers
---        Load     - load select for PC, from CU
---        AddrSel  - address source select, from CU
+--
+--  reset   - active low reset signal
+--  clock   - system clock
+--  Load    - 1 bit load select for PC, from CU
+--  AddrSourceSel   - 3 bit address source select, from CU
+--  IR_input        - 16 bit instruction reg input
+--  Z_input         - 16 bit address from Z
+--  DataDB          - 8 bit data data bus
 --
 --  Outputs:
---        ProgAB  : out std_logic_vector(15 downto 0) -- program address bus
+--
+--  ProgAB          - 16 bit program address bus
 --
 -- Revision History:
 -- 01/24/2019 Sophia Liu Initial revision
@@ -34,17 +38,15 @@ use work.ALUconstants.all;
 
 entity ProgMIU is
     port(
-	    reset	: in std_logic;
-        clock   : in std_logic;
-        Load    : in std_logic;                     -- load select for PC, from CU
+	    reset	: in std_logic;         -- active low reset signal
+        clock   : in std_logic;         -- system clock
+        Load    : in std_logic;         -- load select for PC, from CU
         AddrSourceSel : in SOURCE_SEL;  -- address source select, from CU
-        IR_input: in std_logic_vector(ADDRSIZE-1 downto 0);
+        IR_input: in std_logic_vector(ADDRSIZE-1 downto 0); -- instruction reg
 
         -- from RegUnit
-        Z_input : in std_logic_vector(ADDRSIZE-1 downto 0);
-
-        DataDB  : in std_logic_vector(REGSIZE-1 downto 0);
-
+        Z_input : in std_logic_vector(ADDRSIZE-1 downto 0); -- z addr, for ICALL
+        DataDB  : in std_logic_vector(REGSIZE-1 downto 0);  -- data data bus
         ProgAB  : out std_logic_vector(ADDRSIZE-1 downto 0) -- program address bus
      );
 end ProgMIU;

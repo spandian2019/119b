@@ -2,17 +2,18 @@
 --
 --  Test Bench for CPU
 --
---  This is a test bench for the AVR CPU entity.
+--  This is a test bench for the AVR CPU entity. It checks the program
+--  address bus, data data bus for both read/write operations, data address
+--  bus, and data read and write signals. The program data is specified
+--  in the PROG_MEMORY entity.
 --
 --
 --  Revision History:
---  02/07/2019 Sophia Liu Initial revision
---  02/09/2019 Sophia Liu Updated comments
+--  02/20/2019 Sophia Liu Initial revision
 --
 ----------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
---use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 
 use work.opcodes.all;
@@ -110,8 +111,6 @@ architecture TB_ARCHITECTURE of CPUTB is
         TB: process
             variable i : integer;
             variable j : integer;
-            variable abtest : integer; 
-            variable ab: integer; 
         begin
 
 
@@ -129,9 +128,7 @@ architecture TB_ARCHITECTURE of CPUTB is
                 -- on falling edge
                 wait for CLK_PERIOD/2;
                 -- check prog AB
-                abtest := to_integer(unsigned(ProgABTest(i)));
-                
-                assert (to_integer(unsigned(ProgABTest(i))) = to_integer(unsigned(ProgAB)) - 1) 
+                assert (to_integer(unsigned(ProgABTest(i))) = to_integer(unsigned(ProgAB)))
                     report  "ProgAB failure at clock number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
 
@@ -139,11 +136,16 @@ architecture TB_ARCHITECTURE of CPUTB is
                 assert (std_match(DataABTest(i), DataAB))
                     report  "DataAB failure at clock number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
-                    
-                -- check data DB (for ld, st)
+
+                -- check data DB (for ld)
                 assert (std_match(DataDBRdTest(i), DataDB))
-                    report  "DataAB failure at clock number " & integer'image(TEST_SIZE-i)
+                    report  "DataDBRd failure at clock number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
+
+                -- check data DB (for st)
+                assert (std_match(DataDBWrTest(i), DataDB))
+                        report  "DataDBWr failure at clock number " & integer'image(TEST_SIZE-i)
+                        severity  ERROR;
 
                 -- check rd/wr (check for glitches)
                 assert (std_match(DataRdTest(i), DataRd))
@@ -157,7 +159,7 @@ architecture TB_ARCHITECTURE of CPUTB is
                 wait for CLK_PERIOD/2; -- wait for rest of clock
 
 			end loop;
-            wait for CLK_PERIOD*50; 
+            wait for CLK_PERIOD*50;
             END_SIM <= TRUE;        -- end of stimulus events
             wait;                   -- wait for simulation to end
         end process;
