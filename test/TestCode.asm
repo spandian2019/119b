@@ -855,9 +855,8 @@ JumpSReg:
 	IN      R25, SREG	; store new flags
 	CPSE 	R24, R25    ; check flags unchanged
 	NOP
-	RCALL 	CallTest	; call test
+	CALL 	CallTest	; call test
 	RJMP 	CallSReg 	; jmp test
-	NOP
 	NOP
 
 CallSReg:
@@ -881,7 +880,7 @@ ICallSreg:
 	NOP
 
 End:
-	RET		; -return to very top
+	JMP 0000		; -return to very top
 	NOP
 
 

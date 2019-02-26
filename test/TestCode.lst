@@ -859,9 +859,8 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 00028e b79f      	IN      R25, SREG	; store new flags
 00028f 1389      	CPSE 	R24, R25    ; check flags unchanged
 000290 0000      	NOP
-000291 d00f      	RCALL 	CallTest	; call test
-000292 c002      	RJMP 	CallSReg 	; jmp test
-000293 0000      	NOP
+000291 940e 02a1    CALL 	CallTest	; call test
+000293 c002      	RJMP 	CallSReg 	; jmp test
 000294 0000      	NOP
 
                  CallSReg:
@@ -885,9 +884,9 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 00029e 0000      	NOP
 
                  End:
-00029f 9508      	RET		; -return to very top
-0002a0 0000      	NOP
-
+--00029f 9508      	RET		; -return to very top
+--0002a0 0000      	NOP
+00029f 940C 0000 JMP ; jump to top
 
                  CallTest:				; subroutine test
                  ; -RET
@@ -895,10 +894,7 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 0002a2 2d00      	MOV R16, R0			; do something
 0002a3 9508      	RET					; -return from subroutine
 
-                 ICallTest:				; indirect subroutine call test
-0002a4 0000      	NOP
-0002a5 0c12      	ADD R1, R2			; do something
-0002a6 9508      	RET
+
 
 
 RESOURCE USE INFORMATION

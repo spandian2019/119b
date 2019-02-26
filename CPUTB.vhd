@@ -128,7 +128,7 @@ architecture TB_ARCHITECTURE of CPUTB is
                 -- on falling edge
                 wait for CLK_PERIOD/2;
                 -- check prog AB
-                assert (to_integer(unsigned(ProgABTest(i))) = to_integer(unsigned(ProgAB)))
+                assert (std_match(ProgABTest(i),ProgAB))
                     report  "ProgAB failure at clock number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
                 if i = TEST_SIZE then 

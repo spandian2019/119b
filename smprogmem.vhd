@@ -56,7 +56,7 @@ end  PROG_MEMORY;
 architecture  ROM  of  PROG_MEMORY  is
 
     -- define the type for the ROM (an array)
-    type  ROMtype  is array(0 to 678) of std_logic_vector(15 downto 0);
+    type  ROMtype  is array(0 to 675) of std_logic_vector(15 downto 0);
 
     -- define the actual ROM to test program 
     signal  ROMbits  :  ROMtype  :=  ( X"E000", X"E010", X"E020", X"E030", X"E040",
@@ -190,11 +190,11 @@ architecture  ROM  of  PROG_MEMORY  is
                                         X"912F", X"3520", X"F409", X"0000", X"B78F",
                                         X"C002", X"0000", X"0000", X"B79F", X"1789",
                                         X"F409", X"0000", X"B78F", X"D013", X"B79F",
-                                        X"1389", X"0000", X"D00F", X"C002", X"0000",
+                                        X"1389", X"0000", X"940E", X"02A1", X"C002", 
                                         X"0000", X"EAE1", X"E0F2", X"B78F", X"9509",
                                         X"B79F", X"1389", X"0000", X"9A93", X"9893",
-                                        X"0000", X"9508", X"0000", X"0000", X"2D01",
-                                        X"9508", X"0000", X"0C12", X"9508");
+                                        X"0000", X"940C", X"0000", X"0000", X"2D01",
+                                        X"9508");
 
 
 begin
