@@ -120,8 +120,8 @@ architecture TB_ARCHITECTURE of CPUTB is
             INT1 <= '1';
         	wait for CLK_PERIOD*5.5; -- wait for a bit
 
-            Reset <= '1'; -- de-assert reset, program should begin from start
             wait for CLK_PERIOD*0.2; -- offset for clock edge
+            Reset <= '1'; -- de-assert reset, program should begin from start
 
 			-- check with test vectors every clock
 			for i in TEST_SIZE downto 0 loop

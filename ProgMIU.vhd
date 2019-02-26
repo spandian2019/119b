@@ -109,7 +109,7 @@ begin
 
     ProgAB <= AddrAdderOut;
 
-    process(clock, reset)
+    process(clock)
     begin
         if rising_edge(clock) then
             ProgCtr <= AddrAdderOut;
