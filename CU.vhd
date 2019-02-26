@@ -1151,7 +1151,7 @@ begin
 
                 ProgSourceSel <= NORMAL_SRC;
 
-                if SBFlag = IR(9) then
+                if SBFlag /= IR(9) then
                     cycle_num <= ONE_CYCLE;
                 else
                     if std_match(ProgDB, OpLDS) or std_match(ProgDB, OpSTS) or
