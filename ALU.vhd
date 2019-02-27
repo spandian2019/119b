@@ -267,7 +267,8 @@ begin
     StatusOut(7) <= StatusIn(7) when BitMask(7) = '0' else
                     '1' when ALUSel = BSET else
                     '0' when ALUSel = BCLR else
-                    '0';
+                    not StatusIn(7); -- flips between setting and resetting global interrupt
+                                     --  enable between CALLI and RETI
 
     -- transfer bit
     StatusOut(6) <= StatusIn(6) when BitMask(6) = '0' else

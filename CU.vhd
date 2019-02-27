@@ -74,6 +74,21 @@ use work.constants.all;
 
 entity CU is
     port(
+        -- interrupt signals
+        Reset   : in std_logic; -- hardware pin and watchdog reset
+        INT0    : in std_logic; -- external interrupt request 0
+        INT1    : in std_logic; -- external interrupt request 1
+        T1CAP   : in std_logic; -- timer 1 capture event
+        T1CPA   : in std_logic; -- timer 1 compare match A
+        T1CPB   : in std_logic; -- timer 2 compare match B
+        T1OVF   : in std_logic; -- timer 1 overflow
+        T0OVF   : in std_logic; -- timer 0 overflow
+        IRQSPI  : in std_logic; -- serial transfer complete
+        UARTRX  : in std_logic; -- UART receive complete
+        UARTRE  : in std_logic; -- UART data register empty
+        UARTTX  : in std_logic; -- UART transmit complete
+        ANACMP  : in std_logic; -- analog comparator
+
         ProgDB  : in std_logic_vector(ADDRSIZE-1 downto 0);     -- program memory data bus
         SReg    : in std_logic_vector(REGSIZE-1 downto 0);      -- status flags
         ZeroFlag: in std_logic;                                 -- zero flag from ALU for CPSE op
@@ -141,10 +156,13 @@ architecture RISC of CU is
     signal IR           :   std_logic_vector(ADDRSIZE-1 downto 0);  -- instruction register
 
     signal ProgDBLatch  :   std_logic_vector(ADDRSIZE-1 downto 0);  -- Prog Address Bus latch
+
+    signal IntEventReg  :   std_logic_vector(INTREGSIZE-1 downto 0); -- interrupt event register
+    signal Int_RJMPAddr :   std_logic_vector(INTREGSIZE-1 downto 0); -- interrupt JMP address
 begin
 
     -- asynchronously decodes IR inputs
-    decoder : process(IR, CLK, cycle, SBFlag, ZeroFlag, cycle_num, RegIoFlag, RegIoSelFlag, SReg, DataAB, ProgDB, ProgDBLatch)
+    decoder : process(IR, CLK, cycle, SBFlag, ZeroFlag, cycle_num, RegIoFlag, RegIoSelFlag, SReg, DataAB, ProgDB, ProgDBLatch, Int_RJMPAddr)
     begin
             -- sets cycle number for op_codes
             -- defaults operations to 1 cycle
@@ -190,6 +208,8 @@ begin
             load <= '1';
             -- clear IO register write select line, allows for ALU default writing to SReg
             IORegWSel <= (others => '0');
+
+
 
             -- considering single byte adder/subber ops:
             -- ADC, ADD, SBC, SUB, CPC, CP
@@ -1006,6 +1026,50 @@ begin
                 end if;
             end if;
 
+            if std_match(IR, OpCALLI) then
+                -- 0000000000000001
+
+                cycle_num <= THREE_CYCLES;          -- takes 4 cycles to complete operation
+
+                DataOffsetSel <= DEC_SEL;           -- Pushing post decrements
+                PreSel <= POST_ADDR;                --  the Stack Pointer
+
+                IndAddrSel <= SP_SEL;               -- indirect addressing stored in Stack Pointer
+
+                if cycle = ZERO_CYCLES then         -- during first cycle
+                    ProgSourceSel <= NORMAL_SRC;    -- hold PC value here, pointing to next op IR
+
+                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
+
+                    BitMask <= MASK_INT;
+
+                elsif cycle = ONE_CYCLE then        -- during second cycle
+                    LoadIn <= LD_PROG_HI;           -- load high byte of next IR into DataDB to
+                                                    --  save into stack
+
+                    DataWr <= CLK;                  -- DataWr = CLK for the second cycle, so will go active low at end
+
+                    DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
+
+                    ProgSourceSel <= RST_SRC;       -- hold PC value here, pointing to next op IR
+
+                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
+
+
+                else                                -- during third cycle
+                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
+                    LoadIn <= LD_PROG_LO;           -- load high byte of next IR into DataDB to
+                                                    --  save into stack
+
+                    DataWr <= CLK;                  -- DataWr = CLK for the second cycle, so will go active low at end
+
+                    DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
+
+                    ProgSourceSel <= INT_ZERO_PAD & Int_RJMPAddr;
+                    load <= '0';
+                end if;
+            end if;
+
             if std_match(IR, OpRCALL) or std_match(IR, OpICALL) then
             -- 1101jjjjjjjjjjjj - RCALL Opcode
             -- 10010101XXXX1001 - ICALL Opcode
@@ -1188,12 +1252,60 @@ begin
     begin
         if (rising_edge(CLK)) then
             if cycle = cycle_num-1 then
-                IR <= ProgDB;
+                if IntEventReg = NO_INT then
+                    IR <= ProgDB;
+                else
+                    IR <= OpCALLI;
+                    Int_RJMPAddr <= IntEventReg;
+                    IntEventReg <= NO_INT;
+                end if;
             else
                 IR <= IR;
             end if;
         end if;
     end process IR_update;
+
+    -- detects if any interrupt signal goes active during the current operation cycles
+    -- upon completion of current instruction, halts operation to execute interrupt
+    -- handler function, returning to next location in program memory upon completion
+    INT_latch: process (Reset, INT0, INT1, T1CAP, T1CPA, T1CPB, T1OVF,
+                        T0OVF, IRQSPI, UARTRX, UARTRE, UARTTX, ANACMP, SReg)
+    begin
+        if SReg(I_SREG) = INT_EN then
+            if (falling_edge(Reset)) then
+                IntEventReg <= RESET_INT;
+            elsif (falling_edge(INT0)) then
+                IntEventReg <= INT0_INT;
+            elsif (falling_edge(INT1)) then
+                IntEventReg <= INT1_INT;
+            elsif (rising_edge(T1CAP)) then
+                IntEventReg <= T1CAP_INT;
+            elsif (rising_edge(T1CPA)) then
+                IntEventReg <= T1CPA_INT;
+            elsif (rising_edge(T1CPB)) then
+                IntEventReg <= T1CPB_INT;
+            elsif (rising_edge(T1OVF)) then
+                IntEventReg <= T1OVF_INT;
+            elsif (rising_edge(T0OVF)) then
+                IntEventReg <= T0OVF_INT;
+            elsif (rising_edge(IRQSPI)) then
+                IntEventReg <= IRQSPI_INT;
+            elsif (rising_edge(UARTRX)) then
+                IntEventReg <= UARTRX_INT;
+            elsif (rising_edge(UARTRE)) then
+                IntEventReg <= UARTRE_INT;
+            elsif (rising_edge(UARTTX)) then
+                IntEventReg <= UARTTX_INT;
+            elsif (rising_edge(ANACMP)) then
+                IntEventReg <= ANACMP_INT;
+            else
+                IntEventReg <= IntEventReg;
+            end if;
+        else
+            IntEventReg <= NO_INT;
+        end if;
+    end process INT_latch;
+
 
     -- cycle counter, only operates when cycle_num /= 1
     FSM_noSM : process (CLK)

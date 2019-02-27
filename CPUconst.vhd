@@ -26,6 +26,7 @@ package constants is
     constant IRSIZE     : natural := 16;    -- number of bits in IR
     constant RADDRSIZE  : natural := 5;     -- number of bits in register addr
     constant IOADDRSIZE : natural := 6;     -- number of bits in IO reg addr
+    constant INTREGSIZE : natural := 4;     -- number of bits in Int Event reg
     constant REG_LENGTH     : natural := 32;--
     constant IO_REG_LENGTH  : natural := 64;--
     constant ZERO8      : std_logic_vector(7 downto 0) := "00000000"; -- 8 bit zero
@@ -41,6 +42,26 @@ package constants is
     constant ONE_CYCLE      : OP_CYCLE := "01";
     constant TWO_CYCLES     : OP_CYCLE := "10";
     constant THREE_CYCLES   : OP_CYCLE := "11";
+
+    -- Interrupt Event Handling Constants
+    -- cannot currently handle more than 15 interrupts
+    subtype INT_EVENT is std_logic_vector(INTREGSIZE-1 downto 0);
+    constant NO_INT         : INT_EVENT := "1111";
+    constant RESET_INT      : INT_EVENT := "0000";
+    constant INT0_INT       : INT_EVENT := "0001";
+    constant INT1_INT       : INT_EVENT := "0010";
+    constant T1CAP_INT      : INT_EVENT := "0011";
+    constant T1CPA_INT      : INT_EVENT := "0100";
+    constant T1CPB_INT      : INT_EVENT := "0101";
+    constant T1OVF_INT      : INT_EVENT := "0110";
+    constant T0OVF_INT      : INT_EVENT := "0111";
+    constant IRQSPI_INT     : INT_EVENT := "1000";
+    constant UARTRX_INT     : INT_EVENT := "1001";
+    constant UARTRE_INT     : INT_EVENT := "1010";
+    constant UARTTX_INT     : INT_EVENT := "1011";
+    constant ANACMP_INT     : INT_EVENT := "1100";
+
+    constant INT_ZERO_PAD : std_logic_vector(ADDRSIZE-INTREGSIZE-1 downto 0) := "000000000000";
 
     -------------------
     -- ALU CONSTANTS --
@@ -255,8 +276,12 @@ package constants is
 
     constant MASK_INT   : BIT_MASK := "10000000"; -- change interrupt flag
 
-    constant T_SREG : natural := 6; -- transfer bit number in sreg
+    constant T_SREG : natural := 6; -- transfer bit index in sreg
+    constant I_SREG : natural := 7; -- global interrupt enable index in sreg
     constant T_IR : natural := 9; -- transfer bit number in IR
+
+    constant INT_EN  : std_logic := '1'; -- interrupts enabled
+    constant INT_DIS : std_logic := '0'; -- interrupts disabled
 
 
 end package constants;
