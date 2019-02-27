@@ -63,6 +63,9 @@ package constants is
 
     constant INT_ZERO_PAD : std_logic_vector(ADDRSIZE-INTREGSIZE-1 downto 0) := "000000000000";
 
+    constant ACTIVE_LO : std_logic := '0';
+    constant ACTIVE_HI : std_logic := '1';
+
     -------------------
     -- ALU CONSTANTS --
     -------------------
