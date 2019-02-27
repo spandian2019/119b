@@ -317,35 +317,35 @@ begin
             end if;
 
             -- word multiply op
-            if  std_match(IR, OpMUL) then
+--            if  std_match(IR, OpMUL) then
 
-                LoadIn <= LD_ALU;
+--                LoadIn <= LD_ALU;
 
-                RegWEn <= WRITE_EN;
+--                RegWEn <= WRITE_EN;
 
-                -- takes 2 cycles to complete operation
-                cycle_num <= TWO_CYCLES;
+--                -- takes 2 cycles to complete operation
+--                cycle_num <= TWO_CYCLES;
 
-                -- enable MUL operation
-                RegSelA <= IR(8 downto 4);
-                RegSelB <= IR(9) & IR(3 downto 0);
+--                -- enable MUL operation
+--                RegSelA <= IR(8 downto 4);
+--                RegSelB <= IR(9) & IR(3 downto 0);
 
-                BitMask <= MASK_MUL;
+--                BitMask <= MASK_MUL;
 
-                -- output of MUL op is saved in R1:R0
-                --  low byte operation uses above bytes while high byte
-                --    operation uses the next highest byte
-                -- first do low byte multiply
-                if cycle = ZERO_CYCLES then
-                    ALUSel <= MULOUTL;  -- select low byte
-                    RegWSel <= "00000";
-                else
-                    ALUSel <= MULOUTH;  -- select high byte
-                    RegWSel <= "00001";
-                end if;
+--                -- output of MUL op is saved in R1:R0
+--                --  low byte operation uses above bytes while high byte
+--                --    operation uses the next highest byte
+--                -- first do low byte multiply
+--                if cycle = ZERO_CYCLES then
+--                    ALUSel <= MULOUTL;  -- select low byte
+--                    RegWSel <= "00000";
+--                else
+--                    ALUSel <= MULOUTH;  -- select high byte
+--                    RegWSel <= "00001";
+--                end if;
 
-                BitMask <= MASK_MUL;
-            end if;
+--                BitMask <= MASK_MUL;
+--            end if;
 
             -- considering immediate subber operations
             if  std_match(IR, OpSUBI) or std_match(IR, OpSBCI) or std_match(IR, OpCPI) then
@@ -1030,49 +1030,49 @@ begin
                 end if;
             end if;
 
-            if std_match(IR, OpCALLI) then
-                -- 0000000000000001
+--            if std_match(IR, OpCALLI) then
+--                -- 0000000000000001
 
-                cycle_num <= THREE_CYCLES;          -- takes 4 cycles to complete operation
+--                cycle_num <= THREE_CYCLES;          -- takes 4 cycles to complete operation
 
-                DataOffsetSel <= DEC_SEL;           -- Pushing post decrements
-                PreSel <= POST_ADDR;                --  the Stack Pointer
+--                DataOffsetSel <= DEC_SEL;           -- Pushing post decrements
+--                PreSel <= POST_ADDR;                --  the Stack Pointer
 
-                IndAddrSel <= SP_SEL;               -- indirect addressing stored in Stack Pointer
+--                IndAddrSel <= SP_SEL;               -- indirect addressing stored in Stack Pointer
 
-                if cycle = ZERO_CYCLES then         -- during first cycle
-                    ProgSourceSel <= NORMAL_SRC;    -- hold PC value here, pointing to next op IR
+--                if cycle = ZERO_CYCLES then         -- during first cycle
+--                    ProgSourceSel <= NORMAL_SRC;    -- hold PC value here, pointing to next op IR
 
-                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
+--                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
-                    BitMask <= MASK_INT;
+--                    BitMask <= MASK_INT;
 
-                elsif cycle = ONE_CYCLE then        -- during second cycle
-                    LoadIn <= LD_PROG_HI;           -- load high byte of next IR into DataDB to
-                                                    --  save into stack
+--                elsif cycle = ONE_CYCLE then        -- during second cycle
+--                    LoadIn <= LD_PROG_HI;           -- load high byte of next IR into DataDB to
+--                                                    --  save into stack
 
-                    DataWr <= CLK;                  -- DataWr = CLK for the second cycle, so will go active low at end
+--                    DataWr <= CLK;                  -- DataWr = CLK for the second cycle, so will go active low at end
 
-                    DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
+--                    DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
 
-                    ProgSourceSel <= RST_SRC;       -- hold PC value here, pointing to next op IR
+--                    ProgSourceSel <= RST_SRC;       -- hold PC value here, pointing to next op IR
 
-                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
+--                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
 
-                else                                -- during third cycle
-                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
-                    LoadIn <= LD_PROG_LO;           -- load high byte of next IR into DataDB to
-                                                    --  save into stack
+--                else                                -- during third cycle
+--                    IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
+--                    LoadIn <= LD_PROG_LO;           -- load high byte of next IR into DataDB to
+--                                                    --  save into stack
 
-                    DataWr <= CLK;                  -- DataWr = CLK for the second cycle, so will go active low at end
+--                    DataWr <= CLK;                  -- DataWr = CLK for the second cycle, so will go active low at end
 
-                    DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
+--                    DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
 
-                    ProgSourceSel <= INT_ZERO_PAD & Int_RJMPAddr;
-                    load <= '0';
-                end if;
-            end if;
+--                    ProgSourceSel <= INT_ZERO_PAD & Int_RJMPAddr;
+--                    load <= '0';
+--                end if;
+--            end if;
 
             if std_match(IR, OpRCALL) or std_match(IR, OpICALL) then
             -- 1101jjjjjjjjjjjj - RCALL Opcode
@@ -1269,46 +1269,46 @@ begin
         end if;
     end process IR_update;
 
-    -- detects if any interrupt signal goes active during the current operation cycles
-    -- upon completion of current instruction, halts operation to execute interrupt
-    -- handler function, returning to next location in program memory upon completion
-    INT_latch: process (Reset, INT0, INT1, T1CAP, T1CPA, T1CPB, T1OVF,
-                        T0OVF, IRQSPI, UARTRX, UARTRE, UARTTX, ANACMP, SReg)
-    begin
-        if SReg(I_SREG) = INT_EN then
-            if (falling_edge(Reset)) then
-                IntEventReg <= RESET_INT;
-            elsif (falling_edge(INT0)) then
-                IntEventReg <= INT0_INT;
-            elsif (falling_edge(INT1)) then
-                IntEventReg <= INT1_INT;
-            elsif (rising_edge(T1CAP)) then
-                IntEventReg <= T1CAP_INT;
-            elsif (rising_edge(T1CPA)) then
-                IntEventReg <= T1CPA_INT;
-            elsif (rising_edge(T1CPB)) then
-                IntEventReg <= T1CPB_INT;
-            elsif (rising_edge(T1OVF)) then
-                IntEventReg <= T1OVF_INT;
-            elsif (rising_edge(T0OVF)) then
-                IntEventReg <= T0OVF_INT;
-            elsif (rising_edge(IRQSPI)) then
-                IntEventReg <= IRQSPI_INT;
-            elsif (rising_edge(UARTRX)) then
-                IntEventReg <= UARTRX_INT;
-            elsif (rising_edge(UARTRE)) then
-                IntEventReg <= UARTRE_INT;
-            elsif (rising_edge(UARTTX)) then
-                IntEventReg <= UARTTX_INT;
-            elsif (rising_edge(ANACMP)) then
-                IntEventReg <= ANACMP_INT;
-            else
-                IntEventReg <= IntEventReg;
-            end if;
-        else
-            IntEventReg <= NO_INT;
-        end if;
-    end process INT_latch;
+--    -- detects if any interrupt signal goes active during the current operation cycles
+--    -- upon completion of current instruction, halts operation to execute interrupt
+--    -- handler function, returning to next location in program memory upon completion
+--    INT_latch: process (Reset, INT0, INT1, T1CAP, T1CPA, T1CPB, T1OVF,
+--                        T0OVF, IRQSPI, UARTRX, UARTRE, UARTTX, ANACMP, SReg)
+--    begin
+--        if SReg(I_SREG) = INT_EN then
+--            if (falling_edge(Reset)) then
+--                IntEventReg <= RESET_INT;
+--            elsif (falling_edge(INT0)) then
+--                IntEventReg <= INT0_INT;
+--            elsif (falling_edge(INT1)) then
+--                IntEventReg <= INT1_INT;
+--            elsif (rising_edge(T1CAP)) then
+--                IntEventReg <= T1CAP_INT;
+--            elsif (rising_edge(T1CPA)) then
+--                IntEventReg <= T1CPA_INT;
+--            elsif (rising_edge(T1CPB)) then
+--                IntEventReg <= T1CPB_INT;
+--            elsif (rising_edge(T1OVF)) then
+--                IntEventReg <= T1OVF_INT;
+--            elsif (rising_edge(T0OVF)) then
+--                IntEventReg <= T0OVF_INT;
+--            elsif (rising_edge(IRQSPI)) then
+--                IntEventReg <= IRQSPI_INT;
+--            elsif (rising_edge(UARTRX)) then
+--                IntEventReg <= UARTRX_INT;
+--            elsif (rising_edge(UARTRE)) then
+--                IntEventReg <= UARTRE_INT;
+--            elsif (rising_edge(UARTTX)) then
+--                IntEventReg <= UARTTX_INT;
+--            elsif (rising_edge(ANACMP)) then
+--                IntEventReg <= ANACMP_INT;
+--            else
+--                IntEventReg <= IntEventReg;
+--            end if;
+--        else
+--            IntEventReg <= NO_INT;
+--        end if;
+--    end process INT_latch;
 
 
     -- cycle counter, only operates when cycle_num /= 1
