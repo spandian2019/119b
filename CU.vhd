@@ -150,8 +150,8 @@ end CU;
 --
 
 architecture RISC of CU is
-    signal cycle_num    :   OP_CYCLE := ZERO_CYCLES;                -- TODO delete
-    signal cycle        :   std_logic_vector(1 downto 0) := "00";   -- TODO delete
+    signal cycle_num    :   OP_CYCLE;                -- TODO delete
+    signal cycle        :   std_logic_vector(1 downto 0);   -- TODO delete
 
     signal IR           :   std_logic_vector(ADDRSIZE-1 downto 0);  -- instruction register
 
@@ -1319,7 +1319,9 @@ begin
     FSM_noSM : process (CLK)
     begin
       if (rising_edge(CLK)) then
-            if cycle /= cycle_num-1 then
+            if Reset = '0' then
+                cycle <= "00";
+            elsif cycle /= cycle_num-1 then
                 cycle <= cycle + 1;
             else
                 cycle <= "00";
