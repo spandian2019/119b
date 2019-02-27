@@ -871,13 +871,8 @@ CallSReg:
 	NOP
 
 ICallSreg:
-; I/O tests
-	; check registers
-	SBI 	$12, 3		; set bit 3 of port D
-	CBI 	$12, 3		; clear bit 3 of port D
-
-	; SLEEP		; sleep until interrupt
-	NOP
+    SBRS	R31, 1		; skip 2 word inst
+    LDS 	R2, $FF00
 
 End:
 	JMP 0000		; -return to very top

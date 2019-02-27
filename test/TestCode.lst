@@ -875,17 +875,10 @@ AVRASM ver. 2.1.42  C:\Users\Soph\Documents\College\Senior\EE119b\TestCode\TestC
 00029b 0000      	NOP
 
                  ICallSreg:
-                 ; I/O tests
-                 	; check registers
-00029c 9a93      	SBI 	$12, 3		; set bit 3 of port D
-00029d 9893      	CBI 	$12, 3		; clear bit 3 of port D
-
-                 	; SLEEP		; sleep until interrupt
-00029e 0000      	NOP
+00029c fff1      	SBRS	R31, 1		; skip 2 word inst
+00029d 9020 ff00 	LDS 	R2, $FF00
 
                  End:
---00029f 9508      	RET		; -return to very top
---0002a0 0000      	NOP
 00029f 940C 0000 JMP ; jump to top
 
                  CallTest:				; subroutine test
