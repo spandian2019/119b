@@ -1131,17 +1131,27 @@ begin
 
                 ProgSourceSel <= NORMAL_SRC;
 
-                if ZeroFlag = '0' then
-                    cycle_num <= ONE_CYCLE;
-                else
-                    cycle_num <= TWO_CYCLES;
-                end if;
+                --if ZeroFlag = '0' then
+                --    cycle_num <= ONE_CYCLE;
+                --else
+                --    cycle_num <= TWO_CYCLES;
+                --    if cycle = ZERO_CYCLES then
+                --        if std_match(ProgDB, OpLDS) or std_match(ProgDB, OpSTS) or
+                --           std_match(ProgDB, OpJMP) or std_match(ProgDB, OpCALL) then
+                --                cycle_num <= THREE_CYCLES;
+                --        end if;
+                --    end if;
+                --end if;
 
-                if cycle = ZERO_CYCLES then
+                if cycle = ZERO_CYCLES and ZeroFlag = '1' then
                     if std_match(ProgDB, OpLDS) or std_match(ProgDB, OpSTS) or
                        std_match(ProgDB, OpJMP) or std_match(ProgDB, OpCALL) then
-                            cycle_num <= THREE_CYCLES;
+                        cycle_num <= THREE_CYCLES;
+                    else
+                        cycle_num <= TWO_CYCLES;
                     end if;
+                else
+                    cycle_num <= cycle_num;
                 end if;
 
             end if;
@@ -1155,18 +1165,21 @@ begin
 
                 ProgSourceSel <= NORMAL_SRC;
 
-                if SBFlag /= IR(9) then
-                    cycle_num <= ONE_CYCLE;
-                else
-                    cycle_num <= TWO_CYCLES;
-                end if;
+                --if SBFlag = IR(9) then
+                --    cycle_num <= TWO_CYCLES;
+                --end if;
 
-                if cycle = ZERO_CYCLES then
+                if cycle = ZERO_CYCLES and SBFlag = IR(9) then
                     if std_match(ProgDB, OpLDS) or std_match(ProgDB, OpSTS) or
                        std_match(ProgDB, OpJMP) or std_match(ProgDB, OpCALL) then
-                            cycle_num <= THREE_CYCLES;
+                        cycle_num <= THREE_CYCLES;
+                    else
+                        cycle_num <= TWO_CYCLES;
                     end if;
+                else
+                    cycle_num <= cycle_num;
                 end if;
+
             end if;
 
     end process decoder;
