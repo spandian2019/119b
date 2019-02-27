@@ -42,13 +42,13 @@ START:
 ALUtests:
             RJMP     ADD1F
 ADD1F: ;test ADIW
-            EOR     R1, R1
+            LDI     R1, R19
             EOR     R25, R25
             EOR     R24, R24
             OUT     SReg, R1
             ADIW    R25:R24, $11    ; ADDIW 0, $11
             IN      R3, SReg
-            STS     $FE00, R3       ; W 00 FE00
+            STS     $FE00, R3       ; W 80 FE00
 ADD1resF:
             CPI     R25, 0
             BRBC 	1, ADD1resL
@@ -62,7 +62,7 @@ ADD2F: ;test ADD Carry Flag
             LDI     R17, $52
             ADD     R16, R17        ; ADD $F0, $52
             IN      R18, SReg
-            STS     $FE00, R18      ; W 01 FE00
+            STS     $FE00, R18      ; W 81 FE00
 ADD2res:
             CPI     R16, $42
             BRBC 	1, ADD3F
@@ -72,7 +72,7 @@ ADD3F: ;test ADD Zero Flag
             LDI     R16, $00
             ADD     R16, R18        ; ADD 0, 0
             IN      R3, SReg
-            STS     $FE01, R3       ; W 02 FE01
+            STS     $FE01, R3       ; W 82 FE01
 ADD3res:
             CPI     R16, $00
             BRBC 	1, ADC1F
@@ -82,7 +82,7 @@ ADC1F: ;test H,S,N flag
             LDI     R17, $81
             ADC     R16, R17        ; ADC $0F, $81
             IN      R3, SReg
-            STS     $FE02, R3       ; W 34 FE02
+            STS     $FE02, R3       ; W B4 FE02
 ADC1res:
             CPI     R16, $90
             BRBC 	1, ADC2F
@@ -94,11 +94,11 @@ ADC2F: ;test S,V,C flags
             LDI     R19, $40
             ADC     R16, R18        ; ADC $80, $80
             IN      R3, SReg
-            STS     $FE03, R3       ; W 1B FE03
+            STS     $FE03, R3       ; W 9B FE03
 ADD4F: ;test S,V,N flags
             ADD     R17, R19        ; ADD $40, $40
             IN      R3, SReg
-            STS     $FE00, R3       ; W 0C FE00
+            STS     $FE00, R3       ; W 8C FE00
 ADC2res:
             CPI     R16, $00
             BRBC 	1, ADD4res
