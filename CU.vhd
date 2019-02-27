@@ -1253,16 +1253,17 @@ begin
 
     -- Fetches next instruction when on last cycle of operation of previous instruction
     -- cycle value is zero indexed so final value is one less than cycle_num
-    IR_update: process (CLK)
+    IR_update: process (CLK, IntEventReg, cycle, cycle_num, ProgDB)
     begin
         if (rising_edge(CLK)) then
-            if cycle = cycle_num-1 then
-                if IntEventReg = NO_INT then
+            if Reset = '0' then
+                IR <= OpNOP;
+            elsif cycle = cycle_num-1 then
+                if IntEventReg = NO_INT or IntEventReg = RESET_INT then
                     IR <= ProgDB;
                 else
                     IR <= OpCALLI;
                     Int_RJMPAddr <= IntEventReg;
-                    IntEventReg <= NO_INT;
                 end if;
             else
                 IR <= IR;
@@ -1274,13 +1275,15 @@ begin
     -- detects if any interrupt signal goes active during the current operation cycles
     -- upon completion of current instruction, halts operation to execute interrupt
     -- handler function, returning to next location in program memory upon completion
-    INT_latch: process (Reset, INT0, INT1, T1CAP, T1CPA, T1CPB, T1OVF,
-                        T0OVF, IRQSPI, UARTRX, UARTRE, UARTTX, ANACMP, SReg)
+    INT_latch: process (CLK, Reset, INT0, INT1, T1CAP, T1CPA, T1CPB, T1OVF,
+                        T0OVF, IRQSPI, UARTRX, UARTRE, UARTTX, ANACMP, SReg, cycle)
     begin
-        if SReg(I_SREG) = INT_EN then
-            if (Reset = ACTIVE_LO) then
-                IntEventReg <= RESET_INT;
-            elsif (INT0 = ACTIVE_LO) then
+        if Reset = ACTIVE_LO then
+            IntEventReg <= RESET_INT;
+        elsif cycle = ONE_CYCLE then
+            IntEventReg <= NO_INT;
+        elsif SReg(I_SREG) = INT_EN then
+            if (INT0 = ACTIVE_LO) then
                 IntEventReg <= INT0_INT;
             elsif (INT1 = ACTIVE_LO) then
                 IntEventReg <= INT1_INT;

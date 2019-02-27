@@ -64,8 +64,8 @@ architecture  ROM  of  PROG_MEMORY  is
                                         X"C2E3", X"C2F0", X"C2FD", X"C30A", X"C317",
                                         X"C324", X"C331", X"C33E", -- interrupt vectors
 
-                                        X"E000", X"E010", X"E020", X"E030", X"E040",
-                                        X"2EF0", X"2E10", X"2E20", X"2E30", X"2E40",
+                                        X"E000", X"E010", X"E020", X"E030", X"9478",
+                                        X"2EF0", X"2E10", X"9478", X"2E30", X"2E40",
                                         X"2E50", X"2E60", X"2E70", X"2E80", X"2E90",
                                         X"2EA0", X"2EB0", X"2EC0", X"2ED0", X"2EE0",
                                         X"C000", X"2411", X"E080", X"E090", X"BE1F",

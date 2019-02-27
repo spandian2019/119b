@@ -75,7 +75,8 @@ signal AddrAdderOut : std_logic_vector(ADDRSIZE-1 downto 0); -- address adder ou
 
 begin
 
-    OffsetMuxOut <= IR_input            when AddrSourceSel = IR_SRC else
+    OffsetMuxOut <= RST_VECTOR          when Reset = '0' else
+                    IR_input            when AddrSourceSel = IR_SRC else
                     Z_input             when AddrSourceSel = Z_SRC else
                     RST_VECTOR          when AddrSourceSel = RST_SRC else
                     INC_VECTOR          when AddrSourceSel = NORMAL_SRC else
@@ -112,10 +113,11 @@ begin
     process(clock)
     begin
         if rising_edge(clock) then
-            ProgCtr <= AddrAdderOut;
-        end if;
-        if rising_edge(clock) and reset = '0' then
-            ProgCtr <= "1111111111111111";--(others => '1');
+            if reset = '0' then
+                ProgCtr <= "1111111111111111";
+            else
+                ProgCtr <= AddrAdderOut;
+            end if;
         end if;
     end process;
 
