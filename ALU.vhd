@@ -83,6 +83,12 @@ architecture behavioral of ALU is
 signal AdderOut     : std_logic_vector(REGSIZE-1 downto 0); -- adder/subtracter output
 signal CarryOut     : std_logic_vector(REGSIZE-1 downto 0); -- carry for adder/subtracter
 
+-- mult signals
+type MULARR is array (natural range <>) of std_logic_vector(REGSIZE-1 downto 0);
+signal CarryOutMul  : MULARR(REGSIZE-1 downto 0); -- carry for mul
+signal AOpMul       : MULARR(REGSIZE-1 downto 0); -- internal signals for mul
+signal BOpMul       : MULARR(REGSIZE-2 downto 0); -- internal signals for mul
+
 --signal ASCout       : std_logic;
 signal Bin          : std_logic_vector(REGSIZE-1 downto 0); -- B Input to the adder/subber
 
@@ -94,7 +100,7 @@ signal Bitout       : std_logic_vector(REGSIZE-1 downto 0); -- bit set block out
 
 signal SwapRegOut   : std_logic_vector(REGSIZE-1 downto 0); -- swap block output
 
-signal MulRegOut    : std_logic_vector(REGSIZE-1 downto 0); -- MUL block output
+signal MulRegOut    : std_logic_vector(REGSIZE*2-1 downto 0); -- MUL block output
 
 signal RegBuff      : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output result
 
@@ -250,11 +256,63 @@ begin
         SwapRegOut(i) <= RegA(i+NIBBLE);
     end generate;
 
+    -- 8x8 Array Multiplier
+    -- Array setup
+    Mul_ALU:  for i in 1 to REGSIZE - 1 generate
+        AOpMul(0)(i) <= RegA(i) and RegB(0); -- first row array input
+    end generate;
+    MulRegOut(0) <= RegA(0) and RegB(0); -- ab0 = a0 and b0
+    -- Multiplier sum array
+    -- first array row
+    Mula0_ALU:  for ai in 1 to REGSIZE - 1 generate
+            BOpMul(0)(ai) <= RegA(ai-1) and RegB(1);
+            MulAdd0_ALU: fullAdder
+            port map(
+                A           => AOpMul(0)(ai),
+                B           => BOpMul(0)(ai),
+                Cin         => '0',
+                Cout        => CarryOutMul(0)(ai-1),
+                Sum         => AOpMul(1)(ai-1)
+            );
+    end generate;
+    MulRegOut(1) <= AOpMul(1)(0);
+    AOpMul(1)(REGSIZE-1) <= RegA(REGSIZE-1) and RegB(1);
+    -- middle array rows
+    Mulb_ALU:  for bi in 1 to REGSIZE - 2 generate
+        Mula_ALU:  for ai in 1 to REGSIZE - 1 generate
+            BOpMul(bi)(ai) <= RegA(ai-1) and RegB(bi+1);
+            MulAdd_ALU: fullAdder
+            port map(
+                A           => AOpMul(bi)(ai),
+                B           => BOpMul(bi)(ai),
+                Cin         => CarryOutMul(bi-1)(ai-1),
+                Cout        => CarryOutMul(bi)(ai-1),
+                Sum         => AOpMul(bi+1)(ai-1)
+            );
+        end generate;
+        MulRegOut(bi+1) <= AOpMul(bi+1)(0);
+        AOpMul(bi+1)(REGSIZE-1) <= RegA(REGSIZE-1) and RegB(bi+1);
+    end generate;
+    -- last array row
+    Mula1_ALU:  for ai in 1 to REGSIZE - 1 generate
+        CarryOutMul(REGSIZE-1)(0) <= '0';
+        MulAdd1_ALU: fullAdder
+        port map(
+            A           => AOpMul(REGSIZE-1)(ai),
+            B           => CarryOutMul(REGSIZE-1)(ai-1),
+            Cin         => CarryOutMul(REGSIZE-2)(ai-1),
+            Cout        => CarryOutMul(REGSIZE-1)(ai),
+            Sum         => MulRegOut(ai+7)
+        );
+    end generate;
+    MulRegOut(15) <= CarryOutMul(REGSIZE-1)(REGSIZE-1); -- msb is last carry bit
+
     RegBuff <=  AdderOut    when ALUSel = ADDSUBOUT else
                 FOut        when ALUSel = FBLOCKOUT else
                 SROut       when ALUSel = SHIFTOUT  else
                 SwapRegOut  when ALUSel = SWAPOUT   else
-                MulRegOut   when ALUSel = MULOUT    else
+                MulRegOut(7 downto 0)   when ALUSel = MULOUTL    else
+                MulRegOut(15 downto 8)   when ALUSel = MULOUTH    else
                 BitOut      when ALUSel = BOUT else
                 "XXXXXXXX";
 

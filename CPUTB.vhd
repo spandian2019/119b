@@ -125,17 +125,20 @@ architecture TB_ARCHITECTURE of CPUTB is
 
 			-- check with test vectors every clock
 			for i in TEST_SIZE downto 0 loop
+                -- interrupt test
+                
+
                 -- on falling edge
                 wait for CLK_PERIOD/2;
                 -- check prog AB
                 assert (std_match(ProgABTest(i),ProgAB))
                     report  "ProgAB failure at clock number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
-                if i = TEST_SIZE then 
+                if i = TEST_SIZE then
                     j := TEST_SIZE;
-                else 
+                else
                     j := i+1;
-                end if; -- delay data test bus by one clock 
+                end if; -- delay data test bus by one clock
                 -- check data AB (for ld, st)
                 assert (std_match(DataABTest(j), DataAB))
                     report  "DataAB failure at clock number " & integer'image(TEST_SIZE-i)

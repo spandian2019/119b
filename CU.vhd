@@ -9,7 +9,7 @@
 -- signals for executing instructions, including data and program addressing,
 -- ALU operations, status register controls, and register and IO operations.
 -- For each decoded instruction, the appropriate control signals are outputted
--- for each cycle in the instruction. 
+-- for each cycle in the instruction.
 --
 -- Inputs:
 --
@@ -316,32 +316,36 @@ begin
                 end if;
             end if;
 
-            ---- considering word multiply op
-            --if  std_match(IR, OpMUL) then
+            -- word multiply op
+            if  std_match(IR, OpMUL) then
 
-            --    LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;
 
-            --    RegWEn <= WRITE_EN;
+                RegWEn <= WRITE_EN;
 
-            --    -- takes 2 cycles to complete operation
-            --    cycle_num <= "10";
-            --    -- enable MUL operation
-            --    ALUSel <= MulEn;
+                -- takes 2 cycles to complete operation
+                cycle_num <= TWO_CYCLES;
 
-            --    -- output of MUL op is saved in R1:R0
-            --    --  low byte operation uses above bytes while high byte
-            --    --    operation uses the next highest byte
+                -- enable MUL operation
+                RegSelA <= IR(8 downto 4);
+                RegSelB <= IR(9) & IR(3 downto 0);
 
-            --    RegSelB <= IR(9) & IR(3 downto 0);
-            --    -- first do low byte multiply
-            --    if cycle = "00" then
-            --        RegWSel <= "00000";
-            --    elsif cycle = "01" then
-            --        RegWSel <= "00001";
-            --    end if;
+                BitMask <= MASK_MUL;
 
-            --    BitMask <= MASK_MUL;
-            --end if;
+                -- output of MUL op is saved in R1:R0
+                --  low byte operation uses above bytes while high byte
+                --    operation uses the next highest byte
+                -- first do low byte multiply
+                if cycle = ZERO_CYCLES then
+                    ALUSel <= MULOUTL;  -- select low byte
+                    RegWSel <= "00000";
+                else
+                    ALUSel <= MULOUTH;  -- select high byte
+                    RegWSel <= "00001";
+                end if;
+
+                BitMask <= MASK_MUL;
+            end if;
 
             -- considering immediate subber operations
             if  std_match(IR, OpSUBI) or std_match(IR, OpSBCI) or std_match(IR, OpCPI) then

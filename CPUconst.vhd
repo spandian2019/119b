@@ -69,15 +69,16 @@ package constants is
     constant CPC_SET : std_logic := '1';
     constant CPC_RST : std_logic := '0';
     -- ALU output select signals
-    subtype ALU_SELECTS is std_logic_vector(2 downto 0);
-    constant ADDSUBOUT      : ALU_SELECTS := "000";
-    constant FBLOCKOUT      : ALU_SELECTS := "001";
-    constant SHIFTOUT       : ALU_SELECTS := "010";
-    constant SWAPOUT        : ALU_SELECTS := "011";
-    constant MULOUT         : ALU_SELECTS := "100";
-    constant BOUT           : ALU_SELECTS := "101";
-    constant BSET           : ALU_SELECTS := "110";
-    constant BCLR           : ALU_SELECTS := "111";
+    subtype ALU_SELECTS is std_logic_vector(3 downto 0);
+    constant ADDSUBOUT      : ALU_SELECTS := "0000";
+    constant FBLOCKOUT      : ALU_SELECTS := "0010";
+    constant SHIFTOUT       : ALU_SELECTS := "0100";
+    constant SWAPOUT        : ALU_SELECTS := "0110";
+    constant MULOUTH        : ALU_SELECTS := "1000";
+    constant MULOUTL        : ALU_SELECTS := "1001";
+    constant BOUT           : ALU_SELECTS := "1010";
+    constant BSET           : ALU_SELECTS := "1100";
+    constant BCLR           : ALU_SELECTS := "1110";
 
     -- F-block operands
     subtype  ALU_FOPS is std_logic_vector(3 downto 0);
