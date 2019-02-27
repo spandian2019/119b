@@ -271,7 +271,19 @@ architecture TB_ARCHITECTURE of CPUTB is
                 wait for CLK_PERIOD/2; -- wait for rest of clock
             end loop;
 
-        wait for CLK_PERIOD*5;
+            wait for CLK_PERIOD*5;
+
+            Reset <= '0';
+            wait for CLK_PERIOD;
+            Reset <= '1';
+            wait for CLK_PERIOD*5;
+
+            assert (std_match(X"000d", ProgAB))
+                report "Reset fail"
+                severity ERROR;
+
+            wait for CLK_PERIOD*5;
+
 
         END_SIM <= TRUE;
         wait;
