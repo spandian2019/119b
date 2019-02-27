@@ -317,35 +317,35 @@ begin
             end if;
 
             -- word multiply op
---            if  std_match(IR, OpMUL) then
+            if  std_match(IR, OpMUL) then
 
---                LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;
 
---                RegWEn <= WRITE_EN;
+                RegWEn <= WRITE_EN;
 
---                -- takes 2 cycles to complete operation
---                cycle_num <= TWO_CYCLES;
+                -- takes 2 cycles to complete operation
+                cycle_num <= TWO_CYCLES;
 
---                -- enable MUL operation
---                RegSelA <= IR(8 downto 4);
---                RegSelB <= IR(9) & IR(3 downto 0);
+                -- enable MUL operation
+                RegSelA <= IR(8 downto 4);
+                RegSelB <= IR(9) & IR(3 downto 0);
 
---                BitMask <= MASK_MUL;
+                BitMask <= MASK_MUL;
 
---                -- output of MUL op is saved in R1:R0
---                --  low byte operation uses above bytes while high byte
---                --    operation uses the next highest byte
---                -- first do low byte multiply
---                if cycle = ZERO_CYCLES then
---                    ALUSel <= MULOUTL;  -- select low byte
---                    RegWSel <= "00000";
---                else
---                    ALUSel <= MULOUTH;  -- select high byte
---                    RegWSel <= "00001";
---                end if;
+                -- output of MUL op is saved in R1:R0
+                --  low byte operation uses above bytes while high byte
+                --    operation uses the next highest byte
+                -- first do low byte multiply
+                if cycle = ZERO_CYCLES then
+                    ALUSel <= MULOUTL;  -- select low byte
+                    RegWSel <= "00000";
+                else
+                    ALUSel <= MULOUTH;  -- select high byte
+                    RegWSel <= "00001";
+                end if;
 
---                BitMask <= MASK_MUL;
---            end if;
+                BitMask <= MASK_MUL;
+            end if;
 
             -- considering immediate subber operations
             if  std_match(IR, OpSUBI) or std_match(IR, OpSBCI) or std_match(IR, OpCPI) then

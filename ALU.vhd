@@ -311,7 +311,7 @@ begin
                 FOut        when ALUSel = FBLOCKOUT else
                 SROut       when ALUSel = SHIFTOUT  else
                 SwapRegOut  when ALUSel = SWAPOUT   else
-                --MulRegOut(7 downto 0)   when ALUSel = MULOUTL    else
+                MulRegOut(7 downto 0)   when ALUSel = MULOUTL    else
                 MulRegOut(15 downto 8)   when ALUSel = MULOUTH    else
                 BitOut      when ALUSel = BOUT else
                 "XXXXXXXX";
