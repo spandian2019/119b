@@ -63,8 +63,6 @@ entity  AVR_CPU  is
         UARTRE  :  in     std_logic;                        -- UART data register empty
         UARTTX  :  in     std_logic;                        -- UART transmit complete
         ANACMP  :  in     std_logic;                        -- analog comparator
-        INT0    :  in     std_logic;                        -- interrupt signal (active low)
-        INT1    :  in     std_logic;                        -- interrupt signal (active low)
         clock   :  in     std_logic;                        -- system clock
         ProgAB  :  out    std_logic_vector(15 downto 0);    -- program memory address bus
         DataAB  :  out    std_logic_vector(15 downto 0);    -- data memory address bus
