@@ -1069,7 +1069,8 @@ begin
 
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
 
-                    ProgSourceSel <= INT_ZERO_PAD & Int_RJMPAddr;
+                    ProgIRSource  <= INT_ZERO_PAD & Int_RJMPAddr;
+                    ProgSourceSel <= IR_SRC;
                     load <= '0';
                 end if;
             end if;
@@ -1276,31 +1277,31 @@ begin
                         T0OVF, IRQSPI, UARTRX, UARTRE, UARTTX, ANACMP, SReg)
     begin
         if SReg(I_SREG) = INT_EN then
-            if (falling_edge(Reset)) then
+            if (Reset = ACTIVE_LO) then
                 IntEventReg <= RESET_INT;
-            elsif (falling_edge(INT0)) then
+            elsif (INT0 = ACTIVE_LO) then
                 IntEventReg <= INT0_INT;
-            elsif (falling_edge(INT1)) then
+            elsif (INT1 = ACTIVE_LO) then
                 IntEventReg <= INT1_INT;
-            elsif (rising_edge(T1CAP)) then
+            elsif (T1CAP = ACTIVE_HI) then
                 IntEventReg <= T1CAP_INT;
-            elsif (rising_edge(T1CPA)) then
+            elsif (T1CPA = ACTIVE_HI) then
                 IntEventReg <= T1CPA_INT;
-            elsif (rising_edge(T1CPB)) then
+            elsif (T1CPB = ACTIVE_HI) then
                 IntEventReg <= T1CPB_INT;
-            elsif (rising_edge(T1OVF)) then
+            elsif (T1OVF = ACTIVE_HI) then
                 IntEventReg <= T1OVF_INT;
-            elsif (rising_edge(T0OVF)) then
+            elsif (T0OVF = ACTIVE_HI) then
                 IntEventReg <= T0OVF_INT;
-            elsif (rising_edge(IRQSPI)) then
+            elsif (IRQSPI = ACTIVE_HI) then
                 IntEventReg <= IRQSPI_INT;
-            elsif (rising_edge(UARTRX)) then
+            elsif (UARTRX = ACTIVE_HI) then
                 IntEventReg <= UARTRX_INT;
-            elsif (rising_edge(UARTRE)) then
+            elsif (UARTRE = ACTIVE_HI) then
                 IntEventReg <= UARTRE_INT;
-            elsif (rising_edge(UARTTX)) then
+            elsif (UARTTX = ACTIVE_HI) then
                 IntEventReg <= UARTTX_INT;
-            elsif (rising_edge(ANACMP)) then
+            elsif (ANACMP = ACTIVE_HI) then
                 IntEventReg <= ANACMP_INT;
             else
                 IntEventReg <= IntEventReg;
