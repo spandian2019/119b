@@ -1041,8 +1041,6 @@ begin
                 IndAddrSel <= SP_SEL;               -- indirect addressing stored in Stack Pointer
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    --ProgSourceSel <= NORMAL_SRC;    -- hold PC value here, pointing to next op IR
-
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
                     BitMask <= MASK_INT;
