@@ -43,6 +43,11 @@ package constants is
     constant TWO_CYCLES     : OP_CYCLE := "10";
     constant THREE_CYCLES   : OP_CYCLE := "11";
 
+    -- PC Load Constants
+    -- uses and gate to add or load in value
+    constant PC_ADD         : std_logic := '1';
+    constant PC_LOAD        : std_logic := '0';
+
     -- Interrupt Event Handling Constants
     -- cannot currently handle more than 15 interrupts
     subtype INT_EVENT is std_logic_vector(INTREGSIZE-1 downto 0);
@@ -187,6 +192,8 @@ package constants is
                                                                   --  loading points to reset vector
                                                                   --  adding does not change PC
     constant INC_VECTOR     : SOURCE_CONST := "0000000000000001"; -- +1 constant to add
+
+    constant PC_INIT        : std_logic_vector(15 downto 0) := "1111111111111111"; -- initial PC value
 
     ------------------------
     -- Register CONSTANTS --

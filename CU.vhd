@@ -62,6 +62,10 @@
 -- 02/07/2019   Sundar Pandian  Started adding support for AVR load/store instr
 -- 02/09/2019   Sundar Pandian  Added documentation for AVR load/store ops
 -- 02/09/2019   Sophia Liu      Updated and cleaned doc
+-- 02/13/2019   Sundar Pandian  Fixed all ALU instructions
+-- 02/25/2019   Sundar Pandian  combined into full CPU
+-- 02/26/2019   Sundar Pandian  added EC support
+-- 02/27/2019   Sundar Pandian  Added documentation
 --
 ----------------------------------------------------------------------------
 library ieee;
@@ -111,8 +115,6 @@ entity CU is
         DataRd          : out std_logic;                        -- indicates data memory is being read, active lo
         DataWr          : out std_logic;                        -- indicates data memory is being written, active lo
 
-        IORegOutEn  : out   std_logic;                          -- OUT command enable TODO delete
-
         -- to ALU and SReg
         ALUaddsub   : out ALU_ADDSUB;                           -- ALU adder/subber operation signals
         ALUsr       : out ALU_SR;                               -- ALU shifter/rotator operation signals
@@ -123,7 +125,6 @@ entity CU is
         CPC         : out std_logic;                            -- bit for signalling to ALU when CPC is the op
 
         LoadIn      : out LOADIN_SEL;                           -- selects data line into reg
-        SRegLd      : out   std_logic;                          -- select line to mux status reg source
 
         -- Data memory access
         DataOffsetSel   : out OFFSET_SEL;                       -- data address offset source select
@@ -132,30 +133,31 @@ entity CU is
         DataDBWEn       : out std_logic;                        -- DataDB write enable
         DataABMux       : out std_logic;                        -- DataAB mux control signal
 
+        -- CLK and address remapping signals
         CLK         : in std_logic;                           -- system clock
         RegIoFlag   : in std_logic;                           -- '1' if external address is in register range
         RegIoSelFlag: in std_logic;                           -- external address is in either io or general range
-        DataAB      : in std_logic_vector(5 downto 0);        -- address to be remapped to registers
+        DataAB      : in std_logic_vector(IOADDRSIZE-1 downto 0);  -- address to be remapped to registers
 
         -- Prog memory access
-        Load            : out std_logic;
-        ProgSourceSel   : out SOURCE_SEL;
-        ProgIRSource    : out std_logic_vector(ADDRSIZE-1 downto 0)
+        Load            : out std_logic;                      -- PC load signal, active low
+        ProgSourceSel   : out SOURCE_SEL;                     -- PC Source select line
+        ProgIRSource    : out std_logic_vector(ADDRSIZE-1 downto 0) -- For outputting PC Source, (un)conditional addr
     );
 
 end CU;
 
 --
---  CU Architecture
+--  CU Architecture, contains IR register and decoder, Interrupt Event Handler, clock cycle FSM
 --
 
 architecture RISC of CU is
-    signal cycle_num    :   OP_CYCLE;                -- TODO delete
-    signal cycle        :   std_logic_vector(1 downto 0);   -- TODO delete
+    signal cycle_num    :   OP_CYCLE;                                -- number of cycles of operation per instr
+    signal cycle        :   std_logic_vector(1 downto 0);            -- current cycle of op for instr
 
-    signal IR           :   std_logic_vector(ADDRSIZE-1 downto 0);  -- instruction register
+    signal IR           :   std_logic_vector(ADDRSIZE-1 downto 0);   -- instruction register
 
-    signal ProgDBLatch  :   std_logic_vector(ADDRSIZE-1 downto 0);  -- Prog Address Bus latch
+    signal ProgDBLatch  :   std_logic_vector(ADDRSIZE-1 downto 0);   -- Prog Address Bus latch
 
     signal IntEventReg  :   std_logic_vector(INTREGSIZE-1 downto 0); -- interrupt event register
     signal Int_RJMPAddr :   std_logic_vector(INTREGSIZE-1 downto 0); -- interrupt JMP address
@@ -167,6 +169,7 @@ begin
             -- sets cycle number for op_codes
             -- defaults operations to 1 cycle
             cycle_num   <= ONE_CYCLE;
+
             -- control signals default values, reset all write signal
             -- this way each operation only enables writes if necessary
             RegWEn      <= WRITE_DIS;
@@ -178,7 +181,7 @@ begin
             -- default Immed register to IR(11..8) & IR(3..0)
             --  because general IR form follows: ----KKKK----KKKK
             Immed       <= IR(11 downto 8) & IR(3 downto 0);
-            -- defaults to no bit setting in SReg
+            -- defaults to no bit changing in SReg
             bitmask     <= MASK_NONE;
             -- defaults to not CPC operation
             CPC         <= CPC_RST;
@@ -197,6 +200,7 @@ begin
             DataWr <= '1';
             -- default address offset value is 0
             DataOffsetSel <= ZERO_SEL;
+            
             -- default PC to increment when operation is on last cycle
             --  else no change to PC
             if cycle = cycle_num - 1 then
@@ -204,8 +208,9 @@ begin
             else
                 ProgSourceSel <= RST_SRC;
             end if;
+            
             -- load defaults to indirect addressing
-            load <= '1';
+            load <= PC_ADD;
             -- clear IO register write select line, allows for ALU default writing to SReg
             IORegWSel <= (others => '0');
 
@@ -213,47 +218,53 @@ begin
 
             -- considering single byte adder/subber ops:
             -- ADC, ADD, SBC, SUB, CPC, CP
-            -- all of these have the top three bits in IR cleared
-            -- can be combined with CPSE
+            -- all use same adder block in ALU with similar select line functionality
             if  std_match(IR, OpADC) or std_match(IR, OpADD) or
                 std_match(IR, OpSBC) or std_match(IR, OpSUB) or
                 std_match(IR, OpCPC) or std_match(IR, OpCP)  then
-            --  000ooordddddrrrr
+                --  000ooordddddrrrr
 
-                LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
                 RegSelA <= IR(8 downto 4);          -- Operand 1 is the first addend, loc in IR(8..4)
 
-                RegWSel <= IR(8 downto 4);          -- Operand 1 is the register being written to
+                RegWSel <= IR(8 downto 4);          -- Operand 1 is the register being written to, lock in IR(8..4)
 
                 RegSelB <= IR(9) & IR(3 downto 0);  -- Operand 2 is the second addend, loc in IR(9)&IR(3..0)
 
-                BitMask <= MASK_ADD;
+                BitMask <= MASK_ADD;                -- SReg bits only changed by adder/subber block
 
                 ALUSel <= ADDSUBOUT;                -- enable Adder/Subber output
 
                 RegWEn <= IR(11);                   -- Writes data from RegA, mapped in IR(11)
                                                     -- only not set for CP, CPC. Don't rewrite reg value
+                                                    -- IR(11) = '1' to rewrite Reg A
+                                                    -- IR(11) = '0' to not rewrite Reg A
 
-                                                    -- subber flag mapped in IR as function of 2 bits
                 ALUaddsub(SUBFLAG)  <= IR(11) xor IR(10);
-                                                    -- carry/nborrow bit mapped in IR
+                                                    -- subber flag mapped in IR as function of 2 bits
+                                                    -- IR(11..10) = "00" or "11" to add
+                                                    -- IR(11..10) = "01" or "10" to sub
+
+                                                    -- carry/nborrow bit mapped in IR(12)
+
                 if (IR(12) xor IR(11) xor IR(10)) = '1' then
-                                                    -- signal to ALU adder to use carry bit
+                                                    -- if IR(12) = '1', carry in operation flips
+                                                    --  for CP CPC vs ADC ADD SBC SUB                    
                     if (IR(11) xor IR(10)) = '1' then
                         ALUaddsub(CARRY_S1 downto CARRY_S0) <= NCARRY_IN;
-                        if IR(10) = '1' then
-                            CPC <= CPC_SET;
+                        if IR(10) = '1' then        -- special flag changing for CPC
+                            CPC <= CPC_SET;         -- CPC set here in IR(10) with IR(11..10) = "01"
                         end if;
                     else
                         ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
                     end if;
                 else
-                    -- all no carry operations use same logic block with
-                    -- carry in mapped in IR
-                    --  clear active-hi carry for add
-                    --  clear active-lo borrow for sub
-                    -- maps same as to subFlag
+                                                    -- all no carry operations use same logic block with
+                                                    -- carry in mapped in IR
+                                                    --  clear active-hi carry for add
+                                                    --  clear active-lo borrow for sub
+                                                    -- maps same as to subFlag
                     if (IR(11) xor IR(10)) = '1' then
                                                     -- clearing borrow for subber, sets carry
                         ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;
@@ -266,51 +277,56 @@ begin
 
             -- considering word adder/subber ops
             if  std_match(IR, OpADIW) or std_match(IR, OpSBIW) then
-            --  1001011oKKddKKKK  -- IR
+                -- 1001011oKKddKKKK
 
-                LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
-                RegWEn <= WRITE_EN;
+                RegWEn <= WRITE_EN;                 -- writes ALU output to register
 
-                BitMask <= MASK_ADIW;
+                BitMask <= MASK_ADIW;               -- SReg bits only changed by adder/subber for word ops
 
                 cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
 
                 ALUSel <= ADDSUBOUT;                -- enable Adder/Subber operation
 
-                ALUaddsub(subFlag) <= IR(8);        -- subFlag mapped in IR
+                ALUaddsub(subFlag) <= IR(8);        -- subFlag mapped in IR directly
 
                 ImmedEn <= IMM_EN;                  -- immediate value loads into second operand
 
-                -- value in IR is offset added to register 24
-                --  possible operands include {24, 26, 28, 30}
-                --  low byte operation uses above bytes while high byte
-                --    operation uses the next highest byte
+                                                    -- value in IR is offset added to register 24
+                                                    --  possible operands include {24, 26, 28, 30}
+                                                    --  low byte operation uses above bytes while high byte
+                                                    --    operation uses the next highest byte
 
-                -- if just loaded IR, doing first cycle
+                                                    -- if just loaded IR, doing first cycle
                 if cycle = ZERO_CYCLES then
-                    -- mapping to immediate value in IR, max value of 63
+                                                    -- mapping to immediate value in IR, max value of 63
+                                                    -- loc in IR(7..6)&IR(3..0)
                     Immed <= "00" & IR(7 downto 6) & IR(3 downto 0);
-                    -- add/sub op mapped in
-                    ALUaddsub(subFlag)  <= IR(8);
-                    -- carry/nborrow cleared
+                                                    -- carry/nborrow cleared
                     if IR(8) = '1' then
+                                                    -- carry/borrow set appropriately with subFlag
                         ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;
                     else
+                                                    -- borrow is set high when subbing
                         ALUaddsub(CARRY_S1 downto CARRY_S0) <= RST_CARRY;
                     end if;
-                    -- limits operand addresses
+                                                    -- limits operand addresses to those set previously
+                                                    -- Operand 1 is the register being written to, lock in "11"&IR(5..4)&'0'
                     RegSelA <= "11" & IR(5 downto 4) & '0';
+                                                    -- rewrite to op 1 register
                     RegWSel <= "11" & IR(5 downto 4) & '0';
                 else
-                    ALUfop <= FOP_ZERO;             -- add in zero
+                    ALUfop <= FOP_ZERO;             -- add in zero in the second cycle
+                                                    -- only bringing in carry from previous operation
                     if IR(8) = '1' then
+                                                    -- flips carry to a borrow for subbing
                         ALUaddsub(CARRY_S1 downto CARRY_S0) <= NCARRY_IN;
                     else
-                        -- carry out from low byte carries in to high byte add
+                                                    -- carry out from low byte carries in to high byte add
                         ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
                     end if;
-                    -- previous operand addresses + 1
+                                                    -- previous operand addresses + 1
                     RegSelA <= "11" & IR(5 downto 4) & '1';
                     RegWSel <= "11" & IR(5 downto 4) & '1';
                 end if;
@@ -318,126 +334,131 @@ begin
 
             -- word multiply op
             if  std_match(IR, OpMUL) then
+                -- 100111rdddddrrrr
 
-                LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
-                RegWEn <= WRITE_EN;
+                RegWEn <= WRITE_EN;                 -- writes ALU output to register
 
-                -- takes 2 cycles to complete operation
-                cycle_num <= TWO_CYCLES;
+                cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
 
-                -- enable MUL operation
-                RegSelA <= IR(8 downto 4);
-                RegSelB <= IR(9) & IR(3 downto 0);
+                                                    -- enable MUL operation
+                RegSelA <= IR(8 downto 4);          -- Operand 1 is the register, loc in IR(8..4)
 
-                BitMask <= MASK_MUL;
+                RegSelB <= IR(9) & IR(3 downto 0);  -- Operand 2 is the register, loc in IR(9)&IR(3..0)
 
-                -- output of MUL op is saved in R1:R0
-                --  low byte operation uses above bytes while high byte
-                --    operation uses the next highest byte
-                -- first do low byte multiply
+                BitMask <= MASK_MUL;                -- SReg bits only changed by MUL block
+
+                                                    -- output of MUL op is saved in R1:R0
+                                                    --  low byte operation uses above bytes while high byte
+                                                    --    operation uses the next highest byte
+                                                    -- first do low byte multiply
                 if cycle = ZERO_CYCLES then
-                    ALUSel <= MULOUTL;  -- select low byte
-                    RegWSel <= "00000";
+                    ALUSel <= MULOUTL;              -- select low byte
+                    RegWSel <= "00000";             -- writes to low byte first cycle
                 else
-                    ALUSel <= MULOUTH;  -- select high byte
-                    RegWSel <= "00001";
+                    ALUSel <= MULOUTH;              -- select high byte
+                    RegWSel <= "00001";             -- writes to high byte second cycle
                 end if;
 
-                BitMask <= MASK_MUL;
+                BitMask <= MASK_MUL;                -- SReg bits only changed by MUL block in ALU
             end if;
 
             -- considering immediate subber operations
             if  std_match(IR, OpSUBI) or std_match(IR, OpSBCI) or std_match(IR, OpCPI) then
                 -- 0oooKKKKddddKKKK
 
-                LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
                 ALUSel <= ADDSUBOUT;                -- enable Adder/Subber operation
 
-                -- carry/nborrow bit mapped in IR
-                if IR(12) = '0' then
-                    -- send carry bit to ALU
+                if IR(12) = '0' then                -- carry/nborrow bit mapped in IR(12) directly
                     ALUaddsub(CARRY_S1 downto CARRY_S0) <= NCARRY_IN;
                 else
-                    -- all no carry operations use same logic block with
-                    -- carry in mapped in IR
-                    --  clear active-hi carry for add
-                    --  clear active-lo borrow for sub
-                    -- maps same as to subFlag
+                                                    -- all no carry operations use same logic block with
+                                                    -- carry in mapped in IR
+                                                    --  clear active-hi carry for add
+                                                    --  clear active-lo borrow for sub
+                                                    -- maps same as to subFlag
                     ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;
                 end if;
-                -- subbing so subFlag active
-                ALUaddsub(subFlag)  <= OP_SUB;
-                -- CPI doesn't rewrite register, mapped in IR
-                RegWEn <= IR(14);
-                -- immediate value loads into second operand
-                ImmedEn <= IMM_EN;
-                RegSelA <= '1' & IR(7 downto 4);
-                RegWSel <= '1' & IR(7 downto 4);
-                BitMask <= MASK_ADD;
+                                                    
+                ALUaddsub(subFlag)  <= OP_SUB;      -- subbing so subFlag active
+                                                    
+                RegWEn <= IR(14);                   -- CPI doesn't rewrite register, mapped in IR(14) directly
+                                                    
+                ImmedEn <= IMM_EN;                  -- immediate value loads into second operand
+
+                RegSelA <= '1' & IR(7 downto 4);    -- Operand 1 is the same register being written to, loc in '1'&IR(7..4)
+                RegWSel <= '1' & IR(7 downto 4);    -- can only use registers in second half of register space
+
+                BitMask <= MASK_ADD;                -- SReg bits only changed by subber block
             end if;
 
             -- considering incrementing/decrementing operations
             if  std_match(IR, OpINC) or std_match(IR, OpDEC) then
                 -- 1001010dddddoo1o
 
-                RegWEn <= WRITE_EN;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
-                LoadIn <= LD_ALU;
+                RegWEn <= WRITE_EN;                 -- writes ALU output to register
 
                 ALUSel <= ADDSUBOUT;                -- enable Adder/Subber operation
 
-                -- add/sub conditional mapped in IR
-                ALUaddsub(subFlag)  <= OP_ADD;
-                if IR(3) = '1' then
-                    ALUfop <= FOP_ONES;
-                    ALUaddsub(CARRY_S1 downto CARRY_S0) <= RST_CARRY;   -- set carry flag
-                else
-                    ALUfop <= FOP_ZERO;
-                    ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;   -- set carry flag
+                ALUaddsub(subFlag)  <= OP_ADD;      -- only using adder
+                
+                if IR(3) = '1' then                 -- if decrementing (mapped in IR(3))
+                    ALUfop <= FOP_ONES;             -- add in -1 or "FF"
+                                                    -- reset carry flag
+                                                    -- equivalent to adding 2's complement of 1
+                    ALUaddsub(CARRY_S1 downto CARRY_S0) <= RST_CARRY; 
+
+                else                                -- if incrementing
+                    ALUfop <= FOP_ZERO;             -- add in 0
+                                                    -- set carry flag
+                                                    -- equivalent to adding 1
+                    ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;
                 end if;
 
                 ImmedEn <= IMM_EN;                  -- immediate value loads into second operand
 
                 RegSelA <= IR(8 downto 4);          -- Operand 1 is the first addend, loc in IR(8..4)
-
                 RegWSel <= IR(8 downto 4);          -- Operand 1 is the register being written to
 
-                BitMask <= MASK_DECINC;
+                BitMask <= MASK_DECINC;             -- SReg bits only changed by adder with +1 or -1 as Op B
             end if;
 
             -- considering COM and NEG operations
             if  std_match(IR, OpCOM) or std_match(IR, OpNEG) then
                 -- 1001010ddddd000o
 
-                LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
                 ALUSel <= ADDSUBOUT;                -- enable Adder/Subber operation
 
-                RegWEn <= WRITE_EN;
+                RegWEn <= WRITE_EN;                 -- writes ALU output to register
 
-                -- carry in mapped in IR
-                --  clear active-hi carry for add
-                --  clear active-lo borrow for sub
-                -- clear nborrow
+                                                    -- carry in mapped in IR
+                                                    --  clear active-hi carry for add
+                                                    --  clear active-lo borrow for sub
+                                                    -- clear nborrow
                 ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;
-                -- always subbing so set
-                ALUaddsub(SUBFLAG)  <= OP_SUB;
-                -- either subtract operand from xFF or x00
-                -- xFF for NEG
-                -- x00 for COM
-                if IR(0) = '0' then
+                
+                ALUaddsub(SUBFLAG)  <= OP_SUB;      -- always subbing so set
+
+                                                    -- either subtract operand from xFF or x00
+                                                    -- xFF for NEG
+                                                    -- x00 for COM
+                if IR(0) = '0' then                 -- COM operation mapped directly in IR(0)
                     ALUcomneg <= ALU_COM;
                 else
                     ALUcomneg <= ALU_NEG;
                 end if;
 
-                RegSelB <= IR(8 downto 4);
+                RegSelB <= IR(8 downto 4);          -- Operand 2 is the register being written to, loc in IR(8..4)
+                RegWSel <= IR(8 downto 4);          -- Argument is being subtracted from either xFF or x00
 
-                RegWSel <= IR(8 downto 4);
-                -- set bitmask based on if COM op or NEG op
-                if IR(0) = '0' then
+                if IR(0) = '0' then                 -- set bitmask based on if COM op or NEG op, mapped in IR(0)
                     BitMask <= MASK_COM;
                 else
                     BitMask <= MASK_NEG;
@@ -448,175 +469,197 @@ begin
                 -- 001000rdddddrrrr
                 -- 0111KKKKddddKKKK
 
-                LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
                 ALUSel <= FBLOCKOUT;                -- enable F Block Operation
 
-                RegWEn <= WRITE_EN;
+                RegWEn <= WRITE_EN;                 -- writes ALU output to register
 
                 ALUfop <= FOP_AND;                  -- select AND operation
 
-                if IR(14) = '1' then
-                    -- immediate value loads into second operand if ANDI op
-                    ImmedEn <= IMM_EN;
+                if IR(14) = '1' then                -- if immediate operation
+                    ImmedEn <= IMM_EN;              -- immediate value loads into second operand if ANDI op
                 end if;
 
-                RegWSel <= IR(8 downto 4);
+                RegWSel <= IR(8 downto 4);          -- Operand 1 is the same register being written to, loc in IR(8..4)
                 RegSelA <= IR(8 downto 4);
-                -- ANDI operation only maps to upper half of register space
-                if IR(14) = '1' then
+                
+                if IR(14) = '1' then                -- ANDI operation only maps to upper half of register space
                     RegSelA(4) <= '1';
                     RegWSel(4) <= '1';
                 end if;
-                RegSelB <= IR(9) & IR(3 downto 0);
-                BitMask <= MASK_ANDOR;
+
+                RegSelB <= IR(9) & IR(3 downto 0);  -- Operand 2 is loc in IR(9) & IR(3..0)
+                BitMask <= MASK_ANDOR;              -- SReg bits only changed by AND OR op in FBlock
             end if;
 
             if  std_match(IR, OpOR) or std_match(IR, OpORI) then
+                -- 001010rdddddrrrr
+                -- 0110KKKKddddKKKK
 
-                LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
                 ALUSel <= FBLOCKOUT;                -- enable F Block Operation
 
-                RegWEn <= WRITE_EN;
+                RegWEn <= WRITE_EN;                 -- writes ALU output to register
 
                 ALUfop <= FOP_OR;                   -- select OR operation
 
-                if IR(14) = '1' then
-                    -- immediate value loads into second operand
-                    ImmedEn <= IMM_EN;
+                if IR(14) = '1' then                -- if immediate operation
+                    ImmedEn <= IMM_EN;              -- immediate value loads into second operand if ANDI op
                 end if;
 
+                RegWSel <= IR(8 downto 4);          -- Operand 1 is the same register being written to, loc in IR(8..4)
                 RegSelA <= IR(8 downto 4);
-                RegWSel <= IR(8 downto 4);
-                -- ORI operation only maps to upper half of register space
-                if IR(14) = '1' then
+                
+                if IR(14) = '1' then                -- ORI operation only maps to upper half of register space
                     RegSelA(4) <= '1';
                     RegWSel(4) <= '1';
                 end if;
-                RegSelB <= IR(9) & IR(3 downto 0);
-                BitMask <= MASK_ANDOR;
+
+                RegSelB <= IR(9) & IR(3 downto 0);  -- Operand 2 is loc in IR(9) & IR(3..0)
+                BitMask <= MASK_ANDOR;              -- SReg bits only changed by AND OR op in FBlock
             end if;
 
             if  std_match(IR, OpEOR) then
+                -- 001001rdddddrrrr
 
-                LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
                 ALUSel <= FBLOCKOUT;                -- enable F Block Operation
 
-                RegWEn <= WRITE_EN;
+                RegWEn <= WRITE_EN;                 -- writes ALU output to register
 
-                ALUfop <= FOP_XOR;                  -- select OR operation
+                ALUfop <= FOP_XOR;                  -- select XOR operation
 
-                RegSelA <= IR(8 downto 4);
+                RegSelA <= IR(8 downto 4);          -- Operand 1 is the same register being written to, loc in IR(8..4)
                 RegWSel <= IR(8 downto 4);
-                RegSelB <= IR(9) & IR(3 downto 0);
-                BitMask <= MASK_EOR;
+
+                RegSelB <= IR(9) & IR(3 downto 0);  -- Operand 2 is loc in IR(9) & IR(3..0)
+                
+                BitMask <= MASK_EOR;                -- SReg bits only changed by EOR op in FBlock
             end if;
 
             if  std_match(IR, OpLSR) then
+                -- 1001010ddddd0110
 
-                LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
                 ALUSel <= SHIFTOUT;                 -- enable F Block Operation
 
-                RegWEn <= WRITE_EN;
+                RegWEn <= WRITE_EN;                 -- writes ALU output to register
 
-                -- select LSR operation
-                ALUsr <= SR_LSR;
-                RegSelA <= IR(8 downto 4);
+                ALUsr <= SR_LSR;                    -- select LSR operation
+
+                RegSelA <= IR(8 downto 4);          -- Operand 1 is the same register being written to, loc in IR(8..4)
                 RegWSel <= IR(8 downto 4);
-                BitMask <= MASK_SHIFT;
+
+                BitMask <= MASK_SHIFT;              -- SReg bits only changed by shift op
             end if;
 
             if  std_match(IR, OpASR) then
+                -- 1001010ddddd0101
 
-                LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
                 ALUSel <= SHIFTOUT;                 -- enable F Block Operation
 
-                RegWEn <= WRITE_EN;
-                -- select ASR operation
-                ALUsr <= SR_ASR;
-                RegSelA <= IR(8 downto 4);
+                RegWEn <= WRITE_EN;                 -- writes ALU output to register
+                
+                ALUsr <= SR_ASR;                    -- select ASR operation
+
+                RegSelA <= IR(8 downto 4);          -- Operand 1 is the same register being written to, loc in IR(8..4)
                 RegWSel <= IR(8 downto 4);
-                BitMask <= MASK_SHIFT;
+                
+                BitMask <= MASK_SHIFT;              -- SReg bits only changed by shift op
             end if;
 
             if  std_match(IR, OpROR) then
+                -- 1001010ddddd0111
 
-                LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
                 ALUSel <= SHIFTOUT;                 -- enable F Block Operation
 
-                RegWEn <= WRITE_EN;
+                RegWEn <= WRITE_EN;                 -- writes ALU output to register
 
-                -- select ROR operation
-                ALUsr <= SR_ROR;
-                -- ROR op uses carry bit from last operation ----------- TODO
+                ALUsr <= SR_ROR;                    -- select ROR operation
+
+                                                    -- uses carry in from last operation
                 ALUaddsub(CARRY_S1 downto CARRY_S0) <= CARRY_IN;
-                RegSelA <= IR(8 downto 4);
+
+                RegSelA <= IR(8 downto 4);          -- Operand 1 is the same register being written to, loc in IR(8..4)
                 RegWSel <= IR(8 downto 4);
-                BitMask <= MASK_SHIFT;
+
+                BitMask <= MASK_SHIFT;              -- SReg bits only changed by shift op
             end if;
 
             if  std_match(IR, OpBCLR) or std_match(IR, OpBSET) then
+                -- 10010100osss1000
 
-                if IR(7) = '0' then
-                    ALUSel <= BSET;
+                if IR(7) = '0' then                 -- BSET operation directly mapped in IR(7)
+                    ALUSel <= BSET;                 -- set ALU SReg output for BSET
                 else
-                    ALUSel <= BCLR;
+                    ALUSel <= BCLR;                 -- set ALU SReg output for BCLR
                 end if;
 
-                bitmask <= (others => '0');
-                --  then set proper bit high in bitmask
+                bitmask <= (others => '0');         -- clear bitmask
+                                                    --  then set proper bit high in bitmask
+                                                    --  loc in IR(6..4)
+                                                    -- bitmask uses active hi to enable bit changing
                 bitmask(conv_integer(IR(6 downto 4))) <= '1';
             end if;
 
             if  std_match(IR, OpBLD) or std_match(IR, OpBST) then
+                -- 111110odddddobbb
 
-                LoadIn <= LD_ALU;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
-                ImmedEn <= IMM_EN;
+                ImmedEn <= IMM_EN;                  -- immediate value loads into second operand
 
-                ALUSel <= BOUT;
+                ALUSel <= BOUT;                     -- sets BOUT block output from ALU
 
-                RegSelA <= IR(8 downto 4);
+                RegSelA <= IR(8 downto 4);          -- Operand is same as register being written to, loc in IR(8..4)
                 RegWSel <= IR(8 downto 4);
 
-                -- clear bitmask
-                BitMask <= (others => '0');
-                if IR(T_IR) = '0' then
-                    RegWEn <= WRITE_EN;
+                BitMask <= (others => '0');         -- clear bitmask
+
+                if IR(T_IR) = '0' then              -- if writing back to register, mapped in IR(T_IR)
+                    RegWEn <= WRITE_EN;             -- writes back if doing BLD, loading into register from T bit
                 end if;
-                -- store/loads T bit
-                BitMask(T_SREG) <= IR(T_IR);
+
+                BitMask(T_SREG) <= IR(T_IR);        -- SReg bits only changes T bit if mapped in IR(T_IR) for BST op
             end if;
 
             if std_match(IR, OpSWAP) then
+                -- 1001010ddddd0010
 
-                LoadIn <= LD_ALU;
-                ALUSel <= SWAPOUT;
+                LoadIn <= LD_ALU;                   -- load in data value from output of ALU
 
-                RegSelA <= IR(8 downto 4);
+                RegWEn <= WRITE_EN;                 -- writes ALU output to register
 
-                RegWEn <= WRITE_EN;
+                ALUSel <= SWAPOUT;                  -- select ALU to output from SWAP block
 
+                RegSelA <= IR(8 downto 4);          -- Operand is same as register being written to, loc in IR(8..4)
                 RegWSel <= IR(8 downto 4);
-                BitMask <= MASK_NONE;
+
+                BitMask <= MASK_NONE;               -- SReg bits not changed
             end if;
 
             if std_match(IR, OpIN) or std_match(IR, OpOUT) then
                 -- 1011oppdddddpppp
-                RegSelA     <= IR(8 downto 4);
+
+                RegSelA     <= IR(8 downto 4);      -- Operand is same as register being written to, loc in IR(8..4)
                 RegWSel     <= IR(8 downto 4);
-                RegWEn      <= not IR(11);
 
-                IOOutSel    <= not IR(11);
-
+                                                    -- io reg operand loc in IR(10..9) & IR(3..0)
                 IORegWSel   <= IR(10 downto 9) & IR(3 downto 0);
-                IORegWEn    <= IR(11);
-                IORegOutEn  <= IR(11);
+
+                RegWEn      <= not IR(11);          -- writing to reg space if doing IN op, mapped in opposite of IR(11)
+
+                IOOutSel    <= not IR(11);          -- output from Reg Unit if doing IN op, mapped in opposite of IR(11)
+
+                IORegWEn    <= IR(11);              -- writing to io reg space if doing OUT op, mapped in IR(11)
             end if;
 
             if  std_match(IR, OpLDX) or
@@ -758,9 +801,9 @@ begin
 
                     -- loading values from RegA into DataDB so no change from default
 
-                    -- offset values is the q offset, encoded in the IR
-                    -- all q bits as seen above: IR(13)&IR(11..10)&IR(2..0)
-                                        QOffset <= IR(13) & IR(11 downto 10) & IR(2 downto 0);
+                                                        -- offset values is the q offset, encoded in the IR
+                                                        -- all q bits as seen above: IR(13)&IR(11..10)&IR(2..0)
+                    QOffset <= IR(13) & IR(11 downto 10) & IR(2 downto 0);
 
                     DataOffsetSel <= OFFS_SEL;          -- Data Offset is the q offset value
 
@@ -941,13 +984,15 @@ begin
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
                     ProgSourceSel <= NORMAL_SRC;    -- increment PC here so ProgAB points to next IR
-                    ProgDBLatch <= ProgDB;          -- latch ProgDB
+                    ProgDBLatch <= ProgDB;          -- latch ProgDB, so can change ProgAB to JMP location
+
                 elsif cycle = ONE_CYCLE then        -- during second cycle
-                    ProgIRSource <= ProgDBLatch;
-                    ProgSourceSel <= IR_SRC;
-                    load <= '0';
+                    ProgIRSource <= ProgDBLatch;    -- output the latched ProgDB so can load new one
+                    ProgSourceSel <= IR_SRC;        -- CU decides ProgAB source
+                    load <= PC_LOAD;                -- direct addressing mode so loading new source
+
                 else                                -- during third cycle
-                    ProgSourceSel <= RST_SRC;
+                    ProgSourceSel <= RST_SRC;       -- no change to ProgAB since pointing to next IR already
                 end if;
             end if;
 
@@ -957,10 +1002,14 @@ begin
                 cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    ProgSourceSel <= NORMAL_SRC;
+                    ProgSourceSel <= NORMAL_SRC;    -- increment PC here so ProgAB points to next IR
+
                 else                                -- during second cycle
+                                                    -- indirect address jmp loc in IR(11..0)
                     ProgIRSource(11 downto 0) <= IR(11 downto 0);
+                                                    -- sign extend top bit
                     ProgIRSource(15 downto 12) <= (others => IR(11));
+                                                    -- CU decides ProgAB source
                     ProgSourceSel <= IR_SRC;
                 end if;
             end if;
@@ -970,15 +1019,16 @@ begin
 
                 cycle_num <= TWO_CYCLES;            -- takes 2 cycles to complete operation
 
-                DataOffsetSel <= ZERO_SEL;
+                DataOffsetSel <= ZERO_SEL;          -- output Z value with no inc or dec
 
-                IndAddrSel <= Z_SEL;
+                IndAddrSel <= Z_SEL;                -- get Z value for JMP
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    ProgSourceSel <= NORMAL_SRC;
+                    ProgSourceSel <= NORMAL_SRC;    -- increment PC here so ProgAB points to next IR
+
                 else                                -- during second cycle
-                    ProgSourceSel <= Z_SRC;
-                    load <= '0';
+                    ProgSourceSel <= Z_SRC;         -- Z register is ProgAB source
+                    load <= PC_LOAD;                -- direct addressing so loading new source
                 end if;
             end if;
 
@@ -994,12 +1044,11 @@ begin
                 IndAddrSel <= SP_SEL;               -- indirect addressing stored in Stack Pointer
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    ProgDBLatch <= ProgDB;          -- latch ProgDB value, Prog addr to call
-                    ProgSourceSel <= NORMAL_SRC;    -- inc PC to point to next value
+                    ProgDBLatch <= ProgDB;          -- latch ProgAB value, Prog addr to call
+                    ProgSourceSel <= NORMAL_SRC;    -- inc PC to point to next value, our address of subroutine
 
                 elsif cycle = ONE_CYCLE then        -- during second cycle
-                    ProgSourceSel <= NORMAL_SRC;    -- hold PC value here, pointing to next op IR
-
+                    ProgSourceSel <= NORMAL_SRC;    -- inc PC to point to next value, now pointing to next op IR
 
                 elsif cycle = TWO_CYCLES then       -- during third cycle
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
@@ -1007,11 +1056,9 @@ begin
                     LoadIn <= LD_PROG_HI;           -- load high byte of next IR into DataDB to
                                                     --  save into stack
 
-
                     DataWr <= CLK;                  -- DataWr = CLK for the second cycle, so will go active low at end
 
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
-
 
                     ProgSourceSel <= RST_SRC;       -- hold PC value here, pointing to next op IR
 
@@ -1024,9 +1071,11 @@ begin
 
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
 
-                    ProgIRSource <= ProgDBLatch;    -- hold ProgDB value
+                    ProgIRSource <= ProgDBLatch;    -- output latched ProgAB value
+
                     ProgSourceSel <= IR_SRC;        -- output address of subroutine
-                    load <= '0';                     -- loading address, not adding
+
+                    load <= PC_LOAD;                -- direct addressing so loading address, not adding
                 end if;
             end if;
 
@@ -1041,9 +1090,7 @@ begin
                 IndAddrSel <= SP_SEL;               -- indirect addressing stored in Stack Pointer
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    --IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
-
-                    BitMask <= MASK_INT;
+                    BitMask <= MASK_INT;            -- SReg flips I bit, now should be disabled unless mismatched interrupt calls
 
                 elsif cycle = ONE_CYCLE then        -- during second cycle
                     LoadIn <= LD_PROG_HI;           -- load high byte of next IR into DataDB to
@@ -1057,7 +1104,6 @@ begin
 
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
-
                 else                                -- during third cycle
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
                     LoadIn <= LD_PROG_LO;           -- load high byte of next IR into DataDB to
@@ -1067,15 +1113,21 @@ begin
 
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
 
+                                                    -- ZERO PAD RJMP address since Interrupt Vector table starts at 0000 in 
+                                                    --  memory. all relative addressing adds pointing to later instructions
+                                                    -- RJMP address was determined by highest priority interrupt enable
                     ProgIRSource  <= INT_ZERO_PAD & Int_RJMPAddr;
-                    ProgSourceSel <= IR_SRC;
-                    load <= '0';
+
+                    ProgSourceSel <= IR_SRC;        -- CU decides ProgAB source 
+
+                    load <= PC_LOAD;                -- check this TODO
                 end if;
             end if;
 
             if std_match(IR, OpRCALL) or std_match(IR, OpICALL) then
             -- 1101jjjjjjjjjjjj - RCALL Opcode
             -- 10010101XXXX1001 - ICALL Opcode
+
                 cycle_num <= THREE_CYCLES;          -- takes 4 cycles to complete operation
 
                 DataOffsetSel <= DEC_SEL;           -- Pushing post decrements
@@ -1084,10 +1136,7 @@ begin
                 IndAddrSel <= SP_SEL;               -- indirect addressing stored in Stack Pointer
 
                 if cycle = ZERO_CYCLES then         -- during first cycle
-                    ProgSourceSel <= NORMAL_SRC;    -- hold PC value here, pointing to next op IR
-
-                    --IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
-
+                    ProgSourceSel <= NORMAL_SRC;    -- inc PC value here, pointing to next op IR
 
                 elsif cycle = ONE_CYCLE then        -- during second cycle
                     LoadIn <= LD_PROG_HI;           -- load high byte of next IR into DataDB to
@@ -1101,9 +1150,9 @@ begin
 
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
 
-
                 else                                -- during third cycle
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
+                    
                     LoadIn <= LD_PROG_LO;           -- load high byte of next IR into DataDB to
                                                     --  save into stack
 
@@ -1111,14 +1160,18 @@ begin
 
                     DataDBWEn <= WRITE_EN;          -- Write data from register into DataDB
 
-
                     if IR(14) = '1' then            -- then RCALL op
+                                                    -- relative calling so adding to prev PC value
+                                                    -- loc in IR(11..0)
                         ProgIRSource(11 downto 0) <= IR(11 downto 0);
+                                                    -- sign extend top bit for negative relative addressing
                         ProgIRSource(15 downto 12) <= (others => IR(11));
-                        ProgSourceSel <= IR_SRC;
+
+                        ProgSourceSel <= IR_SRC;    -- CU decides ProgAB source
+
                     else                            -- then ICALL op
-                        ProgSourceSel <= Z_SRC;
-                        load <= '0';
+                        ProgSourceSel <= Z_SRC;     -- uses Z value
+                        load <= PC_LOAD;            -- loading not adding
                     end if;
                 end if;
             end if;
@@ -1133,57 +1186,61 @@ begin
 
                 IndAddrSel <= SP_SEL;               -- indirect addressing stored in Stack Pointer
 
-                --LoadIn <= LD_DB;                    -- loading values into register space from DataDB
-
                 if cycle = ZERO_CYCLES then         -- during first cycle
 
                 elsif cycle = ONE_CYCLE then        -- during second cycle
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
                                                     --  incremented SP val is written back into SP reg
+                    
                     DataRd <= CLK;                  -- DataRd = CLK for the second cycle, so will go active low at end
 
-                    ProgSourceSel <= DB_LO_SRC;     --
-                    load <= '0';
+                    ProgSourceSel <= DB_LO_SRC;     -- low byte of ProgAB return address being popped from stack
+                    load <= PC_LOAD;                -- load in this low byte value
 
-                elsif cycle = TWO_CYCLES then       -- duri ng third cycle
+                elsif cycle = TWO_CYCLES then       -- during third cycle
 
                 else                                -- during fourth cycle
                     IndWEn <= WRITE_EN;             -- write result of arith block back to indirect address reg
                                                     --  incremented SP val is written back into SP reg
+                    
                     DataRd <= CLK;                  -- DataRd = CLK for the second cycle, so will go active low at end
 
-                    ProgSourceSel <= DB_HI_SRC;
-                    load <= '1';
-
+                    ProgSourceSel <= DB_HI_SRC;     -- high byte of ProgAB return address being popped from stack
+                                                    -- gets added to prev ProgAB value containing low byte
+ 
                     if IR(4) = '1' then
-                        BitMask <= MASK_INT;
+                        BitMask <= MASK_INT;        -- SReg flips I bit, now should be disabled unless mismatched interrupt calls
                     end if;
                 end if;
             end if;
 
             if std_match(IR, OpBRBC) or std_match(IR, OpBRBS) then
                 -- 11110orrrrrrrbbb
+
+                -- IR(2..0) contains bit value to check
+                -- not IR(10) contains branch condition
                 if SReg(to_integer(unsigned(IR(2 downto 0)))) = not IR(10) then
-                    --branch
-                    cycle_num <= TWO_CYCLES;
+                    cycle_num <= TWO_CYCLES;        -- if branching, two cycles of op
                 else
-                    -- dont branch
-                    cycle_num <= ONE_CYCLE;
+                    cycle_num <= ONE_CYCLE;         -- if not branching, one cycle of op
                 end if;
 
                 if cycle = ZERO_CYCLES then
-                    ProgSourceSel <= NORMAL_SRC;
+                    ProgSourceSel <= NORMAL_SRC;    -- if first cycle of op, point to next ProgAB value
                 else
+                                                    -- check value and if in second cycle of op, must be branching
                     ProgIRSource(6 downto 0) <= IR(9 downto 3);
+                                                    -- IR branch loc located in IR(9..3)
                     ProgIRSource(15 downto 7) <= (others => IR(9));
-                    ProgSourceSel <= IR_SRC;
+                                                    -- since relative addressing, sign extend top bit
+                    ProgSourceSel <= IR_SRC;        -- CU decides IR source
                 end if;
             end if;
 
             if std_match(IR, OpCPSE) then
                 --000100rdddddrrrr
 
-                BitMask <= MASK_NONE;
+                BitMask <= MASK_NONE;               -- no SReg bits changed
 
                 RegSelA <= IR(8 downto 4);          -- Operand 1 is the first addend, loc in IR(8..4)
 
@@ -1191,32 +1248,24 @@ begin
 
                 ALUSel <= ADDSUBOUT;                -- enable Adder/Subber output
 
-                ALUaddsub(SUBFLAG)  <= OP_SUB;
+                ALUaddsub(SUBFLAG)  <= OP_SUB;      -- subtracting Op 2 from Op 1 to check if equal
+                                                    -- no carry in so set borrow
                 ALUaddsub(CARRY_S1 downto CARRY_S0) <= SET_CARRY;
 
-                ProgSourceSel <= NORMAL_SRC;
+                ProgSourceSel <= NORMAL_SRC;        -- always increments ProgAB since skip instructions
+                                                    --  just let IR change to next instr or hold it
 
-                --if ZeroFlag = '0' then
-                --    cycle_num <= ONE_CYCLE;
-                --else
-                --    cycle_num <= TWO_CYCLES;
-                --    if cycle = ZERO_CYCLES then
-                --        if std_match(ProgDB, OpLDS) or std_match(ProgDB, OpSTS) or
-                --           std_match(ProgDB, OpJMP) or std_match(ProgDB, OpCALL) then
-                --                cycle_num <= THREE_CYCLES;
-                --        end if;
-                --    end if;
-                --end if;
-
+                -- can only change cycle_num on first cycle of op
                 if cycle = ZERO_CYCLES and ZeroFlag = '1' then
+                                                    -- if skipping
                     if std_match(ProgDB, OpLDS) or std_match(ProgDB, OpSTS) or
                        std_match(ProgDB, OpJMP) or std_match(ProgDB, OpCALL) then
-                        cycle_num <= THREE_CYCLES;
+                        cycle_num <= THREE_CYCLES;  -- only these instr have a second word
                     else
-                        cycle_num <= TWO_CYCLES;
+                        cycle_num <= TWO_CYCLES;    -- else just skip one ProgAB value
                     end if;
                 else
-                    cycle_num <= cycle_num;
+                    cycle_num <= cycle_num;         -- hold cycle_num value set during first cycle of op
                 end if;
 
             end if;
@@ -1224,38 +1273,40 @@ begin
             if std_match(IR, OpSBRC) or std_match(IR, OpSBRS) then
                 --111111orrrrrXbbb
 
-                ImmedEn <= IMM_EN;
+                ImmedEn <= IMM_EN;                  -- muxing in Immed value into Operand 2
 
-                RegSelA <= IR(8 downto 4);
+                RegSelA <= IR(8 downto 4);          -- Operand 1 is the value being checked, loc in IR(8..4)
 
-                ProgSourceSel <= NORMAL_SRC;
+                ProgSourceSel <= NORMAL_SRC;        -- always increments ProgAB since skip instructions
+                                                    --  just let IR change to next instr or hold it
 
-                --if SBFlag = IR(9) then
-                --    cycle_num <= TWO_CYCLES;
-                --end if;
-
-                if cycle = ZERO_CYCLES and SBFlag = IR(9) then
+                -- can only change cycle_num on first cycle of op
+                if cycle = ZERO_CYCLES and ZeroFlag = '1' then
+                                                    -- if skipping
                     if std_match(ProgDB, OpLDS) or std_match(ProgDB, OpSTS) or
                        std_match(ProgDB, OpJMP) or std_match(ProgDB, OpCALL) then
-                        cycle_num <= THREE_CYCLES;
+                        cycle_num <= THREE_CYCLES;  -- only these instr have a second word
                     else
-                        cycle_num <= TWO_CYCLES;
+                        cycle_num <= TWO_CYCLES;    -- else just skip one ProgAB value
                     end if;
                 else
-                    cycle_num <= cycle_num;
+                    cycle_num <= cycle_num;         -- hold cycle_num value set during first cycle of op
                 end if;
 
             end if;
 
             if std_match(IR, OpNOP) then
+                -- 0000000000000000
                 -- do nothing
             end if;
 
             if std_match(IR, OpSLP) then
+                -- 10010101100X1000
                 -- do nothing
             end if;
 
             if std_match(IR, OpWDR) then
+                -- 10010101101X1000
                 -- do nothing
             end if;
 
@@ -1266,17 +1317,17 @@ begin
     IR_update: process (CLK, IntEventReg, cycle, cycle_num, ProgDB)
     begin
         if (rising_edge(CLK)) then
-            if Reset = '0' then
+            if Reset = '0' then                     -- if reset, load IR with NOP
                 IR <= OpNOP;
-            elsif cycle = cycle_num-1 then
+            elsif cycle = cycle_num-1 then          -- if on last cycle of op
                 if IntEventReg = NO_INT or IntEventReg = RESET_INT then
-                    IR <= ProgDB;
+                    IR <= ProgDB;                   -- if no interrupt, IR loads from ProgDB value
                 else
-                    IR <= OpCALLI;
-                    Int_RJMPAddr <= IntEventReg;
+                    IR <= OpCALLI;                  -- otherwise do a CALLI op
+                    Int_RJMPAddr <= IntEventReg;    -- and latch RJMP register for RJMP address info
                 end if;
             else
-                IR <= IR;
+                IR <= IR;                           -- still doing operation so hold IR
             end if;
         end if;
     end process IR_update;
@@ -1288,12 +1339,14 @@ begin
     INT_latch: process (CLK, Reset, INT0, INT1, T1CAP, T1CPA, T1CPB, T1OVF,
                         T0OVF, IRQSPI, UARTRX, UARTRE, UARTTX, ANACMP, SReg, cycle, IR)
     begin
-        if Reset = ACTIVE_LO then
+        if Reset = '0' then                         -- if reset, load reset interrupt
             IntEventReg <= RESET_INT;
+        
         elsif cycle = ONE_CYCLE and IR = OpCALLI then
-            IntEventReg <= NO_INT;
-        elsif SReg(I_SREG) = INT_EN then
-            if (INT0 = ACTIVE_LO) then
+            IntEventReg <= NO_INT;                  -- if first cycle of CALLI op, clear interrupt reg
+        
+        elsif SReg(I_SREG) = INT_EN then            -- if any other interrupt, load with appropriate RJMP addr
+            if (INT0 = ACTIVE_LO) then              -- interrupt priority from first to last starting with highest prio
                 IntEventReg <= INT0_INT;
             elsif (INT1 = ACTIVE_LO) then
                 IntEventReg <= INT1_INT;
@@ -1331,11 +1384,11 @@ begin
     FSM_noSM : process (CLK)
     begin
       if (rising_edge(CLK)) then
-            if Reset = '0' then
+            if Reset = '0' then                     -- if reset, on first cycle of op
                 cycle <= "00";
-            elsif cycle /= cycle_num-1 then
+            elsif cycle /= cycle_num-1 then         -- unless on last cycle of op, increment cycle
                 cycle <= cycle + 1;
-            else
+            else                                    -- otherwise was on last cycle of op so reset cycle
                 cycle <= "00";
             end if;
       end if;

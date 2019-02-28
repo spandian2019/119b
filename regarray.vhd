@@ -37,6 +37,7 @@
 -- 01/30/2019   Sundar Pandian  Initial architecture writeup
 -- 02/01/2019   Sundar Pandian  Debugged with testbench
 -- 02/07/2019   Sundar Pandian  Added indirect addressing mux and support
+-- 02/07/2019   Sundar Pandian  removed unnecessary delay on register outputs
 --
 ----------------------------------------------------------------------------
 

@@ -41,6 +41,8 @@
 -- 01/31/2019   Sundar Pandian  Added support for BST, BLD
 -- 02/01/2019   Sophia Liu      Updates for CU support
 -- 02/06/2019   Sundar Pandian  Changed structure so ALU does it all
+-- 02/27/2019   Sophia Liu      Added MUL block
+-- 02/27/2019   Sundar Pandian  Added documentation
 --
 ----------------------------------------------------------------------------
 library ieee;
@@ -68,10 +70,10 @@ entity ALU is
         -- from Regs
         RegA        : in    std_logic_vector(REGSIZE-1 downto 0); -- operand A
         RegB        : in    std_logic_vector(REGSIZE-1 downto 0); -- operand B, or immediate
-        StatusIn    : in    std_logic_vector(REGSIZE-1 downto 0);
+        StatusIn    : in    std_logic_vector(REGSIZE-1 downto 0); -- status register previous value
 
         RegOut      : out   std_logic_vector(REGSIZE-1 downto 0); -- output result
-        StatusOut   : out   std_logic_vector(REGSIZE-1 downto 0); -- status register output
+        StatusOut   : out   std_logic_vector(REGSIZE-1 downto 0); -- status register output new value
         SBFlag      : out   std_logic;                            -- skip bit flag output for SBRC/SBRS
         ZeroFlag    : out   std_logic                             -- zero flag output for CPSE
     );
@@ -106,14 +108,14 @@ signal RegBuff      : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output
 
 -- internal status signals
 signal VFlag        : std_logic; -- signed overflow status flag
-signal NFlag        : std_logic;
-signal CFlag        : std_logic;
+signal NFlag        : std_logic; -- neg value status flag
+signal CFlag        : std_logic; -- carry flag
 
 signal CIn          : std_logic; -- carry in from adder sel
 
-signal comnegR      : std_logic_vector(REGSIZE-1 downto 0);
+signal comnegR      : std_logic_vector(REGSIZE-1 downto 0); -- comneg register
 
-signal nCarryFlag   : std_logic;
+signal nCarryFlag   : std_logic; -- neg of carry flag (so borrow flag)
 ---- component declarations
 
 component Mux8to1 is
@@ -171,12 +173,11 @@ begin
       end generate GenFBlock;
 
     -- clear or set A, for use with COM or NEG
-    -- TODO explain?
     GenAClr: for i in REGSIZE-1 downto 0 generate
         comnegR(i) <= (RegA(i) and ALUCNOp(OP_CN_AND)) or ALUCNOp(OP_CN_OR);
     end generate GenAClr;
 
-    nCarryFlag <= not StatusIn(0);
+    nCarryFlag <= not StatusIn(0);  -- neg of carry flag
 
     -- adder/subtracter carry in MUX
     adderCarry: Mux4to1

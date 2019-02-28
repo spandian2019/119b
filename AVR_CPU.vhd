@@ -140,8 +140,8 @@ begin
                                     T0OVF, IRQSPI, UARTRX, UARTRE, UARTTX, ANACMP,
                                     ProgDB, SReg, ZeroFlag, SBFlag, Immed, ImmedEn, RegWEn, RegWSel,
                                     RegSelA, RegSelB, IORegWEn, IORegWSel, IndWEn, IndAddrSel,
-                                    IOOutSel, DataRd, DataWr, IORegOutEn, ALUaddsub, ALUsr, ALUfop,
-                                    ALUcomneg, ALUSel, bitmask, CPC, LoadIn, SRegLd,
+                                    IOOutSel, DataRd, DataWr, ALUaddsub, ALUsr, ALUfop,
+                                    ALUcomneg, ALUSel, bitmask, CPC, LoadIn,
                                     DataOffsetSel, PreSel, QOffset, DataDBWEn, DataABMux, clock,
                                     RegIoFlag, RegIoSelFlag, DataCtrlU, Load, ProgSourceSel, ProgIRSource);
 

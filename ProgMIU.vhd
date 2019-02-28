@@ -24,7 +24,9 @@
 --  ProgAB          - 16 bit program address bus
 --
 -- Revision History:
--- 01/24/2019 Sophia Liu Initial revision
+-- 01/24/2019   Sophia Liu      Initial revision
+-- 02/20/2019   Sundar Pandian  Populated
+-- 02/27/2019   Sundar Pandian  Added documentation
 --
 ----------------------------------------------------------------------------
 library ieee;
@@ -100,7 +102,7 @@ begin
     GenAdder:  for i in 1 to ADDRSIZE - 1 generate
     adderi: fullAdder
     port map(
-        A           => PCOut(i),         -- indirect address to manipulate
+        A           => PCOut(i),            -- indirect address to manipulate
         B           => OffsetMuxOut(i),     -- only ever adding in offset values
         Cin         => CarryOut(i-1),       -- carry in from last bit add
         Cout        => Carryout(i),         -- set next carry
@@ -108,15 +110,15 @@ begin
     );
     end generate GenAdder;
 
-    ProgAB <= AddrAdderOut;
+    ProgAB <= AddrAdderOut;                 -- ProgAB directly maps to adder output
 
     process(clock)
     begin
         if rising_edge(clock) then
-            if reset = '0' then
-                ProgCtr <= "1111111111111111";
+            if reset = '0' then             -- if reset, initializes ProgCtr
+                ProgCtr <= PC_INIT;
             else
-                ProgCtr <= AddrAdderOut;
+                ProgCtr <= AddrAdderOut;    -- else saves Adder output
             end if;
         end if;
     end process;
