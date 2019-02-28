@@ -36,6 +36,7 @@
 -- 01/24/2019   Sophia Liu      Initial revision
 -- 01/30/2019   Sundar Pandian  Initial architecture writeup
 -- 02/01/2019   Sundar Pandian  Debugged with testbench
+-- 02/27/2019   Sophia Liu      Added header documentation
 -- 02/07/2019   Sundar Pandian  Added indirect addressing mux and support
 --
 ----------------------------------------------------------------------------

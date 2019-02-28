@@ -31,6 +31,7 @@
 -- 01/30/2019   Sundar Pandian  Initial architecture writeup, remapping port
 -- 02/01/2019   Sundar Pandian  Debugged with testbench
 -- 02/01/2019   Sundar Pandian  added indirect addressing modes
+-- 02/27/2019   Sophia Liu      Added header documentation
 -- 02/27/2019   Sundar Pandian  removed unnecessary second delay on reg outputs
 --
 ----------------------------------------------------------------------------

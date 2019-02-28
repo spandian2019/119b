@@ -31,6 +31,7 @@
 -- Revision History:
 -- 01/24/2019   Sophia Liu      Initial revision
 -- 02/01/2019   Sundar Pandian  populated
+-- 02/27/2019   Sophia Liu      Added header documentation
 --
 ----------------------------------------------------------------------------
 library ieee;

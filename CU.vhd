@@ -65,6 +65,7 @@
 -- 02/13/2019   Sundar Pandian  Fixed all ALU instructions
 -- 02/25/2019   Sundar Pandian  combined into full CPU
 -- 02/26/2019   Sundar Pandian  added EC support
+-- 02/27/2019   Sophia Liu      Added header documentation
 -- 02/27/2019   Sundar Pandian  Added documentation
 --
 ----------------------------------------------------------------------------

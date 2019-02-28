@@ -42,7 +42,8 @@
 -- 02/01/2019   Sophia Liu      Updates for CU support
 -- 02/06/2019   Sundar Pandian  Changed structure so ALU does it all
 -- 02/27/2019   Sophia Liu      Added MUL block
--- 02/27/2019   Sundar Pandian  Added documentation
+-- 02/27/2019   Sophia Liu      Added header documentation
+-- 02/27/2019   Sundar Pandian  Added in line documentation
 --
 ----------------------------------------------------------------------------
 library ieee;

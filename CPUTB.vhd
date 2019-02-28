@@ -10,6 +10,8 @@
 --
 --  Revision History:
 --  02/20/2019 Sophia Liu Initial revision
+--  02/27/2019 Sophia Liu added support for EC Int
+--  02/27/2019 Sundar     changed EC testing for multicycle operation
 --
 ----------------------------------------------------------------------------
 library ieee;
@@ -231,7 +233,7 @@ architecture TB_ARCHITECTURE of CPUTB is
             for ii in INTR_SIZE downto 0 loop
                 -- check signals, after falling edge
                 wait for CLK_PERIOD/2;
-                -- check prog AB, offset depending on interrupt number
+                -- check prog AB, offset depending on interrupt vector number
                 assert (std_match(ProgABTestIntr(ii),ProgAB))
                     report  "ProgAB failure at interrupt clock number " & integer'image(INTR_SIZE-ii) & " Expected: "
                         & integer'image(to_integer(unsigned(ProgABTestIntr(ii)))) & " and got: "
@@ -273,17 +275,18 @@ architecture TB_ARCHITECTURE of CPUTB is
 
             wait for CLK_PERIOD*5;
 
+            -- reset test
             Reset <= '0';
             wait for CLK_PERIOD;
             Reset <= '1';
             wait for CLK_PERIOD*2;
 
+            -- ensure back at START
             assert (std_match(X"000d", ProgAB))
                 report "Reset fail"
                 severity ERROR;
 
             wait for CLK_PERIOD*5;
-
 
         END_SIM <= TRUE;
         wait;
@@ -314,17 +317,3 @@ architecture TB_ARCHITECTURE of CPUTB is
         end process;
 
 end TB_ARCHITECTURE;
-
---configuration TESTBENCH_FOR_CPU of CPUTB is
---    for TB_ARCHITECTURE
---		for UUT : AVR_CPU
---            use entity work.AVR_CPU;
---        end for;
---        for UUTP : PROG_MEMORY
---            use entity work.PROG_MEMORY;
---        end for;
---        for UUTD : DATA_MEMORY
---            use entity work.DATA_MEMORY;
---        end for;
---    end for;
---end TESTBENCH_FOR_CPU;

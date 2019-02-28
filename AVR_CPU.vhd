@@ -21,11 +21,21 @@
 --  test the complete design.
 --
 --  Inputs:
---    ProgDB - program memory data bus (16 bits)
---    Reset  - active low reset signal
---    INT0   - active low interrupt
---    INT1   - active low interrupt
---    clock  - the system clock
+    --ProgDB  :  in     std_logic_vector(15 downto 0);    -- program memory data bus
+    --Reset   :  in     std_logic;                        -- reset signal (active low)
+    --INT0    :  in     std_logic;                        -- external interrupt request 0
+    --INT1    :  in     std_logic;                        -- external interrupt request 1
+    --T1CAP   :  in     std_logic;                        -- timer 1 capture event
+    --T1CPA   :  in     std_logic;                        -- timer 1 compare match A
+    --T1CPB   :  in     std_logic;                        -- timer 2 compare match B
+    --T1OVF   :  in     std_logic;                        -- timer 1 overflow
+    --T0OVF   :  in     std_logic;                        -- timer 0 overflow
+    --IRQSPI  :  in     std_logic;                        -- serial transfer complete
+    --UARTRX  :  in     std_logic;                        -- UART receive complete
+    --UARTRE  :  in     std_logic;                        -- UART data register empty
+    --UARTTX  :  in     std_logic;                        -- UART transmit complete
+    --ANACMP  :  in     std_logic;                        -- analog comparator
+    --clock   :  in     std_logic;                        -- system clock
 --
 --  Outputs:
 --    ProgAB - program memory address bus (16 bits)

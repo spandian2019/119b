@@ -26,6 +26,7 @@
 -- Revision History:
 -- 01/24/2019   Sophia Liu      Initial revision
 -- 02/20/2019   Sundar Pandian  Populated
+-- 02/27/2019   Sophia Liu      Added header documentation
 -- 02/27/2019   Sundar Pandian  Added documentation
 --
 ----------------------------------------------------------------------------
@@ -65,34 +66,35 @@ component fullAdder is
       );
 end component;
 
-signal OffsetMuxOut : std_logic_vector(ADDRSIZE-1 downto 0);
+signal OffsetMuxOut : std_logic_vector(ADDRSIZE-1 downto 0); -- Op 2 into PC adder
 
-signal ProgCtr      : std_logic_vector(ADDRSIZE-1 downto 0);
+signal ProgCtr      : std_logic_vector(ADDRSIZE-1 downto 0); -- PC register
 
-signal PCOut        : std_logic_vector(ADDRSIZE-1 downto 0);
+signal PCOut        : std_logic_vector(ADDRSIZE-1 downto 0); -- PC output register from load block
 
-signal CarryOut     : std_logic_vector(ADDRSIZE-1 downto 0);    -- carry for adder/subtracter
+signal CarryOut     : std_logic_vector(ADDRSIZE-1 downto 0); -- carry for adder/subtracter
 
 signal AddrAdderOut : std_logic_vector(ADDRSIZE-1 downto 0); -- address adder output
 
 begin
 
-    OffsetMuxOut <= RST_VECTOR          when Reset = '0' else
-                    IR_input            when AddrSourceSel = IR_SRC else
-                    Z_input             when AddrSourceSel = Z_SRC else
-                    RST_VECTOR          when AddrSourceSel = RST_SRC else
-                    INC_VECTOR          when AddrSourceSel = NORMAL_SRC else
-                    "00000000" & DataDB when AddrSourceSel = DB_LO_SRC else
-                    DataDB & "00000000" when AddrSourceSel = DB_HI_SRC;
+    -- Mux into Operand 2 for PC adder block
+    OffsetMuxOut <= RST_VECTOR          when Reset = '0' else                   -- if reset, hold PC value at init
+                    IR_input            when AddrSourceSel = IR_SRC else        -- source from CU
+                    Z_input             when AddrSourceSel = Z_SRC else         -- source from Z register value
+                    RST_VECTOR          when AddrSourceSel = RST_SRC else       -- hold PC value
+                    INC_VECTOR          when AddrSourceSel = NORMAL_SRC else    -- inc PC value
+                    "00000000" & DataDB when AddrSourceSel = DB_LO_SRC else     -- load popped stack value into low byte of PC
+                    DataDB & "00000000" when AddrSourceSel = DB_HI_SRC;         -- add in popped stack value into high byte of PC
 
-    AndBlock: for i in ADDRSIZE-1 downto 0 generate
-        PCOut(i) <= ProgCtr(i) and Load;
+    AndBlock: for i in ADDRSIZE-1 downto 0 generate                             -- PC AND'd with Load signal for loading or adding offset to PC
+        PCOut(i) <= ProgCtr(i) and Load;                                        -- active low Load
     end generate AndBlock;
 
-    -- ADDRSIZE bit adder for indirect address manipulations
+    -- ADDRSIZE bit adder for PC manipulations
     adder0: fullAdder
     port map(
-        A           => PCOut(0),         -- indirect address to manipulate
+        A           => PCOut(0),            -- PC value to manipulate
         B           => OffsetMuxOut(0),     -- only ever adding in offset values
         Cin         => '0',                 -- since only adding in offset, carry always '0'
         Cout        => Carryout(0),         -- set next carry
@@ -102,7 +104,7 @@ begin
     GenAdder:  for i in 1 to ADDRSIZE - 1 generate
     adderi: fullAdder
     port map(
-        A           => PCOut(i),            -- indirect address to manipulate
+        A           => PCOut(i),            -- PC Value to manipulate
         B           => OffsetMuxOut(i),     -- only ever adding in offset values
         Cin         => CarryOut(i-1),       -- carry in from last bit add
         Cout        => Carryout(i),         -- set next carry

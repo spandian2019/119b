@@ -5,6 +5,7 @@
 --  This package defines constant vectors used in the CPU test bench
 --
 --  Revision History
+--  Sophia  modified to fit expected operation
 --
 -----------------------------------------------------------------------------
 
