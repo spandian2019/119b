@@ -1247,6 +1247,18 @@ begin
 
             end if;
 
+            if std_match(IR, OpNOP) then
+                -- do nothing
+            end if;
+
+            if std_match(IR, OpSLP) then
+                -- do nothing
+            end if;
+
+            if std_match(IR, OpWDR) then
+                -- do nothing
+            end if;
+
     end process decoder;
 
     -- Fetches next instruction when on last cycle of operation of previous instruction
