@@ -195,14 +195,7 @@ begin
         end if;
     end process write_addr_reg;
 
-    read_addr_reg : process (CLK)
-    begin
-        if (rising_edge(CLK)) then
-        -- stack pointer also always gets outputted to addr line MUX and control unit
-        --  selects which address line to be used
-        SPMuxOut <= SPReg;
-        end if;
-    end process read_addr_reg;
+    SPMuxOut <= SPReg;
 
     ZAddr <= '0' & Z_ADDR_L; -- buffer for zero padding Z address line into IO reg array
     YAddr <= '0' & Y_ADDR_L; -- buffer for zero padding Y address line into IO reg array

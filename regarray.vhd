@@ -120,20 +120,15 @@ begin
     RegAOut <=  registers(conv_integer(RegSelA));
     RegBOut <=  registers(conv_integer(RegSelB));
 
-    -- synchronously output indirect address lines to avoid errors with DataMIU
-    --  such as incrementing twice in one operation
-    read_addr_reg : process (CLK)
-    begin
-        if (rising_edge(CLK)) then
-        -- X,Y,Z pointers also always gets outputted to addr line MUX and control unit
-        --  selects which address line to be used
-        RegXOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(X_ADDR_L));
-        RegXOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(X_ADDR_H));
-        RegYOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(Y_ADDR_L));
-        RegYOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(Y_ADDR_H));
-        RegZOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(Z_ADDR_L));
-        RegZOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(Z_ADDR_H));
-        end if;
-    end process read_addr_reg;
+
+    -- X,Y,Z pointers also always gets outputted to addr line MUX and control unit
+    --  selects which address line to be used
+    RegXOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(X_ADDR_L));
+    RegXOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(X_ADDR_H));
+    RegYOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(Y_ADDR_L));
+    RegYOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(Y_ADDR_H));
+    RegZOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(Z_ADDR_L));
+    RegZOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(Z_ADDR_H));
+
 
 end regspace;
