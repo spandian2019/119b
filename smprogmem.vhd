@@ -56,7 +56,7 @@ end  PROG_MEMORY;
 architecture  ROM  of  PROG_MEMORY  is
 
     -- define the type for the ROM (an array)
-    type  ROMtype  is array(0 to 856) of std_logic_vector(15 downto 0);
+    type  ROMtype  is array(0 to 900) of std_logic_vector(15 downto 0);
 
     -- define the actual ROM to test program
     signal  ROMbits  :  ROMtype  :=  (
@@ -198,7 +198,7 @@ architecture  ROM  of  PROG_MEMORY  is
                                         X"1389", X"0000", X"940E", X"02AE", X"C001",
                                         X"0000", X"EAEE", X"E0F2", X"B78F", X"9509",
                                         X"B79F", X"1389", X"0000", X"FFF1", X"9020",
-                                        X"FF00", X"940C", X"000D", X"0000", X"2D01",
+                                        X"FF00", X"940C", X"0359", X"0000", X"2D01", -- 000D start 0359 mul 
                                         X"9508",
                                         X"921F", X"B61F", X"930F", X"931F", X"E203",
                                         X"E213", X"0F01", X"9300", X"FF00", X"911F", -- interrupt handlers
@@ -233,7 +233,16 @@ architecture  ROM  of  PROG_MEMORY  is
                                         X"910F", X"BE1F", X"901F", X"9518", X"921F",
                                         X"B61F", X"930F", X"931F", X"E203", X"E213",
                                         X"0F01", X"9300", X"FF00", X"911F", X"910F",
-                                        X"BE1F", X"901F", X"9518");
+                                        X"BE1F", X"901F", X"9518",
+                                        X"E000", X"BF0F", X"EF00", X"E512", X"9F01", -- mul
+                                        X"B72F", X"9320", X"FE00", X"9200", X"FF00",
+                                        X"9210", X"FF00", X"E000", X"E010", X"9F01",
+                                        X"B72F", X"9320", X"FE00", X"9200", X"FF00",
+                                        X"9210", X"FF00", X"EF0F", X"EF1F", X"9F01",
+                                        X"B72F", X"9320", X"FE00", X"9200", X"FF00",
+                                        X"9210", X"FF00", X"E003", X"E81A", X"9F01",
+                                        X"B72F", X"9320", X"FE00", X"9200", X"FF00",
+                                        X"9210", X"FF00", X"940C", X"000D");
 
 
 begin

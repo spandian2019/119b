@@ -311,8 +311,8 @@ begin
                 FOut        when ALUSel = FBLOCKOUT else
                 SROut       when ALUSel = SHIFTOUT  else
                 SwapRegOut  when ALUSel = SWAPOUT   else
-                MulRegOut(7 downto 0)   when ALUSel = MULOUTL    else
-                MulRegOut(15 downto 8)   when ALUSel = MULOUTH    else
+                MulRegOut(REGSIZE-1 downto 0)   when ALUSel = MULOUTL    else
+                MulRegOut(REGSIZE*2-1 downto REGSIZE)   when ALUSel = MULOUTH    else
                 BitOut      when ALUSel = BOUT else
                 "XXXXXXXX";
 
@@ -381,6 +381,7 @@ begin
                     CarryOut(REGSIZE-1) when ALUSel = ADDSUBOUT and ALUASOp(SUBFLAG) = OP_ADD else
                     not CarryOut(REGSIZE-1) when ALUSel = ADDSUBOUT else     -- carry flag opposite when subtracting
                     '1' when ALUSel = FBLOCKOUT else -- set for logical operations
+                    MulRegOut(REGSIZE*2-1) when ALUSel = MULOUTH else -- carry out for multiplication 
                     RegA(0); -- when ALUSel = SHIFTEN;
     StatusOut(0) <= CFlag;
 end behavioral;

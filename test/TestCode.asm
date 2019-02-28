@@ -894,7 +894,7 @@ ICallSreg:
 	LDS 	R2, $FF00
 
 End:
-	RJMP START ;000D		; -return to very top
+	RJMP MulTest ;000D		; -return to very top
 	NOP
 
 CallTest:				; subroutine test
@@ -1107,3 +1107,40 @@ ANACMP:
     OUT     SREG, R1    ; restore sreg
     POP     R1          ; restore R1
     RETI                ; return from interrupt
+
+    MulTest:
+    			LDI 	R16, $00
+    			OUT		SReg, R16
+    			LDI     R16, $F0
+                LDI     R17, $52
+                MUL     R16, R17	; Mul F0, 52
+                IN      R18, SReg
+                STS     $FE00, R18  ; W 00 FE00
+                STS		$FF00, R0 	; W E0 FF00
+                STS 	$FF00, R1 	; W 4C FF00
+    MulTest2:
+    			LDI     R16, $00
+                LDI     R17, $00
+                MUL     R16, R17	; Mul 0,0
+                IN      R18, SReg
+                STS     $FE00, R18  ; W 00 FE00
+                STS		$FF00, R0 	; W 00 FF00
+                STS 	$FF00, R1 	; W 00 FF00
+
+    MulTest3:
+    			LDI     R16, $FF
+                LDI     R17, $FF
+                MUL     R16, R17	; Mul FF,FF
+                IN      R18, SReg
+                STS     $FE00, R18  ; W 01 FE00
+                STS		$FF00, R0 	; W 01 FF00
+                STS 	$FF00, R1 	; W FE FF00
+    MulTest4:
+    			LDI     R16, $03
+                LDI     R17, $8A
+                MUL     R16, R17	; Mul 03, 8A
+                IN      R18, SReg
+                STS     $FE00, R18  ; W 00 FE00
+                STS		$FF00, R0 	; W 9E FF00
+                STS 	$FF00, R1 	; W 01 FF00
+                JMP     $000D 
