@@ -118,14 +118,14 @@ begin
 
     -- synchronously output indirect address lines to avoid errors with DataMIU
     --  such as incrementing twice in one operation
-    read_addr_reg : process (CLK)
-    begin
-        if (rising_edge(CLK)) then
+    --read_addr_reg : process (CLK)
+    --begin
+    --    if (rising_edge(CLK)) then
         -- stack pointer also always gets outputted to addr line MUX and control unit
         --  selects which address line to be used
         SPRegOut((ADDRSIZE/2)-1 downto 0)      <= IOregisters(conv_integer(SP_ADDR_H));
         SPRegOut(ADDRSIZE-1 downto ADDRSIZE/2) <= IOregisters(conv_integer(SP_ADDR_L));
-        end if;
-    end process read_addr_reg;
+    --    end if;
+    --end process read_addr_reg;
 
 end regspace;

@@ -51,11 +51,11 @@ ADD1F: ;test ADIW
             STS     $FE00, R3       ; W 80 FE00
 ADD1resF:
             CPI     R25, 0
-            BRBC 	1, ADD1resL
+            BRBS 	1, ADD1resL
             NOP
 ADD1resL:
             CPI     R24, $11
-            BRBC 	1, ADD2F
+            BRBS 	1, ADD2F
             NOP
 ADD2F: ;test ADD Carry Flag
             LDI     R16, $F0
@@ -65,7 +65,7 @@ ADD2F: ;test ADD Carry Flag
             STS     $FE00, R18      ; W 81 FE00
 ADD2res:
             CPI     R16, $42
-            BRBC 	1, ADD3F
+            BRBS 	1, ADD3F
             NOP
 ADD3F: ;test ADD Zero Flag
             LDI     R18, $00
@@ -75,7 +75,7 @@ ADD3F: ;test ADD Zero Flag
             STS     $FE01, R3       ; W 82 FE01
 ADD3res:
             CPI     R16, $00
-            BRBC 	1, ADC1F
+            BRBS 	1, ADC1F
             NOP
 ADC1F: ;test H,S,N flag
             LDI     R16, $0F
@@ -85,7 +85,7 @@ ADC1F: ;test H,S,N flag
             STS     $FE02, R3       ; W B4 FE02
 ADC1res:
             CPI     R16, $90
-            BRBC 	1, ADC2F
+            BRBS 	1, ADC2F
             NOP
 ADC2F: ;test S,V,C flags
             LDI     R18, $80
@@ -101,11 +101,11 @@ ADD4F: ;test S,V,N flags
             STS     $FE00, R3       ; W 8C FE00
 ADC2res:
             CPI     R16, $00
-            BRBC 	1, ADD4res
+            BRBS 	1, ADD4res
             NOP
 ADD4res:
             CPI     R17, $80
-            BRBC 	1, AND1F
+            BRBS 	1, AND1F
             NOP
 AND1F:  ;test S,V,N,Z
             LDI     R16, $00
@@ -117,7 +117,7 @@ AND1F:  ;test S,V,N,Z
             STS     $FF00, R3       ; W 14 FF00
 AND1res:
             CPI     R16, $D0
-            BRBC 	1, AND2F
+            BRBS 	1, AND2F
             NOP
 AND2F: ; test S,V,N,Z
             LDI     R17, $2F
@@ -126,7 +126,7 @@ AND2F: ; test S,V,N,Z
             STS     $FF00, R3       ; W 02 FF00
 AND1res1:
             CPI     R16, $00
-            BRBC 	1, ANDI1F
+            BRBS 	1, ANDI1F
             NOP
 ANDI1F:  ;test S,V,N,Z
             LDI     R16, $D8
@@ -135,7 +135,7 @@ ANDI1F:  ;test S,V,N,Z
             STS     $FF00, R3       ; W 14 FF00
 ANDI1res:
             CPI     R16, $D0
-            BRBC 	1, ANDI2F
+            BRBS 	1, ANDI2F
             NOP
 ANDI2F: ; test S,V,N,Z
             ANDI    R16, $2F        ; ANDI D0, 2F
@@ -143,7 +143,7 @@ ANDI2F: ; test S,V,N,Z
             STS     $FF00, R3       ; W 02 FF00
 ANDI1res1:
             CPI     R16, $00
-            BRBC 	1, ASR1F
+            BRBS 	1, ASR1F
             NOP
 ASR1F:
             LDI     R16, $81
@@ -152,7 +152,7 @@ ASR1F:
             STS     $FF00, R3       ; W 15 FF00
 ASR1res:
             CPI     R16, $C0
-            BRBC 	1, LSR1F
+            BRBS 	1, LSR1F
             NOP
 LSR1F:
             LDI     R16, $81
@@ -161,7 +161,7 @@ LSR1F:
             STS     $FF00, R3       ; W 19 FF00
 LSR1res:
             CPI     R16, $40
-            BRBC 	1, BCLR1
+            BRBS 	1, BCLR1
             NOP
 
 BCLR1:
@@ -197,7 +197,7 @@ BLD1F:
             STS     $FF00, R3       ; W 4A FF00
 BLD1res:
             CPI     R16, $81
-            BRBC 	1, BST1F
+            BRBS 	1, BST1F
             NOP
 BST1F:
             BST     R16, 1
@@ -205,17 +205,17 @@ BST1F:
             STS     $FF00, R3       ; W 02 FF00
 BLD1res1:
             CPI     R16, $81
-            BRBC 	1, INC1res
+            BRBS 	1, INC1res
             NOP
 INC1res:
             INC     R16
             CPI     R16, $82        ; INC $81
-            BRBC 	1, DEC1res
+            BRBS 	1, DEC1res
             NOP
 DEC1res:
             DEC     R16
             CPI     R16, $81        ; DEC $82
-            BRBC 	1, SUB1F
+            BRBS 	1, SUB1F
             NOP
 SUB1F: ;test V
             LDI     R16, $AF
@@ -225,7 +225,7 @@ SUB1F: ;test V
             STS     $FF00, R3       ; W 18 FF00
 SUB1res:
             CPI     R16, $30
-            BRBC 	1, SUBI1F
+            BRBS 	1, SUBI1F
             NOP
 SUBI1F: ;test 0
             SUBI    R16, $30        ; SUBI $30, $30
@@ -233,18 +233,18 @@ SUBI1F: ;test 0
             STS     $FF00, R3       ; W 02 FF00
 SUBI1res:
             CPI     R16, $00
-            BRBC 	1, SWAP1
+            BRBS 	1, SWAP1
             NOP
 SWAP1:
             SWAP    R16             ; SWAP 0
             CPI     R16, $00
-            BRBC 	1, SWAP2
+            BRBS 	1, SWAP2
             NOP
 SWAP2:
             LDI     R16, $80
             SWAP    R16             ; SWAP $80
             CPI     R16, $08
-            BRBC 	1, COM1
+            BRBS 	1, COM1
             NOP
 
 COM1:
