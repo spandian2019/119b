@@ -88,8 +88,9 @@ signal XMuxOut  : std_logic_vector(ADDRSIZE-1 downto 0);
 signal YMuxOut  : std_logic_vector(ADDRSIZE-1 downto 0);
 signal ZMuxOut  : std_logic_vector(ADDRSIZE-1 downto 0);
 signal SPMuxOut : std_logic_vector(ADDRSIZE-1 downto 0);
+signal SPReg    : std_logic_vector(ADDRSIZE-1 downto 0);
 signal AMuxOut  : std_logic_vector(REGSIZE-1  downto 0);
-signal IOMuxOut : std_logic_vector(REGSIZE-1  downto 0);
+signal SRegMuxOut : std_logic_vector(REGSIZE-1  downto 0);
 
 signal IndAddrIn : std_logic_vector(IOADDRSIZE-1 downto 0);
 signal XAddr : std_logic_vector(IOADDRSIZE-1 downto 0);
@@ -117,28 +118,6 @@ component RegArray is
         RegXOut     : out std_logic_vector(ADDRSIZE-1 downto 0);    -- register bus X out
         RegYOut     : out std_logic_vector(ADDRSIZE-1 downto 0);    -- register bus Y out
         RegZOut     : out std_logic_vector(ADDRSIZE-1 downto 0)     -- register bus Z out
-    );
-end component;
-
-component IORegArray is
-    port(
-        Clk      :  in  std_logic;                                  -- system clock
-        Reset    :  in  std_logic;                                  -- system reset, used to init SP to all 1s
-        RegIn    :  in  std_logic_vector(REGSIZE-1 downto 0);       -- input register
-
-        -- from CU
-        IORegWEn    : in std_logic;                                 -- IO register write enable, from CU
-        IORegWSel   : in std_logic_vector(IOADDRSIZE-1 downto 0);   -- IO register address select line, from CU
-
-        IndDataIn   : in std_logic_vector(ADDRSIZE-1 downto 0);     -- Indirect Addr data in, from DataMIU
-        IndAddrIn   : in std_logic_vector(IOADDRSIZE-1 downto 0);   -- Indirect Addr value in, from RegUnit
-        IndWEn      : in std_logic;                                 -- Indirect Addr write enable, from CU
-
-        SRegIn      : in std_logic_vector(REGSIZE-1 downto 0);      -- Status Register from ALU
-        SRegOut     : out std_logic_vector(REGSIZE-1 downto 0);     -- Status Register out to ALU
-
-        IORegOut    :  out std_logic_vector(REGSIZE-1 downto 0);    -- IO register bus out
-        SPRegOut    :  out std_logic_vector(ADDRSIZE-1 downto 0)    -- SP register bus out
     );
 end component;
 
@@ -187,26 +166,43 @@ begin
         RegZOut     => ZMuxOut
     );
 
-    IOReg: IORegArray
-    port map(
-        Clk         => Clk,
-        RegIn       => RegIn,
-        Reset       => Reset,
+    -- writing to SP Register occurs synchronously
+    write_addr_reg : process (CLK)
+    begin
+        if Reset = '0' then
+            SPReg <= (others => '1');
+        elsif (rising_edge(CLK)) then
+            -- writes to register only if write enabled
+            -- holds value otherwise
+            if IORegWEn = WRITE_EN then
+                SRegMuxOut <= RegIn;
+                if IORegWSel /= SREG_ADDR then
+                    SRegMuxOut <= SRegIn;
+                end if;
+            else
+                SRegMuxOut <= SRegIn;
+            end if;
 
-        -- from CU
-        IORegWEn    => IORegWEn,
-        IORegWSel   => IORegWSel,
+            -- writes to register only if write enabled and indirect address is SP_ADDR_L
+            -- holds value otherwise
+            if IndWEn = WRITE_EN and IndAddrIn = SP_ADDR_L then
+                SPReg <= IndDataIn;
+            else
+                if IndAddrIn /= "XXXXX" then
+                    SPReg <= SPReg;
+                end if;
+            end if;
+        end if;
+    end process write_addr_reg;
 
-        IndDataIn   => IndDataIn,
-        IndAddrIn   => IndAddrIn,
-        IndWEn      => IndWEn,
-
-        SRegIn      => SRegIn,
-        SRegOut     => SRegOut,
-
-        IORegOut    => IOMuxOut,
-        SPRegOut    => SPMuxOut
-    );
+    read_addr_reg : process (CLK)
+    begin
+        if (rising_edge(CLK)) then
+        -- stack pointer also always gets outputted to addr line MUX and control unit
+        --  selects which address line to be used
+        SPMuxOut <= SPReg;
+        end if;
+    end process read_addr_reg;
 
     ZAddr <= '0' & Z_ADDR_L; -- buffer for zero padding Z address line into IO reg array
     YAddr <= '0' & Y_ADDR_L; -- buffer for zero padding Y address line into IO reg array
@@ -249,11 +245,12 @@ begin
         port map(
             S0          => IOOutSel,
             SIn0        => AMuxOut(i),
-            SIn1        => IOMuxOut(i),
+            SIn1        => SRegMuxOut(i),
             SOut        => RegAOut(i)
       );
       end generate OutAMux;
 
       ZAddrOut <= ZMuxOut;
+      SRegOut <= SRegMuxOut;
 
 end RegUnit_arc;
