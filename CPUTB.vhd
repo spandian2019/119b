@@ -214,7 +214,7 @@ architecture TB_ARCHITECTURE of CPUTB is
 
             -- interrupt test
 
-            wait for CLK_PERIOD*22;
+            wait for CLK_PERIOD*25;
 
             -- assert interrupt
             INT0 <= '0';
@@ -226,7 +226,7 @@ architecture TB_ARCHITECTURE of CPUTB is
 
             PreINT <= ProgAB;
 
-            wait for CLK_PERIOD;
+            wait for CLK_PERIOD*2;
 
             for ii in INTR_SIZE downto 0 loop
                 -- check signals, after falling edge
