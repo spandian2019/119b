@@ -1,38 +1,54 @@
 .device AT90S4414
 .equ SREG = $3f 	; stack register location
 
+; interrupt vectors
+RJMP    START
+RJMP    INT0
+RJMP    INT1
+RJMP    T1CAP
+RJMP    T1CPA
+RJMP    T1CPB
+RJMP    T1OVF
+RJMP    T0OVF
+RJMP    IRQSPI
+RJMP    UARTRX
+RJMP    UARTRE
+RJMP    UARTTX
+RJMP    ANACMP
+
 ; clear all registers
-CLEAR:      EOR     R1, R1
-            EOR     R2, R2
-            EOR     R3, R3
-            EOR     R4, R4
-            EOR     R5, R5
-            EOR     R6, R6
-            EOR     R7, R7
-            EOR     R8, R8
-            EOR     R9, R9
-            EOR     R10, R10
-            EOR     R11, R11
-            EOR     R12, R12
-            EOR     R13, R13
-            EOR     R14, R14
-            EOR     R15, R15
-            EOR     R16, R16
-            EOR     R17, R17
-            EOR     R18, R18
-            EOR     R19, R19
-            EOR     R20, R20
+START:
+            LDI     R16, $00
+            LDI     R17, $00
+            LDI     R18, $00
+            LDI     R19, $80 ;used for setting interrupt flag high in SReg
+           	BSET 	7
+            MOV     R15, R16
+            MOV     R1, R16
+           	BSET 	7
+            MOV     R3, R16
+            MOV     R4, R16
+            MOV     R5, R16
+            MOV     R6, R16
+            MOV     R7, R16
+            MOV     R8, R16
+            MOV     R9, R16
+            MOV     R10, R16
+            MOV     R11, R16
+            MOV     R12, R16
+            MOV     R13, R16
+            MOV     R14, R16
 ; ALU tests
 ALUtests:
             RJMP     ADD1F
 ADD1F: ;test ADIW
-            EOR     R1, R1
+            LDI     R1, R19
             EOR     R25, R25
             EOR     R24, R24
             OUT     SReg, R1
             ADIW    R25:R24, $11    ; ADDIW 0, $11
             IN      R3, SReg
-            STS     $FE00, R3       ; W 00 FE00
+            STS     $FE00, R3       ; W 80 FE00
 ADD1resF:
             CPI     R25, 0
             BRBS 	1, ADD1resL
@@ -46,7 +62,7 @@ ADD2F: ;test ADD Carry Flag
             LDI     R17, $52
             ADD     R16, R17        ; ADD $F0, $52
             IN      R18, SReg
-            STS     $FE00, R18      ; W 01 FE00
+            STS     $FE00, R18      ; W 81 FE00
 ADD2res:
             CPI     R16, $42
             BRBS 	1, ADD3F
@@ -56,7 +72,7 @@ ADD3F: ;test ADD Zero Flag
             LDI     R16, $00
             ADD     R16, R18        ; ADD 0, 0
             IN      R3, SReg
-            STS     $FE01, R3       ; W 02 FE01
+            STS     $FE01, R3       ; W 82 FE01
 ADD3res:
             CPI     R16, $00
             BRBS 	1, ADC1F
@@ -66,7 +82,7 @@ ADC1F: ;test H,S,N flag
             LDI     R17, $81
             ADC     R16, R17        ; ADC $0F, $81
             IN      R3, SReg
-            STS     $FE02, R3       ; W 34 FE02
+            STS     $FE02, R3       ; W B4 FE02
 ADC1res:
             CPI     R16, $90
             BRBS 	1, ADC2F
@@ -78,11 +94,11 @@ ADC2F: ;test S,V,C flags
             LDI     R19, $40
             ADC     R16, R18        ; ADC $80, $80
             IN      R3, SReg
-            STS     $FE03, R3       ; W 1B FE03
+            STS     $FE03, R3       ; W 9B FE03
 ADD4F: ;test S,V,N flags
             ADD     R17, R19        ; ADD $40, $40
             IN      R3, SReg
-            STS     $FE00, R3       ; W 0C FE00
+            STS     $FE00, R3       ; W 8C FE00
 ADC2res:
             CPI     R16, $00
             BRBS 	1, ADD4res
@@ -281,7 +297,7 @@ EOR1:
 	LDI 	R16, $00 	; skip if equal
 
 EOR2:
-    OUT     SReg, R0    ; Clear sreg
+    OUT     SReg, R1    ; Clear sreg
 	LDI 	R17, $FF
 	EOR 	R16, R17 	; EOR $FF, $FF
 	IN 		R24, SREG 	; store new sreg
@@ -354,7 +370,7 @@ ORI1:
 	NOP					; skip if fails
 
 ROR1:
-    OUT     SReg, R0    ; Clear sreg
+    OUT     SReg, R1    ; Clear sreg
 	BSET 	0			; set carry bit
   	ROR 	R17		 	; -ROR $AA
 	IN 		R24, SREG 	; store new sreg
@@ -367,7 +383,7 @@ ROR1:
 	NOP					; skip if fails
 
 ROR2:
-    OUT     SReg, R0    ; Clear sreg
+    OUT     SReg, R1    ; Clear sreg
 	BCLR 	0			; clear carry bit
   	ROR 	R17		 	; -ROR $D5
 	IN 		R24, SREG 	; store new sreg
@@ -380,7 +396,7 @@ ROR2:
 	NOP					; skip if fails
 
 SBC1:
-    OUT     SReg, R0    ; Clear sreg
+    OUT     SReg, R1    ; Clear sreg
 	BCLR 	0			; clear carry bit
 	LDI 	R16, $00
 	LDI 	R17, $FF
@@ -395,7 +411,7 @@ SBC1:
 	NOP					; skip if fails
 
 SBC2:
-    OUT     SReg, R0    ; Clear sreg
+    OUT     SReg, R1    ; Clear sreg
 	BSET 	0			; set carry bit
 	LDI 	R16, $50
 	LDI 	R17, $70
@@ -410,7 +426,7 @@ SBC2:
 	NOP					; skip if fails
 
 SBCI1:
-    OUT     SReg, R0    ; Clear sreg
+    OUT     SReg, R1    ; Clear sreg
 	BSET	0			; set carry bit
 	LDI 	R17, $7A
   	SBCI 	R17, $7A	; SBCI 7A, 7A with carry
@@ -424,7 +440,7 @@ SBCI1:
 	NOP					; skip if fails
 
 SBIW1:
-    OUT     SReg, R0    ; Clear sreg
+    OUT     SReg, R1    ; Clear sreg
 	LDI 	R24, $7A
 	LDI 	R25, $01
   	SBIW 	R24, $0A	; SBCI 017A, A
@@ -855,14 +871,15 @@ JumpSReg:
 	IN      R25, SREG	; store new flags
 	CPSE 	R24, R25    ; check flags unchanged
 	NOP
-	CALL 	CallTest	; call test
+	RCALL 	CallTest	; call test
 	RJMP 	CallSReg 	; jmp test
+	NOP
 	NOP
 
 CallSReg:
 ; ICALL
-	LDI 	R30, $A1
-	LDI 	R31, $02	; load Z with ICallTest address ($02A2)
+	LDI 	R30, $AE
+	LDI 	R31, $02	; load Z with CallTest address ($02A1)
 	IN      R24, SREG	; store flags
 	ICALL				; skip to ICallTest if succeeds
 	IN      R25, SREG	; store new flags
@@ -871,13 +888,14 @@ CallSReg:
 	NOP
 
 ICallSreg:
-    SBRS	R31, 1		; skip 2 word inst
-    LDS 	R2, $FF00
+; I/O tests
+	; check registers
+	SBRS	R31, 1		; skip 2 word inst
+	LDS 	R2, $FF00
 
 End:
-	JMP 0000		; -return to very top
+	RJMP MulTest ;000D		; -return to very top
 	NOP
-
 
 CallTest:				; subroutine test
 ; -RET
@@ -885,7 +903,244 @@ CallTest:				; subroutine test
 	MOV R16, R0			; do something
 	RET					; -return from subroutine
 
-ICallTest:				; indirect subroutine call test
-	NOP
-	ADD R1, R2			; do something
-	RET
+;  interrupt handlers
+INT0:
+    PUSH    R1          ; save R1 on stack
+    IN      R1, SREG    ; save sreg
+    PUSH    R16         ; save other regs
+    PUSH    R17
+    ; do something testable
+    LDI     R16, $23
+    LDI     R17, $23
+    ADD     R16, R17
+    STS     $FF00, R16  ; W 46 FF00
+
+    POP     R17         ; restore regs
+    POP     R16
+    OUT     SREG, R1    ; restore sreg
+    POP     R1          ; restore R1
+    RETI                ; return from interrupt
+
+INT1:
+    PUSH    R1          ; save R1 on stack
+    IN      R1, SREG    ; save sreg
+    PUSH    R16         ; save other regs
+    PUSH    R17
+    ; do something testable
+    LDI     R16, $23
+    LDI     R17, $23
+    ADD     R16, R17
+    STS     $FF00, R16  ; W 46 FF00
+
+    POP     R17         ; restore regs
+    POP     R16
+    OUT     SREG, R1    ; restore sreg
+    POP     R1          ; restore R1
+    RETI                ; return from interrupt
+
+T1CAP:
+    PUSH    R1          ; save R1 on stack
+    IN      R1, SREG    ; save sreg
+    PUSH    R16         ; save other regs
+    PUSH    R17
+    ; do something testable
+    LDI     R16, $23
+    LDI     R17, $23
+    ADD     R16, R17
+    STS     $FF00, R16  ; W 46 FF00
+
+    POP     R17         ; restore regs
+    POP     R16
+    OUT     SREG, R1    ; restore sreg
+    POP     R1          ; restore R1
+    RETI                ; return from interrupt
+
+T1CPA:
+    PUSH    R1          ; save R1 on stack
+    IN      R1, SREG    ; save sreg
+    PUSH    R16         ; save other regs
+    PUSH    R17
+    ; do something testable
+    LDI     R16, $23
+    LDI     R17, $23
+    ADD     R16, R17
+    STS     $FF00, R16  ; W 46 FF00
+
+    POP     R17         ; restore regs
+    POP     R16
+    OUT     SREG, R1    ; restore sreg
+    POP     R1          ; restore R1
+    RETI                ; return from interrupt
+
+T1CPB:
+    PUSH    R1          ; save R1 on stack
+    IN      R1, SREG    ; save sreg
+    PUSH    R16         ; save other regs
+    PUSH    R17
+    ; do something testable
+    LDI     R16, $23
+    LDI     R17, $23
+    ADD     R16, R17
+    STS     $FF00, R16  ; W 46 FF00
+
+    POP     R17         ; restore regs
+    POP     R16
+    OUT     SREG, R1    ; restore sreg
+    POP     R1          ; restore R1
+    RETI                ; return from interrupt
+
+T1OVF:
+    PUSH    R1          ; save R1 on stack
+    IN      R1, SREG    ; save sreg
+    PUSH    R16         ; save other regs
+    PUSH    R17
+    ; do something testable
+    LDI     R16, $23
+    LDI     R17, $23
+    ADD     R16, R17
+    STS     $FF00, R16  ; W 46 FF00
+
+    POP     R17         ; restore regs
+    POP     R16
+    OUT     SREG, R1    ; restore sreg
+    POP     R1          ; restore R1
+    RETI                ; return from interrupt
+
+T0OVF:
+    PUSH    R1          ; save R1 on stack
+    IN      R1, SREG    ; save sreg
+    PUSH    R16         ; save other regs
+    PUSH    R17
+    ; do something testable
+    LDI     R16, $23
+    LDI     R17, $23
+    ADD     R16, R17
+    STS     $FF00, R16  ; W 46 FF00
+
+    POP     R17         ; restore regs
+    POP     R16
+    OUT     SREG, R1    ; restore sreg
+    POP     R1          ; restore R1
+    RETI                ; return from interrupt
+
+IRQSPI:
+    PUSH    R1          ; save R1 on stack
+    IN      R1, SREG    ; save sreg
+    PUSH    R16         ; save other regs
+    PUSH    R17
+    ; do something testable
+    LDI     R16, $23
+    LDI     R17, $23
+    ADD     R16, R17
+    STS     $FF00, R16  ; W 46 FF00
+
+    POP     R17         ; restore regs
+    POP     R16
+    OUT     SREG, R1    ; restore sreg
+    POP     R1          ; restore R1
+    RETI                ; return from interrupt
+
+UARTRX:
+    PUSH    R1          ; save R1 on stack
+    IN      R1, SREG    ; save sreg
+    PUSH    R16         ; save other regs
+    PUSH    R17
+    ; do something testable
+    LDI     R16, $23
+    LDI     R17, $23
+    ADD     R16, R17
+    STS     $FF00, R16  ; W 46 FF00
+
+    POP     R17         ; restore regs
+    POP     R16
+    OUT     SREG, R1    ; restore sreg
+    POP     R1          ; restore R1
+    RETI                ; return from interrupt
+
+UARTRE:
+    PUSH    R1          ; save R1 on stack
+    IN      R1, SREG    ; save sreg
+    PUSH    R16         ; save other regs
+    PUSH    R17
+    ; do something testable
+    LDI     R16, $23
+    LDI     R17, $23
+    ADD     R16, R17
+    STS     $FF00, R16  ; W 46 FF00
+
+    POP     R17         ; restore regs
+    POP     R16
+    OUT     SREG, R1    ; restore sreg
+    POP     R1          ; restore R1
+    RETI                ; return from interrupt
+
+UARTTX:
+    PUSH    R1          ; save R1 on stack
+    IN      R1, SREG    ; save sreg
+    PUSH    R16         ; save other regs
+    PUSH    R17
+    ; do something testable
+    LDI     R16, $23
+    LDI     R17, $23
+    ADD     R16, R17
+    STS     $FF00, R16  ; W 46 FF00
+
+    POP     R17         ; restore regs
+    POP     R16
+    OUT     SREG, R1    ; restore sreg
+    POP     R1          ; restore R1
+    RETI                ; return from interrupt
+
+ANACMP:
+    PUSH    R1          ; save R1 on stack
+    IN      R1, SREG    ; save sreg
+    PUSH    R16         ; save other regs
+    PUSH    R17
+    ; do something testable
+    LDI     R16, $23
+    LDI     R17, $23
+    ADD     R16, R17
+    STS     $FF00, R16  ; W 46 FF00
+
+    POP     R17         ; restore regs
+    POP     R16
+    OUT     SREG, R1    ; restore sreg
+    POP     R1          ; restore R1
+    RETI                ; return from interrupt
+
+    MulTest:
+    			LDI 	R16, $00
+    			OUT		SReg, R16
+    			LDI     R16, $F0
+                LDI     R17, $52
+                MUL     R16, R17	; Mul F0, 52
+                IN      R18, SReg
+                STS     $FE00, R18  ; W 00 FE00
+                STS		$FF00, R0 	; W E0 FF00
+                STS 	$FF00, R1 	; W 4C FF00
+    MulTest2:
+    			LDI     R16, $00
+                LDI     R17, $00
+                MUL     R16, R17	; Mul 0,0
+                IN      R18, SReg
+                STS     $FE00, R18  ; W 00 FE00
+                STS		$FF00, R0 	; W 00 FF00
+                STS 	$FF00, R1 	; W 00 FF00
+
+    MulTest3:
+    			LDI     R16, $FF
+                LDI     R17, $FF
+                MUL     R16, R17	; Mul FF,FF
+                IN      R18, SReg
+                STS     $FE00, R18  ; W 01 FE00
+                STS		$FF00, R0 	; W 01 FF00
+                STS 	$FF00, R1 	; W FE FF00
+    MulTest4:
+    			LDI     R16, $03
+                LDI     R17, $8A
+                MUL     R16, R17	; Mul 03, 8A
+                IN      R18, SReg
+                STS     $FE00, R18  ; W 00 FE00
+                STS		$FF00, R0 	; W 9E FF00
+                STS 	$FF00, R1 	; W 01 FF00
+                JMP     $000D 

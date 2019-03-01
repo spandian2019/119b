@@ -11,6 +11,7 @@
 --      4/22/02   Glen George       added new instructions
 --      4/22/02   Glen George       updated comments
 --      5/16/02   Glen George       fixed LPM instruction constant
+--      2/27/19   Sundar Pandian    Added CALLI operation code
 --
 -----------------------------------------------------------------------------
 
@@ -134,7 +135,11 @@ package opcodes is
    constant OpBREAK  :  opcode_word := "1001010110011000";   -- BREAK
    constant OpNOP    :  opcode_word := "0000000000000000";   -- NOP
    constant OpSLP    :  opcode_word := "10010101100-1000";   -- SLEEP
-   constant OpWDR    :  opcode_word := "10010101101-1000";   -- WDR 
+   constant OpWDR    :  opcode_word := "10010101101-1000";   -- WDR
 
+--  Custom Instruction for interrupt call. No other opcode in AVR instruction set
+--    maps to this value
+
+   constant OpCALLI  :  opcode_word := "0000000000000001";   -- CALLs interrupt function
 
 end package;

@@ -37,6 +37,8 @@
 -- 01/30/2019   Sundar Pandian  Initial architecture writeup
 -- 02/01/2019   Sundar Pandian  Debugged with testbench
 -- 02/07/2019   Sundar Pandian  Added indirect addressing mux and support
+-- 02/27/2019   Sophia Liu      Added header documentation
+-- 02/07/2019   Sundar Pandian  removed unnecessary delay on register outputs
 --
 ----------------------------------------------------------------------------
 
@@ -119,8 +121,6 @@ begin
     -- register outputs load value in address line
     RegAOut <=  registers(conv_integer(RegSelA));
     RegBOut <=  registers(conv_integer(RegSelB));
-
-
     -- X,Y,Z pointers also always gets outputted to addr line MUX and control unit
     --  selects which address line to be used
     RegXOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(X_ADDR_L));
@@ -129,6 +129,5 @@ begin
     RegYOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(Y_ADDR_H));
     RegZOut((ADDRSIZE/2)-1 downto 0)      <= registers(conv_integer(Z_ADDR_L));
     RegZOut(ADDRSIZE-1 downto ADDRSIZE/2) <= registers(conv_integer(Z_ADDR_H));
-
 
 end regspace;

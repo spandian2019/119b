@@ -56,14 +56,19 @@ end  PROG_MEMORY;
 architecture  ROM  of  PROG_MEMORY  is
 
     -- define the type for the ROM (an array)
-    type  ROMtype  is array(0 to 675) of std_logic_vector(15 downto 0);
+    type  ROMtype  is array(0 to 900) of std_logic_vector(15 downto 0);
 
     -- define the actual ROM to test program
-    signal  ROMbits  :  ROMtype  :=  ( X"E000", X"E010", X"E020", X"E030", X"E040",
-                                        X"2EF0", X"2E10", X"2E20", X"2E30", X"2E40",
+    signal  ROMbits  :  ROMtype  :=  (
+                                        X"C00C", X"C2AF", X"C2BC", X"C2C9", X"C2D6",
+                                        X"C2E3", X"C2F0", X"C2FD", X"C30A", X"C317",
+                                        X"C324", X"C331", X"C33E", -- interrupt vectors
+
+                                        X"E000", X"E010", X"E020", X"E830", X"9478",
+                                        X"2EF0", X"2E10", X"9478", X"2E30", X"2E40",
                                         X"2E50", X"2E60", X"2E70", X"2E80", X"2E90",
                                         X"2EA0", X"2EB0", X"2EC0", X"2ED0", X"2EE0",
-                                        X"C000", X"2411", X"E080", X"E090", X"BE1F",
+                                        X"C000", X"2E13", X"E080", X"E090", X"BE1F",
                                         X"9641", X"B63F", X"9230", X"FE00", X"3090",
                                         X"F009", X"0000", X"3181", X"F009", X"0000",
                                         X"EF00", X"E512", X"0F01", X"B72F", X"9320",
@@ -190,11 +195,54 @@ architecture  ROM  of  PROG_MEMORY  is
                                         X"912F", X"3520", X"F409", X"0000", X"B78F",
                                         X"C002", X"0000", X"0000", X"B79F", X"1789",
                                         X"F409", X"0000", X"B78F", X"D013", X"B79F",
-                                        X"1389", X"0000", X"940E", X"02A1", X"C001",
-                                        X"0000", X"EAE1", X"E0F2", X"B78F", X"9509",
+                                        X"1389", X"0000", X"940E", X"02AE", X"C001",
+                                        X"0000", X"EAEE", X"E0F2", X"B78F", X"9509",
                                         X"B79F", X"1389", X"0000", X"FFF1", X"9020",
-                                        X"FF00", X"940C", X"0000", X"0000", X"2D01",
-                                        X"9508");
+                                        X"FF00", X"940C", X"0359", X"0000", X"2D01", -- 000D start 0359 mul 
+                                        X"9508",
+                                        X"921F", X"B61F", X"930F", X"931F", X"E203",
+                                        X"E213", X"0F01", X"9300", X"FF00", X"911F", -- interrupt handlers
+                                        X"910F", X"BE1F", X"901F", X"9518", X"921F",
+                                        X"B61F", X"930F", X"931F", X"E203", X"E213",
+                                        X"0F01", X"9300", X"FF00", X"911F", X"910F",
+                                        X"BE1F", X"901F", X"9518", X"921F", X"B61F",
+                                        X"930F", X"931F", X"E203", X"E213", X"0F01",
+                                        X"9300", X"FF00", X"911F", X"910F", X"BE1F",
+                                        X"901F", X"9518", X"921F", X"B61F", X"930F",
+                                        X"931F", X"E203", X"E213", X"0F01", X"9300",
+                                        X"FF00", X"911F", X"910F", X"BE1F", X"901F",
+                                        X"9518", X"921F", X"B61F", X"930F", X"931F",
+                                        X"E203", X"E213", X"0F01", X"9300", X"FF00",
+                                        X"911F", X"910F", X"BE1F", X"901F", X"9518",
+                                        X"921F", X"B61F", X"930F", X"931F", X"E203",
+                                        X"E213", X"0F01", X"9300", X"FF00", X"911F",
+                                        X"910F", X"BE1F", X"901F", X"9518", X"921F",
+                                        X"B61F", X"930F", X"931F", X"E203", X"E213",
+                                        X"0F01", X"9300", X"FF00", X"911F", X"910F",
+                                        X"BE1F", X"901F", X"9518", X"921F", X"B61F",
+                                        X"930F", X"931F", X"E203", X"E213", X"0F01",
+                                        X"9300", X"FF00", X"911F", X"910F", X"BE1F",
+                                        X"901F", X"9518", X"921F", X"B61F", X"930F",
+                                        X"931F", X"E203", X"E213", X"0F01", X"9300",
+                                        X"FF00", X"911F", X"910F", X"BE1F", X"901F",
+                                        X"9518", X"921F", X"B61F", X"930F", X"931F",
+                                        X"E203", X"E213", X"0F01", X"9300", X"FF00",
+                                        X"911F", X"910F", X"BE1F", X"901F", X"9518",
+                                        X"921F", X"B61F", X"930F", X"931F", X"E203",
+                                        X"E213", X"0F01", X"9300", X"FF00", X"911F",
+                                        X"910F", X"BE1F", X"901F", X"9518", X"921F",
+                                        X"B61F", X"930F", X"931F", X"E203", X"E213",
+                                        X"0F01", X"9300", X"FF00", X"911F", X"910F",
+                                        X"BE1F", X"901F", X"9518",
+                                        X"E000", X"BF0F", X"EF00", X"E512", X"9F01", -- mul
+                                        X"B72F", X"9320", X"FE00", X"9200", X"FF00",
+                                        X"9210", X"FF00", X"E000", X"E010", X"9F01",
+                                        X"B72F", X"9320", X"FE00", X"9200", X"FF00",
+                                        X"9210", X"FF00", X"EF0F", X"EF1F", X"9F01",
+                                        X"B72F", X"9320", X"FE00", X"9200", X"FF00",
+                                        X"9210", X"FF00", X"E003", X"E81A", X"9F01",
+                                        X"B72F", X"9320", X"FE00", X"9200", X"FF00",
+                                        X"9210", X"FF00", X"940C", X"000D");
 
 
 begin

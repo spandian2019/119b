@@ -10,6 +10,8 @@
 --
 --  Revision History:
 --  02/20/2019 Sophia Liu Initial revision
+--  02/27/2019 Sophia Liu added support for EC Int
+--  02/27/2019 Sundar     changed EC testing for multicycle operation
 --
 ----------------------------------------------------------------------------
 library ieee;
@@ -33,6 +35,16 @@ architecture TB_ARCHITECTURE of CPUTB is
             Reset   :  in     std_logic;                       -- reset signal (active low)
             INT0    :  in     std_logic;                       -- interrupt signal (active low)
             INT1    :  in     std_logic;                       -- interrupt signal (active low)
+            T1CAP   :  in     std_logic;                        -- timer 1 capture event
+            T1CPA   :  in     std_logic;                        -- timer 1 compare match A
+            T1CPB   :  in     std_logic;                        -- timer 2 compare match B
+            T1OVF   :  in     std_logic;                        -- timer 1 overflow
+            T0OVF   :  in     std_logic;                        -- timer 0 overflow
+            IRQSPI  :  in     std_logic;                        -- serial transfer complete
+            UARTRX  :  in     std_logic;                        -- UART receive complete
+            UARTRE  :  in     std_logic;                        -- UART data register empty
+            UARTTX  :  in     std_logic;                        -- UART transmit complete
+            ANACMP  :  in     std_logic;                        -- analog comparator
             clock   :  in     std_logic;                       -- system clock
             ProgAB  :  out    std_logic_vector(15 downto 0);   -- program memory address bus
             DataAB  :  out    std_logic_vector(15 downto 0);   -- data memory address bus
@@ -74,6 +86,20 @@ architecture TB_ARCHITECTURE of CPUTB is
     signal DataRd  :  std_logic;                        -- data read (active low)
     signal DataWr  :  std_logic;                        -- data write (active low)
 
+    -- other interrupt signals
+    signal T1CAP :  std_logic;
+    signal T1CPA :  std_logic;
+    signal T1CPB :  std_logic;
+    signal T1OVF :  std_logic;
+    signal T0OVF :  std_logic;
+    signal IRQSPI :  std_logic;
+    signal UARTRX :  std_logic;
+    signal UARTRE :  std_logic;
+    signal UARTTX :  std_logic;
+    signal ANACMP :  std_logic;
+
+    signal PreINT : std_logic_vector(15 downto 0);
+
     signal Clk     : std_logic; -- system clock
 
     begin
@@ -84,6 +110,16 @@ architecture TB_ARCHITECTURE of CPUTB is
             Reset   => Reset,
             INT0    => INT0,
             INT1    => INT1,
+            T1CAP => T1CAP,
+            T1CPA => T1CPA,
+            T1CPB => T1CPB,
+            T1OVF => T1OVF,
+            T0OVF => T0OVF,
+            IRQSPI => IRQSPI,
+            UARTRX => UARTRX,
+            UARTRE => UARTRE,
+            UARTTX => UARTTX,
+            ANACMP => ANACMP,
             clock   => Clk,
             ProgAB  => ProgAB,
             DataAB  => DataAB,
@@ -111,31 +147,44 @@ architecture TB_ARCHITECTURE of CPUTB is
         TB: process
             variable i : integer;
             variable j : integer;
+            variable ii: integer;
         begin
-
-
         	-- initially everything is 0, have not started
             Reset <= '0'; -- begin with reset
             INT0 <= '1'; -- disable interrupts
             INT1 <= '1';
-        	wait for CLK_PERIOD*5.5; -- wait for a bit
+            T1CAP <= '0';
+            T1CPA <= '0';
+            T1CPB <= '0';
+            T1OVF <= '0';
+            IRQSPI <= '0';
+            UARTRX <= '0';
+            UARTRE <= '0';
+            UARTTX <= '0';
+            ANACMP <= '0';
 
-            wait for CLK_PERIOD*0.2; -- offset for clock edge
+        	wait for CLK_PERIOD*5.7; -- wait for a bit, offset for clock edge
+
             Reset <= '1'; -- de-assert reset, program should begin from start
 
 			-- check with test vectors every clock
 			for i in TEST_SIZE downto 0 loop
-                -- on falling edge
+
+                -- check signals, after falling edge
                 wait for CLK_PERIOD/2;
-                -- check prog AB
-                assert (std_match(ProgABTest(i),ProgAB))
-                    report  "ProgAB failure at clock number " & integer'image(TEST_SIZE-i)
+                -- check prog AB, offset for interrupt vectors
+                if not std_match(ProgABTest(i), "XXXXXXXXXXXXXXXX") then
+                assert (to_integer(unsigned(ProgABTest(i))) = to_integer(unsigned((ProgAB))) - 13)
+                    report  "ProgAB failure at clock number " & integer'image(TEST_SIZE-i) & " Expected: "
+                        & integer'image(to_integer(unsigned(ProgABTest(i)))) & " and got: "
+                        & integer'image(to_integer(unsigned(ProgAB)) - 13)
                     severity  ERROR;
-                if i = TEST_SIZE then 
-                    j := TEST_SIZE;
-                else 
+                end if;
+                if i = TEST_SIZE then
+                    j := TEST_SIZE; -- delay data test bus by one clock
+                else
                     j := i+1;
-                end if; -- delay data test bus by one clock 
+                end if;
                 -- check data AB (for ld, st)
                 assert (std_match(DataABTest(j), DataAB))
                     report  "DataAB failure at clock number " & integer'image(TEST_SIZE-i)
@@ -155,7 +204,7 @@ architecture TB_ARCHITECTURE of CPUTB is
                 assert (std_match(DataRdTest(j), DataRd))
                     report  "DataRd failure at test number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
-                -- check write not asserted
+
                 assert (std_match(DataWrTest(j), DataWr))
                     report  "DataWr failure at test number " & integer'image(TEST_SIZE-i)
                     severity  ERROR;
@@ -164,8 +213,84 @@ architecture TB_ARCHITECTURE of CPUTB is
 
 			end loop;
             wait for CLK_PERIOD*5;
-            END_SIM <= TRUE;        -- end of stimulus events
-            wait;                   -- wait for simulation to end
+
+            -- interrupt test
+
+            wait for CLK_PERIOD*25;
+
+            -- assert interrupt
+            INT0 <= '0';
+
+            wait for CLK_PERIOD;
+
+            -- de-assert interrupt, check signals during interrupt
+            INT0 <= '1';
+
+            PreINT <= ProgAB;
+
+            wait for CLK_PERIOD*2;
+
+            for ii in INTR_SIZE downto 0 loop
+                -- check signals, after falling edge
+                wait for CLK_PERIOD/2;
+                -- check prog AB, offset depending on interrupt vector number
+                assert (std_match(ProgABTestIntr(ii),ProgAB))
+                    report  "ProgAB failure at interrupt clock number " & integer'image(INTR_SIZE-ii) & " Expected: "
+                        & integer'image(to_integer(unsigned(ProgABTestIntr(ii)))) & " and got: "
+                        & integer'image(to_integer(unsigned(ProgAB)))
+                    severity  ERROR;
+
+                -- check data AB (for ld, st)
+                assert (std_match(DataABTestIntr(ii), DataAB))
+                    report  "DataAB failure at interrupt clock number " & integer'image(INTR_SIZE-ii)
+                    severity  ERROR;
+
+                -- check data DB (for ld)
+                assert (std_match(DataDBRdTestIntr(ii), DataDB))
+                    report  "DataDBRd failure at interrupt clock number " & integer'image(INTR_SIZE-ii)
+                    severity  ERROR;
+
+                -- check data DB (for st)
+                assert (std_match(DataDBWrTestIntr(ii), DataDB))
+                        report  "DataDBWr failure at interrupt clock number " & integer'image(INTR_SIZE-ii)
+                        severity  ERROR;
+
+                -- check rd/wr (check for glitches)
+                assert (std_match(DataRdTestIntr(ii), DataRd))
+                    report  "DataRd failure at interrupt test number " & integer'image(INTR_SIZE-ii)
+                    severity  ERROR;
+
+                assert (std_match(DataWrTestIntr(ii), DataWr))
+                    report  "DataWr failure at interrupt test number " & integer'image(INTR_SIZE-ii)
+                    severity  ERROR;
+
+                if ii = INTR_SIZE then
+                    assert (std_match(PreINT, ProgAB))
+                        report "Return after INT fail"
+                        severity ERROR;
+                end if;
+
+                wait for CLK_PERIOD/2; -- wait for rest of clock
+            end loop;
+
+            wait for CLK_PERIOD*5;
+
+            -- reset test
+            Reset <= '0';
+            wait for CLK_PERIOD;
+            Reset <= '1';
+            wait for CLK_PERIOD*2;
+
+            -- ensure back at START
+            assert (std_match(X"000d", ProgAB))
+                report "Reset fail"
+                severity ERROR;
+
+            wait for CLK_PERIOD*5;
+
+        END_SIM <= TRUE;
+        wait;
+
         end process;
 
         -- not writing to dataDB, hi-z
@@ -192,17 +317,3 @@ architecture TB_ARCHITECTURE of CPUTB is
         end process;
 
 end TB_ARCHITECTURE;
-
---configuration TESTBENCH_FOR_CPU of CPUTB is
---    for TB_ARCHITECTURE
---		for UUT : AVR_CPU
---            use entity work.AVR_CPU;
---        end for;
---        for UUTP : PROG_MEMORY
---            use entity work.PROG_MEMORY;
---        end for;
---        for UUTD : DATA_MEMORY
---            use entity work.DATA_MEMORY;
---        end for;
---    end for;
---end TESTBENCH_FOR_CPU;

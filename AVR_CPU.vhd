@@ -5,11 +5,19 @@
 --  This is the entity declaration for the complete AVR CPU.  The design
 --  should implement this entity to make testing possible.
 --
+--  Extra Credit implemented:
+--      MUL operation
+--      implementing IO reg space
+--      remapping first 96 address from memory into reg space
+--      AVR Reset and Interrupt Vectors
+--      Misc operations: IN, OUT, NOP, SLEEP, WDR
+--
 --  Revision History:
 --     11 May 98  Glen George       Initial revision.
 --      9 May 00  Glen George       Updated comments.
 --      7 May 02  Glen George       Updated comments.
 --     21 Jan 08  Glen George       Updated comments.
+--     20 Feb 19  Sundar Pandian    populated to fit with HW 5 CPU entity
 --
 ----------------------------------------------------------------------------
 
@@ -21,11 +29,21 @@
 --  test the complete design.
 --
 --  Inputs:
---    ProgDB - program memory data bus (16 bits)
---    Reset  - active low reset signal
---    INT0   - active low interrupt
---    INT1   - active low interrupt
---    clock  - the system clock
+    --ProgDB  - program memory data bus, 15 bits
+    --Reset   - reset signal (active low)
+    --INT0    - external interrupt request 0
+    --INT1    - external interrupt request 1
+    --T1CAP   - timer 1 capture event
+    --T1CPA   - timer 1 compare match A
+    --T1CPB   - timer 2 compare match B
+    --T1OVF   - timer 1 overflow
+    --T0OVF   - timer 0 overflow
+    --IRQSPI  - serial transfer complete
+    --UARTRX  - UART receive complete
+    --UARTRE  - UART data register empty
+    --UARTTX  - UART transmit complete
+    --ANACMP  - analog comparator
+    --clock   - system clock
 --
 --  Outputs:
 --    ProgAB - program memory address bus (16 bits)
@@ -49,16 +67,26 @@ use work.constants.all;
 entity  AVR_CPU  is
 
     port (
-        ProgDB  :  in     std_logic_vector(15 downto 0);   -- program memory data bus
-        Reset   :  in     std_logic;                       -- reset signal (active low)
-        INT0    :  in     std_logic;                       -- interrupt signal (active low)
-        INT1    :  in     std_logic;                       -- interrupt signal (active low)
-        clock   :  in     std_logic;                       -- system clock
-        ProgAB  :  out    std_logic_vector(15 downto 0);   -- program memory address bus
-        DataAB  :  out    std_logic_vector(15 downto 0);   -- data memory address bus
-        DataWr  :  out    std_logic;                       -- data memory write enable (active low)
-        DataRd  :  out    std_logic;                       -- data memory read enable (active low)
-        DataDB  :  inout  std_logic_vector(7 downto 0)     -- data memory data bus
+        ProgDB  :  in     std_logic_vector(15 downto 0);    -- program memory data bus
+        Reset   :  in     std_logic;                        -- reset signal (active low)
+        INT0    :  in     std_logic;                        -- external interrupt request 0
+        INT1    :  in     std_logic;                        -- external interrupt request 1
+        T1CAP   :  in     std_logic;                        -- timer 1 capture event
+        T1CPA   :  in     std_logic;                        -- timer 1 compare match A
+        T1CPB   :  in     std_logic;                        -- timer 2 compare match B
+        T1OVF   :  in     std_logic;                        -- timer 1 overflow
+        T0OVF   :  in     std_logic;                        -- timer 0 overflow
+        IRQSPI  :  in     std_logic;                        -- serial transfer complete
+        UARTRX  :  in     std_logic;                        -- UART receive complete
+        UARTRE  :  in     std_logic;                        -- UART data register empty
+        UARTTX  :  in     std_logic;                        -- UART transmit complete
+        ANACMP  :  in     std_logic;                        -- analog comparator
+        clock   :  in     std_logic;                        -- system clock
+        ProgAB  :  out    std_logic_vector(15 downto 0);    -- program memory address bus
+        DataAB  :  out    std_logic_vector(15 downto 0);    -- data memory address bus
+        DataWr  :  out    std_logic;                        -- data memory write enable (active low)
+        DataRd  :  out    std_logic;                        -- data memory read enable (active low)
+        DataDB  :  inout  std_logic_vector(7 downto 0)      -- data memory data bus
     );
 
 end  AVR_CPU;
@@ -126,10 +154,12 @@ signal ZAddrOut : std_logic_vector(ADDRSIZE-1 downto 0);
 
 begin
 
-    CtrlU   : entity work.CU port map(ProgDB, SReg, ZeroFlag, SBFlag, Immed, ImmedEn, RegWEn, RegWSel,
+    CtrlU   : entity work.CU port map(Reset, INT0, INT1, T1CAP, T1CPA, T1CPB, T1OVF,
+                                    T0OVF, IRQSPI, UARTRX, UARTRE, UARTTX, ANACMP,
+                                    ProgDB, SReg, ZeroFlag, SBFlag, Immed, ImmedEn, RegWEn, RegWSel,
                                     RegSelA, RegSelB, IORegWEn, IORegWSel, IndWEn, IndAddrSel,
-                                    IOOutSel, DataRd, DataWr, IORegOutEn, ALUaddsub, ALUsr, ALUfop,
-                                    ALUcomneg, ALUSel, bitmask, CPC, LoadIn, SRegLd,
+                                    IOOutSel, DataRd, DataWr, ALUaddsub, ALUsr, ALUfop,
+                                    ALUcomneg, ALUSel, bitmask, CPC, LoadIn,
                                     DataOffsetSel, PreSel, QOffset, DataDBWEn, DataABMux, clock,
                                     RegIoFlag, RegIoSelFlag, DataCtrlU, Load, ProgSourceSel, ProgIRSource);
 

@@ -26,6 +26,7 @@ package constants is
     constant IRSIZE     : natural := 16;    -- number of bits in IR
     constant RADDRSIZE  : natural := 5;     -- number of bits in register addr
     constant IOADDRSIZE : natural := 6;     -- number of bits in IO reg addr
+    constant INTREGSIZE : natural := 4;     -- number of bits in Int Event reg
     constant REG_LENGTH     : natural := 32;--
     constant IO_REG_LENGTH  : natural := 64;--
     constant ZERO8      : std_logic_vector(7 downto 0) := "00000000"; -- 8 bit zero
@@ -42,21 +43,50 @@ package constants is
     constant TWO_CYCLES     : OP_CYCLE := "10";
     constant THREE_CYCLES   : OP_CYCLE := "11";
 
+    -- PC Load Constants
+    -- uses and gate to add or load in value
+    constant PC_ADD         : std_logic := '1';
+    constant PC_LOAD        : std_logic := '0';
+
+    -- Interrupt Event Handling Constants
+    -- cannot currently handle more than 15 interrupts
+    subtype INT_EVENT is std_logic_vector(INTREGSIZE-1 downto 0);
+    constant NO_INT         : INT_EVENT := "1111";
+    constant RESET_INT      : INT_EVENT := "0000";
+    constant INT0_INT       : INT_EVENT := "0001";
+    constant INT1_INT       : INT_EVENT := "0010";
+    constant T1CAP_INT      : INT_EVENT := "0011";
+    constant T1CPA_INT      : INT_EVENT := "0100";
+    constant T1CPB_INT      : INT_EVENT := "0101";
+    constant T1OVF_INT      : INT_EVENT := "0110";
+    constant T0OVF_INT      : INT_EVENT := "0111";
+    constant IRQSPI_INT     : INT_EVENT := "1000";
+    constant UARTRX_INT     : INT_EVENT := "1001";
+    constant UARTRE_INT     : INT_EVENT := "1010";
+    constant UARTTX_INT     : INT_EVENT := "1011";
+    constant ANACMP_INT     : INT_EVENT := "1100";
+
+    constant INT_ZERO_PAD : std_logic_vector(ADDRSIZE-INTREGSIZE-1 downto 0) := "000000000000";
+
+    constant ACTIVE_LO : std_logic := '0';
+    constant ACTIVE_HI : std_logic := '1';
+
     -------------------
     -- ALU CONSTANTS --
     -------------------
     constant CPC_SET : std_logic := '1';
     constant CPC_RST : std_logic := '0';
     -- ALU output select signals
-    subtype ALU_SELECTS is std_logic_vector(2 downto 0);
-    constant ADDSUBOUT      : ALU_SELECTS := "000";
-    constant FBLOCKOUT      : ALU_SELECTS := "001";
-    constant SHIFTOUT       : ALU_SELECTS := "010";
-    constant SWAPOUT        : ALU_SELECTS := "011";
-    constant MULOUT         : ALU_SELECTS := "100";
-    constant BOUT           : ALU_SELECTS := "101";
-    constant BSET           : ALU_SELECTS := "110";
-    constant BCLR           : ALU_SELECTS := "111";
+    subtype ALU_SELECTS is std_logic_vector(3 downto 0);
+    constant ADDSUBOUT      : ALU_SELECTS := "0000";
+    constant FBLOCKOUT      : ALU_SELECTS := "0001";
+    constant SHIFTOUT       : ALU_SELECTS := "0010";
+    constant SWAPOUT        : ALU_SELECTS := "0011";
+    constant MULOUTH        : ALU_SELECTS := "0100";
+    constant MULOUTL        : ALU_SELECTS := "1100";
+    constant BOUT           : ALU_SELECTS := "0101";
+    constant BSET           : ALU_SELECTS := "0110";
+    constant BCLR           : ALU_SELECTS := "0111";
 
     -- F-block operands
     subtype  ALU_FOPS is std_logic_vector(3 downto 0);
@@ -163,6 +193,8 @@ package constants is
                                                                   --  adding does not change PC
     constant INC_VECTOR     : SOURCE_CONST := "0000000000000001"; -- +1 constant to add
 
+    constant PC_INIT        : std_logic_vector(15 downto 0) := "1111111111111111"; -- initial PC value
+
     ------------------------
     -- Register CONSTANTS --
     ------------------------
@@ -255,8 +287,12 @@ package constants is
 
     constant MASK_INT   : BIT_MASK := "10000000"; -- change interrupt flag
 
-    constant T_SREG : natural := 6; -- transfer bit number in sreg
+    constant T_SREG : natural := 6; -- transfer bit index in sreg
+    constant I_SREG : natural := 7; -- global interrupt enable index in sreg
     constant T_IR : natural := 9; -- transfer bit number in IR
+
+    constant INT_EN  : std_logic := '1'; -- interrupts enabled
+    constant INT_DIS : std_logic := '0'; -- interrupts disabled
 
 
 end package constants;

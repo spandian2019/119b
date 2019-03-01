@@ -41,6 +41,9 @@
 -- 01/31/2019   Sundar Pandian  Added support for BST, BLD
 -- 02/01/2019   Sophia Liu      Updates for CU support
 -- 02/06/2019   Sundar Pandian  Changed structure so ALU does it all
+-- 02/27/2019   Sophia Liu      Added MUL block
+-- 02/27/2019   Sophia Liu      Added header documentation
+-- 02/27/2019   Sundar Pandian  Added in line documentation
 --
 ----------------------------------------------------------------------------
 library ieee;
@@ -68,10 +71,10 @@ entity ALU is
         -- from Regs
         RegA        : in    std_logic_vector(REGSIZE-1 downto 0); -- operand A
         RegB        : in    std_logic_vector(REGSIZE-1 downto 0); -- operand B, or immediate
-        StatusIn    : in    std_logic_vector(REGSIZE-1 downto 0);
+        StatusIn    : in    std_logic_vector(REGSIZE-1 downto 0); -- status register previous value
 
         RegOut      : out   std_logic_vector(REGSIZE-1 downto 0); -- output result
-        StatusOut   : out   std_logic_vector(REGSIZE-1 downto 0); -- status register output
+        StatusOut   : out   std_logic_vector(REGSIZE-1 downto 0); -- status register output new value
         SBFlag      : out   std_logic;                            -- skip bit flag output for SBRC/SBRS
         ZeroFlag    : out   std_logic                             -- zero flag output for CPSE
     );
@@ -82,6 +85,12 @@ architecture behavioral of ALU is
 -- internal signals
 signal AdderOut     : std_logic_vector(REGSIZE-1 downto 0); -- adder/subtracter output
 signal CarryOut     : std_logic_vector(REGSIZE-1 downto 0); -- carry for adder/subtracter
+
+-- mult signals
+type MULARR is array (natural range <>) of std_logic_vector(REGSIZE-1 downto 0);
+signal CarryOutMul  : MULARR(REGSIZE-1 downto 0); -- carry for mul
+signal AOpMul       : MULARR(REGSIZE-1 downto 0); -- internal signals for mul
+signal BOpMul       : MULARR(REGSIZE-2 downto 0); -- internal signals for mul
 
 --signal ASCout       : std_logic;
 signal Bin          : std_logic_vector(REGSIZE-1 downto 0); -- B Input to the adder/subber
@@ -94,20 +103,20 @@ signal Bitout       : std_logic_vector(REGSIZE-1 downto 0); -- bit set block out
 
 signal SwapRegOut   : std_logic_vector(REGSIZE-1 downto 0); -- swap block output
 
-signal MulRegOut    : std_logic_vector(REGSIZE-1 downto 0); -- MUL block output
+signal MulRegOut    : std_logic_vector(REGSIZE*2-1 downto 0); -- MUL block output
 
 signal RegBuff      : std_logic_vector(REGSIZE-1 downto 0); -- buffer for output result
 
 -- internal status signals
 signal VFlag        : std_logic; -- signed overflow status flag
-signal NFlag        : std_logic;
-signal CFlag        : std_logic;
+signal NFlag        : std_logic; -- neg value status flag
+signal CFlag        : std_logic; -- carry flag
 
 signal CIn          : std_logic; -- carry in from adder sel
 
-signal comnegR      : std_logic_vector(REGSIZE-1 downto 0);
+signal comnegR      : std_logic_vector(REGSIZE-1 downto 0); -- comneg register
 
-signal nCarryFlag   : std_logic;
+signal nCarryFlag   : std_logic; -- neg of carry flag (so borrow flag)
 ---- component declarations
 
 component Mux8to1 is
@@ -165,12 +174,11 @@ begin
       end generate GenFBlock;
 
     -- clear or set A, for use with COM or NEG
-    -- TODO explain?
     GenAClr: for i in REGSIZE-1 downto 0 generate
         comnegR(i) <= (RegA(i) and ALUCNOp(OP_CN_AND)) or ALUCNOp(OP_CN_OR);
     end generate GenAClr;
 
-    nCarryFlag <= not StatusIn(0);
+    nCarryFlag <= not StatusIn(0);  -- neg of carry flag
 
     -- adder/subtracter carry in MUX
     adderCarry: Mux4to1
@@ -250,11 +258,63 @@ begin
         SwapRegOut(i) <= RegA(i+NIBBLE);
     end generate;
 
+    -- 8x8 Array Multiplier
+    -- Array setup
+    Mul_ALU:  for i in 1 to REGSIZE - 1 generate
+        AOpMul(0)(i) <= RegA(i) and RegB(0); -- first row array input
+    end generate;
+    MulRegOut(0) <= RegA(0) and RegB(0); -- ab0 = a0 and b0
+    -- Multiplier sum array
+    -- first array row
+    Mula0_ALU:  for ai in 1 to REGSIZE - 1 generate
+            BOpMul(0)(ai) <= RegA(ai-1) and RegB(1);
+            MulAdd0_ALU: fullAdder
+            port map(
+                A           => AOpMul(0)(ai),
+                B           => BOpMul(0)(ai),
+                Cin         => '0',
+                Cout        => CarryOutMul(0)(ai-1),
+                Sum         => AOpMul(1)(ai-1)
+            );
+    end generate;
+    MulRegOut(1) <= AOpMul(1)(0);
+    AOpMul(1)(REGSIZE-1) <= RegA(REGSIZE-1) and RegB(1);
+    -- middle array rows
+    Mulb_ALU:  for bi in 1 to REGSIZE - 2 generate
+        Mula_ALU:  for ai in 1 to REGSIZE - 1 generate
+            BOpMul(bi)(ai) <= RegA(ai-1) and RegB(bi+1);
+            MulAdd_ALU: fullAdder
+            port map(
+                A           => AOpMul(bi)(ai),
+                B           => BOpMul(bi)(ai),
+                Cin         => CarryOutMul(bi-1)(ai-1),
+                Cout        => CarryOutMul(bi)(ai-1),
+                Sum         => AOpMul(bi+1)(ai-1)
+            );
+        end generate;
+        MulRegOut(bi+1) <= AOpMul(bi+1)(0);
+        AOpMul(bi+1)(REGSIZE-1) <= RegA(REGSIZE-1) and RegB(bi+1);
+    end generate;
+    -- last array row
+    Mula1_ALU:  for ai in 1 to REGSIZE - 1 generate
+        CarryOutMul(REGSIZE-1)(0) <= '0';
+        MulAdd1_ALU: fullAdder
+        port map(
+            A           => AOpMul(REGSIZE-1)(ai),
+            B           => CarryOutMul(REGSIZE-1)(ai-1),
+            Cin         => CarryOutMul(REGSIZE-2)(ai-1),
+            Cout        => CarryOutMul(REGSIZE-1)(ai),
+            Sum         => MulRegOut(ai+7)
+        );
+    end generate;
+    MulRegOut(15) <= CarryOutMul(REGSIZE-1)(REGSIZE-1); -- msb is last carry bit
+
     RegBuff <=  AdderOut    when ALUSel = ADDSUBOUT else
                 FOut        when ALUSel = FBLOCKOUT else
                 SROut       when ALUSel = SHIFTOUT  else
                 SwapRegOut  when ALUSel = SWAPOUT   else
-                MulRegOut   when ALUSel = MULOUT    else
+                MulRegOut(REGSIZE-1 downto 0)   when ALUSel = MULOUTL    else
+                MulRegOut(REGSIZE*2-1 downto REGSIZE)   when ALUSel = MULOUTH    else
                 BitOut      when ALUSel = BOUT else
                 "XXXXXXXX";
 
@@ -267,7 +327,8 @@ begin
     StatusOut(7) <= StatusIn(7) when BitMask(7) = '0' else
                     '1' when ALUSel = BSET else
                     '0' when ALUSel = BCLR else
-                    '0';
+                    not StatusIn(7); -- flips between setting and resetting global interrupt
+                                     --  enable between CALLI and RETI
 
     -- transfer bit
     StatusOut(6) <= StatusIn(6) when BitMask(6) = '0' else
@@ -322,6 +383,7 @@ begin
                     CarryOut(REGSIZE-1) when ALUSel = ADDSUBOUT and ALUASOp(SUBFLAG) = OP_ADD else
                     not CarryOut(REGSIZE-1) when ALUSel = ADDSUBOUT else     -- carry flag opposite when subtracting
                     '1' when ALUSel = FBLOCKOUT else -- set for logical operations
+                    MulRegOut(REGSIZE*2-1) when ALUSel = MULOUTH else -- carry out for multiplication 
                     RegA(0); -- when ALUSel = SHIFTEN;
     StatusOut(0) <= CFlag;
 end behavioral;

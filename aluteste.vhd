@@ -10,7 +10,7 @@
 --     20 Apr 98  Glen George       Fixed minor syntax bugs.
 --     18 Apr 04  Glen George       Updated comments and formatting.
 --     21 Jan 06  Glen George       Updated comments.
---		 31 Jan 19  Sophia Liu        Updated architecture
+--	   31 Jan 19  Sophia Liu        Updated architecture
 --
 ----------------------------------------------------------------------------
 

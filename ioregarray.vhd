@@ -31,6 +31,8 @@
 -- 01/30/2019   Sundar Pandian  Initial architecture writeup, remapping port
 -- 02/01/2019   Sundar Pandian  Debugged with testbench
 -- 02/01/2019   Sundar Pandian  added indirect addressing modes
+-- 02/27/2019   Sophia Liu      Added header documentation
+-- 02/27/2019   Sundar Pandian  removed unnecessary second delay on reg outputs
 --
 ----------------------------------------------------------------------------
 
@@ -115,17 +117,8 @@ begin
     --  by Control Unit to be used
     IORegOut <= IOregisters(conv_integer(IORegWSel));
     SRegOut  <= IOregisters(conv_integer(SREG_ADDR));
+    SPRegOut((ADDRSIZE/2)-1 downto 0)      <= IOregisters(conv_integer(SP_ADDR_H));
+    SPRegOut(ADDRSIZE-1 downto ADDRSIZE/2) <= IOregisters(conv_integer(SP_ADDR_L));
 
-    -- synchronously output indirect address lines to avoid errors with DataMIU
-    --  such as incrementing twice in one operation
-    read_addr_reg : process (CLK)
-    begin
-        if (rising_edge(CLK)) then
-        -- stack pointer also always gets outputted to addr line MUX and control unit
-        --  selects which address line to be used
-        SPRegOut((ADDRSIZE/2)-1 downto 0)      <= IOregisters(conv_integer(SP_ADDR_H));
-        SPRegOut(ADDRSIZE-1 downto ADDRSIZE/2) <= IOregisters(conv_integer(SP_ADDR_L));
-        end if;
-    end process read_addr_reg;
 
 end regspace;
